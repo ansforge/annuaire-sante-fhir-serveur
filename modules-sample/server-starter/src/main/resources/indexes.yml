@@ -1,0 +1,20 @@
+fhir:
+  resources:
+    - name: Device
+      profile: http://hl7.org/fhir/StructureDefinition/Device
+      searchParams:
+        - name: identifier
+          urlParameter: identifier
+          searchType: token
+          description: The device identifier
+          resourcePaths:
+            - path: identifier
+          indexName: t_identifier
+        - name: device-name
+          urlParameter: device-name
+          searchType: string
+          description: The device name
+          resourcePaths:
+            - path: deviceName|name
+          indexName: t_name
+

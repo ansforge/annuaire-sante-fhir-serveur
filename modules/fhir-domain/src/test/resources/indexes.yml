@@ -1,0 +1,22 @@
+fhir:
+  validationMode: strict
+  resources:
+    - name: Patient
+      profile: http://hl7.org/fhir/StructureDefinition/Patient
+      searchParams:
+        - name: active
+          urlParameter: active
+          searchType: token
+          description: Whether the patient record is active
+          resourcePaths:
+            - path: active
+          indexName: t_active
+        - name: address
+          urlParameter: address
+          searchType: string
+          description: A server defined search that may match any of the string fields in the Address, including line, city, district, state, country, postalCode, and/or text
+          resourcePaths:
+            - path: address.line
+            - path: address.city
+            - path: address.district
+

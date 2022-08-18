@@ -1,0 +1,13 @@
+/*
+ * (c) Copyright 1998-2022, ANS. All rights reserved.
+ */
+
+package fr.ans.afas.fhirserver.search.expression;
+
+/**
+ * @param <T> the type returned when the expression is interpreted
+ * @author Guillaume Poulériguen
+ * @since 1.0.0
+ */
+public interface ElementExpression<T> extends Expression<T> {
+}

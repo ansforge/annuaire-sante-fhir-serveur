@@ -1,0 +1,11 @@
+server:
+  port: 8000
+
+afas:
+  fhir:
+    next-url-encryption-key: change-me
+  mongodb:
+    uri: ${MONGO_CONNECTION_STRING:mongodb://root:root@localhost:27017/?socketTimeoutMS=360000&connectTimeoutMS=360000}
+    dbname: ${DB_NAME:afassample}
+
+  publicUrl: http://localhost:8000/fhir

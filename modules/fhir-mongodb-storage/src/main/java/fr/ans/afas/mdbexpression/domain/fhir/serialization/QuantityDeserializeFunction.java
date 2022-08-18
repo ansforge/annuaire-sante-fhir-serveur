@@ -1,0 +1,33 @@
+/*
+ * (c) Copyright 1998-2022, ANS. All rights reserved.
+ */
+
+package fr.ans.afas.mdbexpression.domain.fhir.serialization;
+
+import fr.ans.afas.fhirserver.search.FhirSearchPath;
+import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.expression.Expression;
+import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
+import fr.ans.afas.fhirserver.search.expression.QuantityExpression;
+import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
+import fr.ans.afas.mdbexpression.domain.fhir.MongoDbQuantityExpression;
+import org.bson.conversions.Bson;
+
+/**
+ * Deserialize a Quantity expression
+ *
+ * @author Guillaume Poulériguen
+ * @since 1.0.0
+ */
+public class QuantityDeserializeFunction implements DeserializeFunction<Bson> {
+    @Override
+    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionDeserializer expressionDeserializer, String val) {
+        var parts = val.split("\\$");
+        var operator = QuantityExpression.Operator.values()[Integer.parseInt(parts[0])];
+        var doubleValue = Double.parseDouble(parts[1]);
+        var resource = parts[2];
+        var path = parts[3];
+        var fhirSearchPath = FhirSearchPath.builder().resource(resource).path(path).build();
+        return new MongoDbQuantityExpression(searchConfig, fhirSearchPath, doubleValue, operator);
+    }
+}
