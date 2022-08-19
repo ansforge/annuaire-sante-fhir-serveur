@@ -86,7 +86,7 @@ Ce fichier pourra être utilisé pour le déploiement de l'api.
 Attention, si vous n'avez pas docker, vous devez sauter les tests utilisant
 docker: `mvn clean install -DskipIntegrationTest -Duser.timezone=UTC`
 
-Le système utilise spring boot. Se référer a
+Le système utilise spring boot (veuillez vous vous référer à
 la [documentation de Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/index.html) pour plus
 d'informations).
 
