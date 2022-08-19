@@ -45,24 +45,23 @@ java -Duser.timezone=UTC -jar fhir-server-0.1.2-SNAPSHOT.jar --spring.config.loc
 
 ### IntelliJ
 
-1) ouvre le projet maven
-2) modifiez le fichier `<Root>/modules-as/fhir-server/src/main/resources/application-local.yml` et changez la
+1) ouvrir le projet maven
+2) modifier le fichier `<Root>/modules-as/fhir-server/src/main/resources/application-local.yml` et changer la
    propriété `afas.mongodb.uri` pour correspondre à votre base de données mongodb.
-3) Allez dans Run/Debug, Configure. Ajoutez une configuration spring boot avec comme
+3) Aller dans Run/Debug, Configurer et ajouter une configuration spring boot avec comme
    classe : `modules-as/fhir-server/src/main/java/fr/ans/afas/fhirserver/RassFhirServerApplication.java`
-4) Mettez le profile actif à "local": ![Exemple de configuration de lancement](assets/images/launch-ide.png){ width=50%
+4) Metter le profile actif à "local": ![Exemple de configuration de lancement](assets/images/launch-ide.png){ width=50%
    }
 
 ### Mode démo
 
-Une fois le serveur lancé avec les paramètres par défaut, vous avec l'url du serveur FHIR accéssible sur l'
-url : http://localhost:8080/fhir/v1/
+Une fois le serveur lancé avec les paramètres par défaut, le service FHIR est accessible à cette url : http://localhost:8080/fhir/v1/
 
 Quelques urls utiles:
 
 * CapabilityStatement: http://localhost:8080/fhir/v1/metadata?_format=json
-* Lister les Organization : http://localhost:8080/fhir/v1/Organization?_format=json&_pretty=true
-* Lister les Device : http://localhost:8080/fhir/v1/Device?_format=json&_pretty=true
+* Lister les ressources Organization : http://localhost:8080/fhir/v1/Organization?_format=json&_pretty=true
+* Lister les ressources Device : http://localhost:8080/fhir/v1/Device?_format=json&_pretty=true
 
 ## Build & packaging
 
@@ -78,14 +77,14 @@ Pour tout construire, tester et installer les artifacts : `mvn clean package ins
 
 ### Jar
 
-Pour déployer l'application il est possible d'utiliser maven qui va créer un fichier jar. Le fichier contiendra l'api
+Pour déployer l'application, il est possible d'utiliser maven qui va créer un fichier jar. Le fichier contiendra l'api
 FHIR qui pourra être démarrée.
 
-Avec la commande `mvn clean package` vous obtiendrez un fichier jar sous le dossier module-as/fhir-server/target.
+Avec la commande `mvn clean package`, vous obtiendrez un fichier jar sous le dossier module-as/fhir-server/target.
 
 Ce fichier pourra être utilisé pour le déploiement de l'api.
 
-Attention, si vous n'avez pas docker, vous devez skip les tests utilisant
+Attention, si vous n'avez pas docker, vous devez sauter les tests utilisant
 docker: `mvn clean install -DskipIntegrationTest -Duser.timezone=UTC`
 
 Le système utilise spring boot. Se référer a
