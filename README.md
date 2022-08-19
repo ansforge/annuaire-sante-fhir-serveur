@@ -2,7 +2,7 @@
 
 **Un serveur FHIR ayant été développé en se basant sur la librairie HAPI FHIR.**
 
-Ce code source, appelé module-afas ci-après, vous permettra de créer un serveur FHIR avec vos resources.
+Le code source ci-joint (appelé module-afas ci-après) vous permettra de créer un serveur FHIR avec vos resources.
 
 Notre serveur FHIR a été pensé pour répondre à un besoin particulier :
 
