@@ -1,8 +1,8 @@
-# Serveur FHIR de l'annuaire santé
+# Serveur FHIR de l'annuaire santé IRIS DP
 
-**Un serveur FHIR qui fonctionne basé sur la librairie Hapi.**
+**Un serveur FHIR a été développé en se basant sur la librairie HAPI FHIR.**
 
-Ce serveur vous permettra de créer un serveur FHIR avec vos resources.
+Ce module vous permettra de créer un serveur FHIR avec vos resources.
 
 Le serveur FHIR a été pensé pour répondre à un besoin particulier :
 
@@ -10,7 +10,7 @@ Le serveur FHIR a été pensé pour répondre à un besoin particulier :
 * Des paramètres de recherche spécifiques liés à un domaine
 * De performances optimisés pour la lecture
 * De la scalabilité
-* Une configuration et extenssibilité facile
+* Une configuration et extensibilité facile
 
 ### Useful resources
 
