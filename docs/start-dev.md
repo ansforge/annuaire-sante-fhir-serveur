@@ -30,7 +30,7 @@ afas.version doit être remplacée par la version souhaitée de la librairie.
 
 ## Créer une première ressource
 
-La configuration d'une ressource se fait en 2 étapes. 
+La configuration d'une ressource se fait en 2 étapes :
 - La première étape consiste à configurer le moteur de stockage 
 - et la seconde à configurer Hapi. 
 
