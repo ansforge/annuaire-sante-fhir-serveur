@@ -11,8 +11,7 @@ Pour démarrer, créer un projet spring boot avec le strater spring : [stater sp
 
 ## Intégration du module afas 
 
-Nous proposons l'utilisation d'un starter spring boot. Cela signifie que si vous ajoutiez la dépendance maven, votre
-serveur est prêt à fonctionner.
+Ajouter la dépendance maven comme suit : 
 
 ``` xml
 <dependencies>
