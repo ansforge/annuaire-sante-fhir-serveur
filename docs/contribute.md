@@ -88,7 +88,7 @@ docker: `mvn clean install -DskipIntegrationTest -Duser.timezone=UTC`
 
 Le système utilise spring boot. Se référer a
 la [documentation de Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/index.html) pour plus
-d'informations.
+d'informations).
 
 ### Docker
 
