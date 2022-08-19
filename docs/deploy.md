@@ -47,5 +47,5 @@ Pour lancer le docker, il suffira d'utiliser la commande docker run :
 `docker run [Name of the repo and version]`
 
 Lorsque vous lancez le docker, vous pouvez préciser un fichier de configuration ou bien des variables d'environnement =>
-Monter les 2 techniques et faire référence au [deploy](deploy.md)
+Monter les 2 techniques et faire référence au [deploy](deploy.md).
 
