@@ -50,8 +50,7 @@ java -Duser.timezone=UTC -jar fhir-server-0.1.2-SNAPSHOT.jar --spring.config.loc
    propriété `afas.mongodb.uri` pour correspondre à votre base de données mongodb.
 3) Aller dans Run/Debug, Configurer et ajouter une configuration spring boot avec comme
    classe : `modules-as/fhir-server/src/main/java/fr/ans/afas/fhirserver/RassFhirServerApplication.java`
-4) Metter le profile actif à "local": ![Exemple de configuration de lancement](assets/images/launch-ide.png){ width=50%
-   }
+4) Metter le profile actif à "local": ![Exemple de configuration de lancement](assets/images/launch-ide.png)
 
 ### Mode démo
 
