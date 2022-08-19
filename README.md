@@ -6,11 +6,11 @@ Le code source ci-joint (appelé module-afas ci-après) vous permettra de créer
 
 Notre serveur FHIR a été pensé pour répondre à un besoin particulier :
 
-* Des ressources spécifiques mais basés sur les standards
-* Des paramètres de recherche spécifiques liés à un domaine
-* De performances optimisés pour la lecture
-* De la scalabilité
-* Une configuration et extensibilité facile
+* Des ressources spécifiques mais basés sur les standards,
+* Des paramètres de recherche spécifiques liés à un domaine,
+* Des performances optimisées pour la lecture,
+* De la scalabilité,
+* Une configuration et extensibilité facile.
 
 ### Useful resources
 
