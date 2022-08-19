@@ -20,7 +20,7 @@ La configuration mongodb par défaut autorise tout cela.
 | afas.fhir.next-url-encryption-key | secret qui permet d'encoder les urls next. Doit être secret                                                               | changeme                                                                            |
 | afas.mongodb.uri                  | la chaine de connection au mongodb sous le format connection string                                                       | mongodb://root:root@localhost:27017/?socketTimeoutMS=360000&connectTimeoutMS=360000 |
 | afas.mongodb.dbname               | le nom de la collection mongodb                                                                                           | fhirdb                                                                              |
-| afas.publicUrl                    | l'adresse public du serveur FHIR. doit être la base de l'url à partir de laquelle les utilisateurs utiliserons le service | http://localhost:8080/fhir                                                          |
+| afas.publicUrl                    | l'adresse publique du serveur FHIR devant être la base de l'url à partir de laquelle les utilisateurs utiliseront le service | http://localhost:8080/fhir                                                          |
 
 
 ## Jar deployment
