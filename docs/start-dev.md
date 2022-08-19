@@ -4,14 +4,14 @@ Ce guide vous permet de créer votre propre serveur FHIR.
 
 ## Création du projet Maven
 
-Le serveur se base sur les librairies Spring Boot et Hapi
+Le serveur se base sur les librairies Spring Boot et Hapi.
 
-Pour démarrer, créez un projet spring boot avec le strater spring : [stater spring boot](https://start.spring.io/)
+Pour démarrer, créer un projet spring boot avec le strater spring : [stater spring boot](https://start.spring.io/)
 
 
 ## Intégration du module afas 
 
-Nous proposons l'utilisation d'un starter spring boot. Cela signifie que si vous ajoutez la dépendance maven, votre
+Nous proposons l'utilisation d'un starter spring boot. Cela signifie que si vous ajoutiez la dépendance maven, votre
 serveur est prêt à fonctionner.
 
 ``` xml
@@ -36,7 +36,7 @@ Voir [add-parameter](add-parameter.md) pour plus de détails
 
 ## Configurer la servlet FHIR
 
-De manière optionnelle il est possible de configurer la servlet FHIR fournie par Hapi. 
+De manière optionnelle, il est possible de configurer la servlet FHIR fournie par Hapi. 
 
 
 Pour ce faire, vous devez étendre la classe `fr.ans.afas.AfasServerConfigurerAdapter` puis 
@@ -71,4 +71,4 @@ public class FhirServerApplication extends AfasServerConfigurerAdapter {
 }
 ```
 
-Il s'agit de la servlet Hapi vous trouverez plus de documentation sur la documentation officielle Hapi.
+Il s'agit de la servlet Hapi.
