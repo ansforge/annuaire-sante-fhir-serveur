@@ -6,7 +6,7 @@ Lors d'un déploiement avec Mongodb, il faut que l'application dispose des droit
 de données (insert/update/delete).
 
 Si la base de données n'existe pas, l'application va tenter de la créer avec le nom spécifié en configuration. Dans ce
-cas il faudra également le droit de créer des bases de données.
+cas, il faudra également le droit de créer des bases de données.
 
 La configuration mongodb par défaut autorise tout cela.
 
@@ -25,8 +25,7 @@ La configuration mongodb par défaut autorise tout cela.
 
 ## Jar deployment
 
-Créé un fichier de configuration ex `/etc/fhir-server/application.yml` et positionnez les valeurs de ce fichier avec vos
-valeurs.
+Créer un fichier de configuration ex `/etc/fhir-server/application.yml` et positionner les valeurs de ce fichier avec les votres.
 
 ```yaml
 afas:
@@ -43,7 +42,7 @@ afas:
 
 ## Docker deployment
 
-Pour lancer le docker il suffira d'utiliser la commande docker run:
+Pour lancer le docker, il suffira d'utiliser la commande docker run :
 
 `docker run [Name of the repo and version]`
 
