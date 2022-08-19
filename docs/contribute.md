@@ -77,7 +77,7 @@ Pour tout construire, tester et installer les artifacts : `mvn clean package ins
 ### Jar
 
 Pour déployer l'application, il est possible d'utiliser maven qui va créer un fichier jar. Le fichier contiendra l'api
-FHIR qui pourra être démarrée.
+FHIR à démarrer.
 
 Avec la commande `mvn clean package`, vous obtiendrez un fichier jar sous le dossier module-as/fhir-server/target.
 
