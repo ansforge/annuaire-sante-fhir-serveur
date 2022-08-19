@@ -35,7 +35,7 @@ spécifiant à spring que le profil actif est "local" (-Dspring.profiles.active=
 
 Le principal paramètre à changer pour fonctionner est la connection string d'accès à mongodb `afas.mongodb.uri`.
 
-Exemple complet si vous n'utilisez pas d'IDE (pensez à remplacer la version du projet pour le fichier jar).
+Exemple complet si vous n'utilisez pas d'IDE (penser à remplacer la version du projet pour le fichier jar).
 
 ```
 mvn clean package
