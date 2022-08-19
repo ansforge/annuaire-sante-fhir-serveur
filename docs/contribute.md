@@ -92,9 +92,7 @@ d'informations.
 
 ### Docker
 
-Pour les déploiements docker, nous utilisons le plugin maven jib com.google.cloud.tools:jib-maven-plugin
-
-Plus d'informations sur la [page officielle](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin)
+Pour les déploiements docker, nous utilisons le plugin maven jib com.google.cloud.tools:jib-maven-plugin (vous trouvrez plus d'informations sur la [page officielle](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin)
 du plugin.
 
 Après avoir installé la version courante (`mvn install`) puis dans le dossier: `modules-as/fhir-server`
