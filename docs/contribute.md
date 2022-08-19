@@ -54,7 +54,7 @@ java -Duser.timezone=UTC -jar fhir-server-0.1.2-SNAPSHOT.jar --spring.config.loc
 
 ### Mode démo
 
-Une fois le serveur lancé avec les paramètres par défaut, le service FHIR est accessible à cette url : http://localhost:8080/fhir/v1/
+Une fois le serveur lancé avec les paramètres par défaut, le service FHIR sera accessible à cette url : http://localhost:8080/fhir/v1/
 
 Quelques urls utiles:
 
