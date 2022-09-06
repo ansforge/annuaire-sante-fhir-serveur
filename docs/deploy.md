@@ -5,8 +5,8 @@
 Lors d'un déploiement avec Mongodb, il faut que l'application dispose des droits de création de Collection, d'indexes et
 de données (insert/update/delete).
 
-Si la base de données n'existe pas, l'application va tenter de la créer avec le nom spécifié en configuration. Dans ce
-cas, il faudra également le droit de créer des bases de données.
+Si la base de données n'existe pas, l'application va tenter de la créer avec le nom spécifié dans le fichier de configuration. Dans ce
+cas, il faudra également avoir le droit de créer des bases de données.
 
 La configuration mongodb par défaut autorise tout cela.
 
