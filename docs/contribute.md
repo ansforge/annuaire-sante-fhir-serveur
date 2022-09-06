@@ -26,14 +26,14 @@ Pour construire le projet, utilisez la commande : `mvn clean package`.
 
 Vous pouvez ensuite lancer le main "RassFhirServerApplication" dans le module "modules-as/fhir-server".
 
-Les paramètres de l'application se trouvent dans un fichier application.yaml situé
+Les paramètres de l'application se trouvent dans un fichier application.yaml situé dans
 `<Root>/modules-as/fhir-server/src/main/resources/application.yml`
 
 Il est aussi possible d'utiliser un fichier de
 développement `<Root>/modules-as/fhir-server/src/main/resources/application-local.yml` en
 spécifiant à spring que le profil actif est "local" (-Dspring.profiles.active=local).
 
-Le principal paramètre à changer pour fonctionner est la connection string d'accès à mongodb `afas.mongodb.uri`.
+Le principal paramètre à changer pour que ça fonctionne est la connection string d'accès à mongodb `afas.mongodb.uri`.
 
 Exemple complet si vous n'utilisez pas d'IDE (penser à remplacer la version du projet pour le fichier jar).
 
