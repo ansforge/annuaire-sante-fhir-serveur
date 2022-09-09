@@ -17,8 +17,8 @@ Notre serveur FHIR a été pensé pour répondre à certaines exigences fonction
 * Tutoriels et guides pratiques : [Development guide](docs/start-dev.md), [Deployment guide](docs/deploy.md), [Contribution guide](docs/contribute.md)
 * La documentation complète du projet est disponible ici : https://ansforge.github.io/annuaire-sante-fhir-documentation/
 * Une démonstration de ce projet est disponible ici : https://portail.openfhir.annuaire.sante.fr/
-* Ce projet est en Open Source, sous licence Apache Software License 2.0.
-* Si vous avez des questions ou besoin d'aide, veuillez consulter notre page [wiki]
+* Ce projet est en Open Source, sous MIT License.
+* Si vous avez des questions ou besoin d'aide, veuillez consulter notre page [wiki].
 
 
 
