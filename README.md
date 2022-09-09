@@ -1,10 +1,10 @@
 # Serveur FHIR de l'annuaire santé IRIS DP
 
-**Un serveur FHIR ayant été développé en se basant sur la librairie HAPI FHIR.**
+**Le serveur FHIR de l'annuaire santé a été développé en se basant sur la librairie HAPI FHIR.**
 
 Le code source ci-joint (appelé module-afas ci-après) vous permettra de créer un serveur FHIR avec vos resources.
 
-Notre serveur FHIR a été pensé pour répondre à un besoin particulier :
+Notre serveur FHIR a été pensé pour répondre à certaines exigences fonctionnelles et techniques, à savoir :
 
 * Des ressources spécifiques mais basés sur les standards,
 * Des paramètres de recherche spécifiques liés à un domaine,
@@ -12,16 +12,14 @@ Notre serveur FHIR a été pensé pour répondre à un besoin particulier :
 * De la scalabilité,
 * Une configuration et extensibilité facile.
 
-### Useful resources
+### Documentation et Wiki
 
-* [Development guide](docs/start-dev.md)
-* [Deployment guide](docs/deploy.md)
-* [Contribution guide](docs/contribute.md)
+* Tutoriels et guides pratiques : [Development guide](docs/start-dev.md), [Deployment guide](docs/deploy.md), [Contribution guide](docs/contribute.md)
+* La documentation complète du projet est disponible ici : https://ansforge.github.io/annuaire-sante-fhir-documentation/
+* Une démonstration de ce projet est disponible ici : https://portail.openfhir.annuaire.sante.fr/
+* Ce projet est en Open Source, sous licence Apache Software License 2.0.
+* Si vous avez des questions ou besoin d'aide, veuillez consulter notre page [wiki]
 
-### Staff
-
-* TBD
-* TBD
 
 
 
