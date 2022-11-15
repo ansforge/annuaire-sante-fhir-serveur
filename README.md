@@ -1,5 +1,5 @@
 # README
-[![Build status](https://github.com/ansforge/annuaire-sante-fhir-serveur/workflows/main%20branch%20CI/badge.svg)](https://github.com/ansforge/annuaire-sante-fhir-serveur/actions?query=workflow%3A%22main+branch+CI%22)
+
 
 # Code source du serveur FHIR de l'annuaire santé IRIS DP
 
