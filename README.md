@@ -20,7 +20,8 @@ Notre serveur FHIR a été pensé pour répondre à certaines exigences fonction
 * Ce projet est en Open Source, sous MIT License.
 * Si vous avez des questions ou besoin d'aide, veuillez consulter notre page [wiki].
 
-
+### Contributions
+* Le code de conduite est disponible ici : https://ansforge.github.io/Documentation/pages/docs/codedeconduite.html
 
 
 
