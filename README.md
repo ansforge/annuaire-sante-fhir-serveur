@@ -5,7 +5,7 @@
 
 **Le serveur FHIR de l'annuaire santé a été développé en se basant sur la librairie HAPI FHIR.**
 
-Le code source ci-joint (appelé module-afas ci-après) vous permettra de créer un serveur FHIR avec vos resources.
+Le code source ci-joint (appelé module-afas ci-après) vous permettra de créer un serveur FHIR avec vos ressources.
 
 Notre serveur FHIR a été pensé pour répondre à certaines exigences fonctionnelles et techniques, à savoir :
 
