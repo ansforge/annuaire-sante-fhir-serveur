@@ -1,7 +1,4 @@
-# README
-
-
-## Code source du serveur FHIR de l'annuaire santé IRIS DP
+# Code source du serveur FHIR de l'annuaire santé IRIS DP
 
 **Le serveur FHIR de l'annuaire santé a été développé en se basant sur la librairie HAPI FHIR.**
 
