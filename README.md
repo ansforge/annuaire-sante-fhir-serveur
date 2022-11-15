@@ -1,4 +1,7 @@
-# Serveur FHIR de l'annuaire santé IRIS DP
+# README
+[![Build status](https://github.com/ansforge/Documentation/workflows/main%20branch%20CI/badge.svg)](https://github.com/ansforge/Documentation/actions?query=workflow%3A%22main+branch+CI%22)
+
+# Code source du serveur FHIR de l'annuaire santé IRIS DP
 
 **Le serveur FHIR de l'annuaire santé a été développé en se basant sur la librairie HAPI FHIR.**
 
