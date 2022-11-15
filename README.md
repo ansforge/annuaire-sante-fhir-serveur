@@ -1,4 +1,4 @@
-# Code source du serveur FHIR de l'annuaire santé IRIS DP
+# Serveur FHIR de l'annuaire santé IRIS DP - code source
 
 **Le serveur FHIR de l'annuaire santé a été développé en se basant sur la librairie HAPI FHIR.**
 
