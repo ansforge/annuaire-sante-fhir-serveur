@@ -10,7 +10,7 @@ package fr.ans.afas.fhirserver.search.exception;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class BadParametersException extends RuntimeException{
+public class BadParametersException extends RuntimeException {
 
     /**
      * Construct the exception

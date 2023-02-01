@@ -7,7 +7,7 @@ package fr.ans.afas.mdbexpression.domain.fhir.serialization;
 import fr.ans.afas.exception.SerializationException;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.*;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
+import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbIncludeExpression;
 import org.bson.conversions.Bson;
 import org.springframework.util.StringUtils;
@@ -18,10 +18,10 @@ import java.util.regex.Pattern;
 
 public class SelectDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionDeserializer expressionDeserializer, String val) {
+    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
         var parts = val.split("\\$", -1);
         if (parts.length != 6) {
-            throw new SerializationException("Error during the Select deserialization. 6 parameters wanted. " + parts.length + " found. Params:" + val);
+            throw new SerializationException("Error during the Select deserialization. 6 parameters wanted. " + parts.length + " found. Params: " + val);
         }
         var resourceType = parts[0];
         var count = parts[1];
@@ -44,7 +44,7 @@ public class SelectDeserializeFunction implements DeserializeFunction<Bson> {
         var toRet = new HashSet<IncludeExpression<Bson>>();
         var parts = s.split(Pattern.quote(Expression.SERIALIZE_SEPARATOR));
         if (parts.length % 2 != 0) {
-            throw new SerializationException("Error during the Select deserialization. (Rev)include not well formated.");
+            throw new SerializationException("Error during the Select deserialization. (Rev)include not well formatted.");
         }
         for (var i = 0; i < parts.length; i += 2) {
             toRet.add(new MongoDbIncludeExpression(sc, parts[i], parts[i + 1]));

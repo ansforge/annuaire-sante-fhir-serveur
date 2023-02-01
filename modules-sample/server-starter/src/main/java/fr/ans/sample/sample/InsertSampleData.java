@@ -34,7 +34,7 @@ public class InsertSampleData {
     public void insertSampleData() {
         var d1 = new Device();
         d1.setId("id-1");
-        d1.addDeviceName().setName("My device name");
+        d1.addDeviceName().setName("My device name " + System.currentTimeMillis());
         d1.addIdentifier().setSystem("http://system.org/").setValue("ID-1");
         d1.setLotNumber("lot1");
         storeService.store(List.of(d1), true);

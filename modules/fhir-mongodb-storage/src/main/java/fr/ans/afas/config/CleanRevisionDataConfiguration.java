@@ -4,6 +4,7 @@
 
 package fr.ans.afas.config;
 
+import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.rass.service.MongoDbFhirService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,7 +14,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.util.Date;
 
 /**
- * The configuration of the job that clean revision data no more used
+ * The configuration of the job that clean revision data no more used.
+ * The service will clean paging data too.
  *
  * @author Guillaume Poulériguen
  * @since 1.0.0
@@ -28,6 +30,13 @@ public class CleanRevisionDataConfiguration {
     @Autowired
     MongoDbFhirService mongoDbFhirService;
 
+    /**
+     * The url manager
+     */
+    @Autowired
+    NextUrlManager nextUrlManager;
+
+
     @Value("${afas.fhir.max-revision-duration}")
     long validityMs;
 
@@ -36,7 +45,11 @@ public class CleanRevisionDataConfiguration {
      */
     @Scheduled(fixedDelay = 3600000)
     public void cleanOldRevision() {
+
         mongoDbFhirService.deleteOldRevisions(new Date().getTime() - validityMs);
+
+
+        nextUrlManager.cleanOldPagingData(new Date().getTime() - validityMs);
     }
 
 

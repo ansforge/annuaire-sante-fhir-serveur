@@ -9,7 +9,6 @@ import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
 import fr.ans.afas.fhirserver.search.expression.IncludeExpression;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import org.bson.conversions.Bson;
 
@@ -63,7 +62,7 @@ public class MongoDbIncludeExpression extends IncludeExpression<Bson> {
     }
 
     @Override
-    public Expression<Bson> deserialize(ExpressionDeserializer expressionDeserializer) {
+    public Expression<Bson> deserialize(ExpressionSerializer expressionDeserializer) {
         return null;
     }
 

@@ -4,22 +4,21 @@
 
 package fr.ans.afas.fhir;
 
-import ca.uhn.fhir.model.primitive.DateDt;
 import ca.uhn.fhir.rest.api.server.IBundleProvider;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.IPagingProvider;
+import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
-import fr.ans.afas.fhirserver.search.expression.SelectExpression;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.SerializeUrlEncrypter;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
+import fr.ans.afas.fhirserver.service.NextUrlManager;
+import fr.ans.afas.fhirserver.service.exception.BadLinkException;
+import fr.ans.afas.fhirserver.service.exception.BadRequestException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Date;
-import java.util.HashMap;
 
 /**
  * The paging provider. This paging provider use url to store the request and context params.
@@ -27,37 +26,37 @@ import java.util.HashMap;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class AfasPagingProvider implements IPagingProvider {
+public class AfasPagingProvider<T> implements IPagingProvider {
 
     /**
      * The expression factory
      */
     @Autowired
-    ExpressionFactory<?> expressionFactory;
+    ExpressionFactory<T> expressionFactory;
 
     /**
      * The store service
      */
     @Autowired
-    FhirStoreService<?> fhirStoreService;
+    FhirStoreService<T> fhirStoreService;
 
     /**
      * The expression serializer
      */
     @Autowired
-    ExpressionSerializer expressionSerializer;
-
-    /**
-     * The expression deserializer
-     */
-    @Autowired
-    ExpressionDeserializer<?> expressionDeserializer;
+    ExpressionSerializer<T> expressionSerializer;
 
     /**
      * The url encrypter
      */
     @Autowired
     SerializeUrlEncrypter serializeUrlEncrypter;
+
+    /**
+     * A service that store paging
+     */
+    @Autowired
+    NextUrlManager nextUrlManager;
 
     @Override
     public int getDefaultPageSize() {
@@ -82,25 +81,15 @@ public class AfasPagingProvider implements IPagingProvider {
 
     @Override
     public IBundleProvider retrieveResultList(@Nullable RequestDetails theRequestDetails, @NotNull String theSearchIdEncoded, String thePageId) {
-        var theSearchId = serializeUrlEncrypter.decrypt(thePageId);
-        var parts = theSearchId.split("_", 7);
-        var pageSize = parts[0];
-        var size = parts[1];
-        var uuid = parts[2];
-        var timestamp = parts[3];
-        var type = parts[4];
-        var contextAsString = parts[5];
-        var exp = parts[6];
-
-        var context = new HashMap<String, Object>();
-        var keyVals = contextAsString.split(",");
-        for (var keyVal : keyVals) {
-            var p = keyVal.split("=");
-            context.put(p[0], p[1]);
+        try {
+            var parts = thePageId.split("_", 2);
+            if (parts.length != 2) {
+                throw new InvalidRequestException("Your request is not valid.");
+            }
+            return new AfasBundleProvider<T>(fhirStoreService, nextUrlManager, parts[1], parts[0]);
+        } catch (BadLinkException | BadRequestException e) {
+            throw new InvalidRequestException(e.getMessage());
         }
-
-        var expression = expressionDeserializer.deserialize(exp);
-        return new AfasBundleProvider<>(Integer.parseInt(pageSize), Integer.parseInt(size), uuid, new DateDt(new Date(Long.parseLong(timestamp))), fhirStoreService, type, (SelectExpression) expression, context, expressionSerializer, serializeUrlEncrypter);
     }
 
     @Override

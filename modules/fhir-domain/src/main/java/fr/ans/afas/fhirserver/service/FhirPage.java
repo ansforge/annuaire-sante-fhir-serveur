@@ -4,13 +4,13 @@
 
 package fr.ans.afas.fhirserver.service;
 
+import fr.ans.afas.fhirserver.search.data.SearchContext;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * A fhir search result.
@@ -30,7 +30,7 @@ public class FhirPage {
      * Used to store the context of the request like the last id of the query. Can be used for paging or store other metadata.
      */
     @NonNull
-    Map<String, Object> context;
+    SearchContext context;
 
     /**
      * If true, there is more elemnts in next pages

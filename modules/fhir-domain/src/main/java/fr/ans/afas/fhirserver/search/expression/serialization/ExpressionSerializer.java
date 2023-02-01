@@ -6,7 +6,7 @@ package fr.ans.afas.fhirserver.search.expression.serialization;
 import fr.ans.afas.fhirserver.search.expression.*;
 
 /**
- * Serialize an expression
+ * (De)Serialize an expression
  *
  * @param <T> the type of the expression (Bson for mongo etc...)
  * @author Guillaume Poulériguen
@@ -86,5 +86,13 @@ public interface ExpressionSerializer<T> {
      * @return a string representation of the expression
      */
     String serialize(TokenExpression<T> tokenExpression);
+
+    /**
+     * Deserialize the expression
+     *
+     * @param val the string value of the expression to deserialize
+     * @return the expression
+     */
+    Expression<T> deserialize(String val);
 
 }

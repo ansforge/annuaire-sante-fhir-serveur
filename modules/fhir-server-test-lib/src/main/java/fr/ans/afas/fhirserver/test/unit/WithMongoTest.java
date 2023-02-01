@@ -28,7 +28,7 @@ public final class WithMongoTest {
     /**
      * Logger
      */
-    protected static final Logger LOGGER = LoggerFactory.getLogger(WithMongoTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WithMongoTest.class);
 
     /**
      * The mongodb container
@@ -43,7 +43,9 @@ public final class WithMongoTest {
      * Clean test context
      */
     public static void clean() {
-        mongoDBContainer.stop();
+        if (mongoDBContainer != null) {
+            mongoDBContainer.stop();
+        }
     }
 
     /**
@@ -53,10 +55,11 @@ public final class WithMongoTest {
 
         @Override
         public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
+
             // if you encounter some problems with docker, disable RYUK with this env var:  TESTCONTAINERS_RYUK_DISABLED=true
             try {
                 var dockerRegistryUrl = configurableApplicationContext.getEnvironment().getProperty("docker.registry.url.mongodb");
-                mongoDBContainer = new MongoDBContainer(DockerImageName.parse(dockerRegistryUrl != null ? "" : "mongo:5.0.0").asCompatibleSubstituteFor("mongo"));
+                mongoDBContainer = new MongoDBContainer(DockerImageName.parse(dockerRegistryUrl != null ? dockerRegistryUrl : "mongo:5.0.0").asCompatibleSubstituteFor("mongo"));
                 mongoDBContainer.start();
                 TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext, "afas.mongodb.uri=mongodb://localhost:" + mongoDBContainer.getMappedPort(27017));
 

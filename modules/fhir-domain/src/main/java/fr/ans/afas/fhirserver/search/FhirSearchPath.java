@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 
+import java.util.Objects;
+
 /**
  * A search path
  *
@@ -46,5 +48,18 @@ public class FhirSearchPath {
                 "resource='" + resource + '\'' +
                 ", path='" + path + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FhirSearchPath that = (FhirSearchPath) o;
+        return resource.equals(that.resource) && path.equals(that.path);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(resource, path);
     }
 }

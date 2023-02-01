@@ -2,18 +2,17 @@
 <!--
   ~ (c) Copyright 1998-2022, ANS. All rights reserved.
   -->
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>fr.ans</groupId>
         <artifactId>bom-ms</artifactId>
         <version>3.0.4</version>
-        <relativePath>../pom.xml</relativePath>
+        <relativePath>../</relativePath>
     </parent>
     <groupId>fr.ans</groupId>
     <artifactId>annuaire-sante-fhir-serveur</artifactId>
-    <version>1.15.0-SNAPSHOT</version>
+    <version>1.21.2-SNAPSHOT</version>
     <name>annuaire-sante-fhir-serveur</name>
     <packaging>pom</packaging>
     <description>A FHIR server based on Hapi and MongoDB to expose FHIR resources.</description>
@@ -23,11 +22,11 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.source>11</maven.compiler.source>
         <java.version>11</java.version>
-        <hapi.version>6.0.2</hapi.version>
+        <hapi.version>6.2.0</hapi.version>
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.basedir}/../../modules/project-report/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
-        <spring-boot.version>2.6.9</spring-boot.version>
+        <spring-boot.version>2.7.7</spring-boot.version>
         <spring.version>5.3.21</spring.version>
         <jackson-databind.version>2.11.3</jackson-databind.version>
         <jackson-dataformat-csv.version>2.11.3</jackson-dataformat-csv.version>
@@ -35,7 +34,7 @@
         <jackson-datatype-json-org.version>2.11.3</jackson-datatype-json-org.version>
         <jackson.version>2.11.3</jackson.version>
         <mongo-java-driver.version>3.11.2</mongo-java-driver.version>
-        <mongodb.version>4.1.1</mongodb.version>
+        <mongodb.version>4.1.2</mongodb.version>
         <junit.version>4.13.1</junit.version>
         <junit-vintage.version>5.8.2</junit-vintage.version>
         <testcontainers.version>1.16.2</testcontainers.version>
@@ -47,6 +46,8 @@
         <module>modules/fhir-domain</module>
         <module>modules/fhir-mongodb-storage</module>
         <module>modules/fhir-server-test-lib</module>
+        <module>modules/fhir-subscription</module>
+        <module>modules/afas-fhir-hapi</module>
         <module>modules/project-report</module>
         <module>modules/afas-server-starter</module>
     </modules>
@@ -65,7 +66,7 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
-                <version>4.1.1</version>
+                <version>4.1.2</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -75,7 +76,7 @@
             <dependency>
                 <groupId>org.springframework.data</groupId>
                 <artifactId>spring-data-mongodb</artifactId>
-                <version>3.1.1</version>
+                <version>3.3.5</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -99,11 +100,7 @@
                 <version>9.0.64</version>
             </dependency>
             <!--   end of the CVE -->
-            <dependency>
-                <groupId>org.springframework.data</groupId>
-                <artifactId>spring-data-mongodb-cross-store</artifactId>
-                <version>3.1.1</version>
-            </dependency>
+
             <dependency>
                 <groupId>com.querydsl</groupId>
                 <artifactId>querydsl-mongodb</artifactId>
@@ -160,7 +157,7 @@
             <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
-                <version>1.4.200</version>
+                <version>2.1.210</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -248,6 +245,7 @@
                                     <skipTests>${skipTests}</skipTests>
                                     <includes>
                                         <include>**/*Test.java</include>
+                                        <include>**/*IT.java</include>
                                     </includes>
                                 </configuration>
                             </execution>

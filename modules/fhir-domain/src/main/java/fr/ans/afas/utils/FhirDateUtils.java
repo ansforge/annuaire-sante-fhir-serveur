@@ -48,17 +48,17 @@ public final class FhirDateUtils {
         var offset = ZoneOffset.ofTotalSeconds(tz.getRawOffset() / 1000);
         switch (precision) {
             case MILLI:
-                return ldt.toEpochSecond(offset);
+                return ldt.toInstant(offset).toEpochMilli();
             case SECOND:
-                return ldt.withNano(0).toEpochSecond(offset);
+                return ldt.withNano(0).toInstant(offset).toEpochMilli();
             case MINUTE:
-                return ldt.withNano(0).withSecond(0).toEpochSecond(offset);
+                return ldt.withNano(0).withSecond(0).toInstant(offset).toEpochMilli();
             case DAY:
-                return ldt.withNano(0).withMinute(0).withHour(0).withSecond(0).toEpochSecond(offset);
+                return ldt.withNano(0).withMinute(0).withHour(0).withSecond(0).toInstant(offset).toEpochMilli();
             case MONTH:
-                return ldt.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).toEpochSecond(offset);
+                return ldt.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0).toInstant(offset).toEpochMilli();
             case YEAR:
-                return ldt.withDayOfYear(1).withNano(0).withMinute(0).withHour(0).withSecond(0).toEpochSecond(offset);
+                return ldt.withDayOfYear(1).withNano(0).withMinute(0).withHour(0).withSecond(0).withNano(0).toInstant(offset).toEpochMilli();
             default:
                 throw new BadPrecisionException("Unsupported date precision: " + precision);
         }

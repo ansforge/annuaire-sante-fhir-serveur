@@ -14,7 +14,6 @@ import fr.ans.afas.exception.BadReferenceFormat;
 import fr.ans.afas.utils.FhirDateUtils;
 import fr.ans.afas.utils.IrisFhirUtils;
 import fr.ans.afas.utils.data.ParsedReference;
-import org.hl7.fhir.instance.model.api.IDomainResource;
 import org.hl7.fhir.r4.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +40,7 @@ import java.util.stream.Collectors;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public abstract class FhirBaseResourceSerializer<T extends IDomainResource> extends JsonSerializer<T> {
+public abstract class FhirBaseResourceSerializer<T> extends JsonSerializer<T> {
 
 
     /**
@@ -136,7 +135,6 @@ public abstract class FhirBaseResourceSerializer<T extends IDomainResource> exte
     }
 
 
-
     protected void writeBooleansInProperty(JsonGenerator gen, Collection<BooleanType> vs, String property) throws IOException {
         if (!vs.isEmpty()) {
             var cc = new CodeableConcept();
@@ -176,28 +174,6 @@ public abstract class FhirBaseResourceSerializer<T extends IDomainResource> exte
         }
     }
 
-    /**
-     * Write a human name. We index the prefix
-     *
-     * @param gen        the json generator
-     * @param humanNames the human names
-     * @param prefix     the base name of the json property
-     * @throws IOException if an error occur writing humanNames
-     */
-    protected void writeHumanNames(JsonGenerator gen, Collection<HumanName> humanNames, String prefix) throws IOException {
-        if (!humanNames.isEmpty()) {
-            var array = humanNames.stream().map(HumanName::getPrefix).flatMap(p -> p.stream().map(PrimitiveType::getValue)).toArray(String[]::new);
-            if (array.length > 0) {
-                gen.writeFieldName(prefix + StorageConstants.HUMAN_NAME_PREFIX_SUFFIX);
-                gen.writeArray(array, 0, array.length);
-            }
-            var arraySuffix = humanNames.stream().map(HumanName::getSuffix).flatMap(p -> p.stream().map(PrimitiveType::getValue)).toArray(String[]::new);
-            if (array.length > 0) {
-                gen.writeFieldName(prefix + StorageConstants.HUMAN_NAME_SUFFIX_SUFFIX);
-                gen.writeArray(arraySuffix, 0, arraySuffix.length);
-            }
-        }
-    }
 
     /**
      * Write a fhir codeableconcept. We index code (as value), system and both.
@@ -224,7 +200,6 @@ public abstract class FhirBaseResourceSerializer<T extends IDomainResource> exte
             gen.writeArray(array, 0, array.length);
         }
     }
-
 
 
     /**
@@ -265,15 +240,27 @@ public abstract class FhirBaseResourceSerializer<T extends IDomainResource> exte
         }
     }
 
-
     /**
-     * Get the value or if null: Empty string
+     * Write a human name. We index the prefix
      *
-     * @param s the string
-     * @return the value or an empty string if null
+     * @param gen        the json generator
+     * @param humanNames the human names
+     * @param prefix     the base name of the json property
+     * @throws IOException if an error occur writing humanNames
      */
-    protected String s(String s) {
-        return s == null ? "" : s;
+    protected void writeHumanNames(JsonGenerator gen, Collection<HumanName> humanNames, String prefix) throws IOException {
+        if (!humanNames.isEmpty()) {
+            var array = humanNames.stream().map(HumanName::getPrefix).flatMap(p -> p.stream().map(PrimitiveType::getValue)).toArray(String[]::new);
+            if (array.length > 0) {
+                gen.writeFieldName(prefix + StorageConstants.HUMAN_NAME_PREFIX_SUFFIX);
+                gen.writeArray(array, 0, array.length);
+            }
+            var arraySuffix = humanNames.stream().map(HumanName::getSuffix).flatMap(p -> p.stream().map(PrimitiveType::getValue)).toArray(String[]::new);
+            if (array.length > 0) {
+                gen.writeFieldName(prefix + StorageConstants.HUMAN_NAME_SUFFIX_SUFFIX);
+                gen.writeArray(arraySuffix, 0, arraySuffix.length);
+            }
+        }
     }
 
     /**

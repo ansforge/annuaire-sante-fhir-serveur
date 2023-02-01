@@ -6,7 +6,6 @@ package fr.ans.afas.utils;
 
 import fr.ans.afas.fhirserver.search.expression.serialization.DefaultSerializeUrlEncrypter;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;

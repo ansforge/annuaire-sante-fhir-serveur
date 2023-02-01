@@ -18,9 +18,10 @@ exemple:
   "total": 10000,
   "link": [
     {
-    "relation": "next",
-    "url": "http://server/fhir/v1?_getpages=b34e1d28-3247-46f7-91c5-b967427c03b0&_pageId=1dY074e0BDvtV6JqD7sbtwrcdADJQk81WeoGvQHDjaeUqqPlef18R52BvgLzdsL5bkhxOnkl7PzOQ6sjiEAe0m84gFdyF5g6F7hZQIXR0083qSHsBSHiawcUNlwm-3bw4IdEk4i3H4xilP-2lUIFtqInuWrtS3nytwQMvw1U1bRc3ZG1lBs2tIlvrNVNw2rhDyHxD0Kvv9_rOx6MCMRFh9tjZPsI7nvWgQhkzhRVZt2h1Xfa_XnmmFLnUmgDuHY%3D&_format=json&_pretty=true&_bundletype=searchset"
-  } ]
+      "relation": "next",
+      "url": "http://server/fhir/v1?_getpages=b34e1d28-3247-46f7-91c5-b967427c03b0&_pageId=1dY074e0BDvtV6JqD7sbtwrcdADJQk81WeoGvQHDjaeUqqPlef18R52BvgLzdsL5bkhxOnkl7PzOQ6sjiEAe0m84gFdyF5g6F7hZQIXR0083qSHsBSHiawcUNlwm-3bw4IdEk4i3H4xilP-2lUIFtqInuWrtS3nytwQMvw1U1bRc3ZG1lBs2tIlvrNVNw2rhDyHxD0Kvv9_rOx6MCMRFh9tjZPsI7nvWgQhkzhRVZt2h1Xfa_XnmmFLnUmgDuHY%3D&_format=json&_pretty=true&_bundletype=searchset"
+    }
+  ]
 ```
 
 Pour obtenir la page suivante, il suffit d'appeler le lien contenu dans "link>next".

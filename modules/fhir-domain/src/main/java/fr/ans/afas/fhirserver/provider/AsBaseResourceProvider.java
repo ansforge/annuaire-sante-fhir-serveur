@@ -1,19 +1,19 @@
 /*
  * (c) Copyright 1998-2022, ANS. All rights reserved.
  */
+/*
+ * (c) Copyright 1998-2022, ANS. All rights reserved.
+ */
 
 package fr.ans.afas.fhirserver.provider;
 
 import ca.uhn.fhir.rest.annotation.IdParam;
 import ca.uhn.fhir.rest.annotation.ResourceParam;
-import ca.uhn.fhir.rest.annotation.Transaction;
-import ca.uhn.fhir.rest.annotation.TransactionParam;
 import ca.uhn.fhir.rest.api.MethodOutcome;
+import ca.uhn.fhir.rest.gclient.TokenClientParam;
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
-import org.hl7.fhir.instance.model.api.IBaseResource;
-import org.hl7.fhir.instance.model.api.IIdType;
-import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.DomainResource;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.springframework.util.Assert;
@@ -26,29 +26,32 @@ import java.util.*;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public abstract class AsBaseResourceProvider {
-
+public abstract class AsBaseResourceProvider<T> {
 
     /**
-     * The fhir resource name (Device, Organization...)
+     * The trial-use _total parameter to specify the way that the system calculate the count of a search
+     * Allowed values are :
+     * <ul>
+     *     <li>none</li>
+     *     <li>estimate</li>
+     *     <li>accurate</li>
+     * </ul>
      */
-    protected String resourceName;
+    public static final TokenClientParam TOTAL_PARAM = new TokenClientParam("_param");
 
     /**
      * The service that store fhir resources
      */
-    protected FhirStoreService fhirStoreService;
+    protected FhirStoreService<T> fhirStoreService;
 
     /**
      * Construct the base provider
      *
-     * @param resourceName     the resource name (Device, Organization...)
      * @param fhirStoreService the service that store fhir resources
      */
-    protected AsBaseResourceProvider(String resourceName, FhirStoreService<?> fhirStoreService) {
+    protected AsBaseResourceProvider(FhirStoreService<T> fhirStoreService) {
         Assert.notNull(fhirStoreService, "fhirStoreService must not be null");
         this.fhirStoreService = fhirStoreService;
-        this.resourceName = resourceName;
     }
 
     /**
@@ -57,18 +60,17 @@ public abstract class AsBaseResourceProvider {
      * @param resources the resource to store
      * @return the operation outcomes
      */
-    public List<MethodOutcome> create(List<IBaseResource> resources) {
+    public List<MethodOutcome> create(Collection<? extends DomainResource> resources) {
         for (var resource : resources) {
-            if (resource.getIdElement().isEmpty()) {
-                resource.setId(UUID.randomUUID().toString());
-            }
+            resource.setId(UUID.randomUUID().toString());
         }
 
         var methodOutcomes = new ArrayList<MethodOutcome>();
-        var ids = (List<IIdType>) this.fhirStoreService.store(resources, true);
+        var ids = this.fhirStoreService.store(resources, true);
         for (var id : ids) {
             var retVal = new MethodOutcome();
-            retVal.setId(new IdType(resourceName, id.getIdPart(), id.getVersionIdPart()));
+            retVal.setId(new IdType(id.getResourceType(), id.getIdPart(), id.getVersionIdPart()));
+            retVal.setCreated(true);
             methodOutcomes.add(retVal);
         }
         return methodOutcomes;
@@ -81,72 +83,48 @@ public abstract class AsBaseResourceProvider {
      * @param resource the resource to update
      * @return the operation outcome
      */
-    public MethodOutcome update(@IdParam IdType id, @ResourceParam IBaseResource resource) {
+    public MethodOutcome update(IdType id, DomainResource resource) {
+        var outcome = new MethodOutcome();
 
-        var ids = (List<IIdType>) this.fhirStoreService.store(Set.of(resource), true);
+        if (id == null) {
+            var operationOutcome = this.createOperationOutcomeError(OperationOutcome.IssueSeverity.ERROR, OperationOutcome.IssueType.INVALID);
+            outcome.setOperationOutcome(operationOutcome);
+            outcome.setCreated(false);
+
+            return outcome;
+        }
+
+        var ids = this.fhirStoreService.store(Set.of(resource), true);
         if (!ids.isEmpty()) {
-            var retVal = new MethodOutcome();
-            retVal.setId(new IdType(resourceName, ids.get(0).getIdPart(), ids.get(0).getVersionIdPart()));
-
-            var outcome = new OperationOutcome();
-            outcome.addIssue().setDiagnostics("One minor issue detected");
-            retVal.setOperationOutcome(outcome);
-
-            return retVal;
+            outcome.setId(new IdType(resource.getResourceType().toString(), ids.get(0).getIdPart(), ids.get(0).getVersionIdPart()));
+            outcome.setCreated(true);
+            return outcome;
         }
         throw new UnprocessableEntityException("Unknown error");
     }
 
+    public MethodOutcome delete(@IdParam IdType id, @ResourceParam DomainResource resource) {
+        var outcome = new MethodOutcome();
 
-    @Transaction
-    public Bundle transaction(@TransactionParam Bundle theInput) {
-        var ids = new HashSet<>();
-        var toCreate = new ArrayList<IBaseResource>();
-        var toUpdate = new ArrayList<IBaseResource>();
-        var toDelete = new ArrayList<IBaseResource>();
-        var toCreateOutcomes = new ArrayList<MethodOutcome>();
-        var toUpdateOutcomes = new ArrayList<MethodOutcome>();
-
-        // prepare the call
-        for (var nextEntry : theInput.getEntry()) {
-            if (Bundle.HTTPVerb.POST.equals(nextEntry.getRequest().getMethod())) {
-                toCreate.add(nextEntry.getResource());
-            } else if (Bundle.HTTPVerb.PUT.equals(nextEntry.getRequest().getMethod())) {
-                ids.add(nextEntry.getId());
-                toUpdate.add(nextEntry.getResource());
-            } else if (Bundle.HTTPVerb.DELETE.equals(nextEntry.getRequest().getMethod())) {
-                ids.add(nextEntry.getId());
-                toDelete.add(nextEntry.getResource());
-            }
+        var ret = this.fhirStoreService.delete(resource.fhirType(), id);
+        if (!ret) {
+            var operationOutcome = this.createOperationOutcomeError(OperationOutcome.IssueSeverity.ERROR, OperationOutcome.IssueType.NOTFOUND);
+            outcome.setOperationOutcome(operationOutcome);
+            outcome.setCreated(false);
         }
-        // calls:
-        if (!toCreate.isEmpty()) {
-            toCreateOutcomes.addAll(create(toCreate));
-        }
-        if (!toUpdate.isEmpty()) {
-            toUpdateOutcomes.addAll(create(toUpdate));
-        }
+        outcome.setId(new IdType(id.getResourceType(), id.getIdPart(), id.getVersionIdPart()));
 
+        return outcome;
+    }
 
-        // build the response:
-        var retVal = new Bundle();
-        for (var toCreateOutcome : toCreateOutcomes) {
-            var resp = new Bundle.BundleEntryResponseComponent();
-            resp.setStatus("201 Created");
-            resp.setLocation(toCreateOutcome.getId().getValue());
-            retVal.addEntry().setResponse(resp);
-        }
+    private OperationOutcome createOperationOutcomeError(OperationOutcome.IssueSeverity severity, OperationOutcome.IssueType type) {
+        var operationOutcome = new OperationOutcome();
+        var issueComponent = new OperationOutcome.OperationOutcomeIssueComponent();
+        issueComponent.setSeverity(severity);
+        issueComponent.setCode(type);
+        operationOutcome.addIssue(issueComponent);
 
-        for (var toUpdateOutcome : toUpdateOutcomes) {
-            var resp = new Bundle.BundleEntryResponseComponent();
-            resp.setStatus("200 OK");
-            resp.setLocation(toUpdateOutcome.getId().getValue());
-            retVal.addEntry().setResponse(resp);
-        }
-
-        retVal.setTotal(toCreateOutcomes.size() + toUpdateOutcomes.size());
-
-        return retVal;
+        return operationOutcome;
     }
 
 }

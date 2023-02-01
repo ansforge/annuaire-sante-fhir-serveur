@@ -13,7 +13,6 @@ import fr.ans.afas.fhirserver.search.expression.AndExpression;
 import fr.ans.afas.fhirserver.search.expression.QuantityExpression;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
 import fr.ans.afas.fhirserver.search.expression.StringExpression;
-import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionDeserializer;
 import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,8 +31,7 @@ public class ExpressionSerializationTest {
 
     final TestSearchConfig testSearchConfig = new TestSearchConfig();
     final MongoDbExpressionFactory expressionFactory = new MongoDbExpressionFactory(testSearchConfig);
-    final MongoDbExpressionDeserializer mongoDbExpressionDeserializer = new MongoDbExpressionDeserializer(expressionFactory, testSearchConfig);
-    final MongoDbExpressionSerializer mongoDbExpressionSerializer = new MongoDbExpressionSerializer();
+    final MongoDbExpressionSerializer mongoDbExpressionSerializer = new MongoDbExpressionSerializer(expressionFactory, testSearchConfig);
 
 
     Date date = new Date();
@@ -70,7 +68,7 @@ public class ExpressionSerializationTest {
         selectExpression.getExpression().addExpression(mongoDbStringExpression);
 
         var serialized = mongoDbExpressionSerializer.serialize(selectExpression);
-        var deserialized = mongoDbExpressionDeserializer.deserialize(serialized);
+        var deserialized = mongoDbExpressionSerializer.deserialize(serialized);
 
 
         Assert.assertTrue(deserialized instanceof SelectExpression);
@@ -95,7 +93,7 @@ public class ExpressionSerializationTest {
         or.addExpression(mongoDbStringExpression2);
 
         var serialized = mongoDbExpressionSerializer.serialize(selectExpression);
-        var deserialized = mongoDbExpressionDeserializer.deserialize(serialized);
+        var deserialized = mongoDbExpressionSerializer.deserialize(serialized);
 
         Assert.assertTrue(deserialized instanceof SelectExpression);
         Assert.assertTrue(((SelectExpression) deserialized).getExpression() instanceof AndExpression);
@@ -114,7 +112,7 @@ public class ExpressionSerializationTest {
         selectExpression.getExpression().addExpression(mongoDbDateRangeExpression);
 
         var serialized = mongoDbExpressionSerializer.serialize(selectExpression);
-        var deserialized = mongoDbExpressionDeserializer.deserialize(serialized);
+        var deserialized = mongoDbExpressionSerializer.deserialize(serialized);
 
         var andExpression = (AndExpression) ((SelectExpression) deserialized).getExpression();
 
@@ -133,7 +131,7 @@ public class ExpressionSerializationTest {
         selectExpression.getExpression().addExpression(mongoDbTokenExpression);
 
         var serialized = mongoDbExpressionSerializer.serialize(selectExpression);
-        var deserialized = mongoDbExpressionDeserializer.deserialize(serialized);
+        var deserialized = mongoDbExpressionSerializer.deserialize(serialized);
 
         var andExpression = (AndExpression) ((SelectExpression) deserialized).getExpression();
 
@@ -150,7 +148,7 @@ public class ExpressionSerializationTest {
         selectExpression.getExpression().addExpression(mongoDbQuantityExpression);
 
         var serialized = mongoDbExpressionSerializer.serialize(selectExpression);
-        var deserialized = mongoDbExpressionDeserializer.deserialize(serialized);
+        var deserialized = mongoDbExpressionSerializer.deserialize(serialized);
 
         var andExpression = (AndExpression) ((SelectExpression) deserialized).getExpression();
 
@@ -166,7 +164,7 @@ public class ExpressionSerializationTest {
         selectExpression.getExpression().addExpression(mongoDbStringExpression);
 
         var serialized = mongoDbExpressionSerializer.serialize(selectExpression);
-        var deserialized = mongoDbExpressionDeserializer.deserialize(serialized);
+        var deserialized = mongoDbExpressionSerializer.deserialize(serialized);
 
         var andExpression = (AndExpression) ((SelectExpression) deserialized).getExpression();
 
@@ -182,7 +180,7 @@ public class ExpressionSerializationTest {
         selectExpression.getExpression().addExpression(mongoDbReferenceExpression);
 
         var serialized = mongoDbExpressionSerializer.serialize(selectExpression);
-        var deserialized = mongoDbExpressionDeserializer.deserialize(serialized);
+        var deserialized = mongoDbExpressionSerializer.deserialize(serialized);
 
         var andExpression = (AndExpression) ((SelectExpression) deserialized).getExpression();
 
@@ -199,7 +197,7 @@ public class ExpressionSerializationTest {
         selectExpression.fromFhirParamsRevInclude(theInclude);
 
         var serialized = mongoDbExpressionSerializer.serialize(selectExpression);
-        var deserialized = (SelectExpression) mongoDbExpressionDeserializer.deserialize(serialized);
+        var deserialized = (SelectExpression) mongoDbExpressionSerializer.deserialize(serialized);
 
         var rv = ((Set<MongoDbIncludeExpression>) deserialized.getRevincludes()).stream().collect(Collectors.toList());
         Assert.assertEquals(2, rv.size());

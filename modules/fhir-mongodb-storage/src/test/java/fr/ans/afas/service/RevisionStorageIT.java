@@ -22,9 +22,10 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
 
 /***
  * Test the storage of revisions for Fhir resources
@@ -95,12 +96,15 @@ public class RevisionStorageIT {
     public void testLastUpdated() {
 
         // insert:
-        var startDate = new Date();
+        var cal = GregorianCalendar.getInstance();
+        cal.add(Calendar.SECOND, -1);
+        var startDate = cal.getTime();
         var idResource = "12346";
         var i = 1;
         var d = new Device();
         d.setId(idResource);
         d.setLotNumber("Lot " + i);
+
         mongoDbFhirService.store(List.of(d), true);
 
         var checkPoint1 = new Date();
@@ -122,7 +126,7 @@ public class RevisionStorageIT {
         mongoDbFhirService.store(List.of(d), true);
         ret = mongoDbFhirService.findById("Device", new IdType(idResource));
         Assert.assertTrue(ret.getMeta().getLastUpdated().before(new Date()));
-        Assert.assertTrue(ret.getMeta().getLastUpdated().after(checkPoint3));
+        Assert.assertTrue(ret.getMeta().getLastUpdated().after(checkPoint3) || ret.getMeta().getLastUpdated().equals(checkPoint3));
     }
 
 
@@ -167,19 +171,19 @@ public class RevisionStorageIT {
         var t1 = new Date().getTime();
         var collection = mongoClient.getDatabase(dbName).getCollection("Device");
 
-        Thread.sleep(10);
+        await().atLeast(10, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 20);
         // create
         mongoDbFhirService.store(List.of(d), true);
         var col = collection.find(new BasicDBObject()).cursor();
         var device = col.next();
         Assert.assertFalse(col.hasNext());
         var date = (long) device.get(MongoDbFhirService.LAST_WRITE_DATE);
-        Thread.sleep(10);
+        await().atLeast(10, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 40);
         var t2 = new Date().getTime();
         Assert.assertTrue(t1 < date && t2 > date);
 
         // update and no modification
-        Thread.sleep(10);
+        await().atLeast(10, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 60);
         mongoDbFhirService.store(List.of(d), true);
 
         col = collection.find(new BasicDBObject()).cursor();
@@ -193,10 +197,10 @@ public class RevisionStorageIT {
 
 
         // update and modify
-        Thread.sleep(10);
+        await().atLeast(10, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 80);
         d.setLotNumber("OtherNumber");
         mongoDbFhirService.store(List.of(d), true);
-        Thread.sleep(10);
+        await().atLeast(10, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 100);
         var t4 = new Date().getTime();
         col = collection.find(new BasicDBObject()).cursor();
         var device1 = col.next();

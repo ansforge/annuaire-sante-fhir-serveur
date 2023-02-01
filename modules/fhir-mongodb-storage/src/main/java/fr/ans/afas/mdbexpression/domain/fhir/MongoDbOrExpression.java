@@ -8,7 +8,6 @@ import com.mongodb.client.model.Filters;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
 import fr.ans.afas.fhirserver.search.expression.OrExpression;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import org.bson.conversions.Bson;
 
@@ -54,7 +53,7 @@ public class MongoDbOrExpression extends OrExpression<Bson> {
     }
 
     @Override
-    public Expression<Bson> deserialize(ExpressionDeserializer expressionDeserializer) {
+    public Expression<Bson> deserialize(ExpressionSerializer expressionDeserializer) {
         return null;
     }
 

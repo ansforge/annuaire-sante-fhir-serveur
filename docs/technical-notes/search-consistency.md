@@ -107,10 +107,11 @@ Pour ce faire, nous ajoutons la date de requête dans les liens "next" qui perme
   "total": 10000,
   "link": [
     {
-    "relation": "next",
-    "url": "http://server/fhir/v1?_getpages=b34e1d28-3247-46f7-91c5-b967427c03b0&_pageId=1dY074e0BDvtV6JqD7sbtwrcdADJQk81WeoGvQHDjaeUqqPlef18R52BvgLzdsL5bkhxOnkl7PzOQ6sjiEAe0m84gFdyF5g6F7hZQIXR0083qSHsBSHiawcUNlwm-3bw4IdEk4i3H4xilP-2lUIFtqInuWrtS3nytwQMvw1U1bRc3ZG1lBs2tIlvrNVNw2rhDyHxD0Kvv9_rOx6MCMRFh9tjZPsI7nvWgQhkzhRVZt2h1Xfa_XnmmFLnUmgDuHY%3D&_format=json&_pretty=true&_bundletype=searchset"
-  } ],
-...
+      "relation": "next",
+      "url": "http://server/fhir/v1?_getpages=b34e1d28-3247-46f7-91c5-b967427c03b0&_pageId=1dY074e0BDvtV6JqD7sbtwrcdADJQk81WeoGvQHDjaeUqqPlef18R52BvgLzdsL5bkhxOnkl7PzOQ6sjiEAe0m84gFdyF5g6F7hZQIXR0083qSHsBSHiawcUNlwm-3bw4IdEk4i3H4xilP-2lUIFtqInuWrtS3nytwQMvw1U1bRc3ZG1lBs2tIlvrNVNw2rhDyHxD0Kvv9_rOx6MCMRFh9tjZPsI7nvWgQhkzhRVZt2h1Xfa_XnmmFLnUmgDuHY%3D&_format=json&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  ...
 ```
 
 Ci-dessus, le lien "link>url" contient la date de requête qui sera donc propagée sur les prochaines requêtes.
@@ -129,9 +130,9 @@ paramètre de configuration `afas.fhir.max-revision-duration`.
 
 ```java
 @Scheduled(fixedDelay = 3600000)
-public void cleanOldRevision() {
-    mongoDbFhirService.deleteOldRevisions(new Date().getTime() - validityMs);
-}
+public void cleanOldRevision(){
+        mongoDbFhirService.deleteOldRevisions(new Date().getTime()-validityMs);
+        }
 ```
 
 ## Avantages/Inconvénients de la technique

@@ -22,6 +22,7 @@ public final class FhirServerConstants {
     public static final String MSS_EXTENSION_URL_DESCRIPTION = "description";
 
     public static final String DEVICE_FHIR_RESOURCE_NAME = "Device";
+    public static final String SUBSCRIPTION_FHIR_RESOURCE_NAME = "Subscription";
     public static final String HEALTHCARESERVICE_FHIR_RESOURCE_NAME = "HealthcareService";
     public static final String ORGANIZATION_FHIR_RESOURCE_NAME = "Organization";
     public static final String PRACTITIONER_FHIR_RESOURCE_NAME = "Practitioner";

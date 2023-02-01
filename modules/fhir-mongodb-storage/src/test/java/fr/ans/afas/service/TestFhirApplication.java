@@ -8,13 +8,23 @@ import ca.uhn.fhir.context.FhirContext;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import fr.ans.afas.config.CleanRevisionDataConfiguration;
+import fr.ans.afas.fhirserver.hook.exception.BadHookConfiguration;
+import fr.ans.afas.fhirserver.hook.service.HookService;
 import fr.ans.afas.fhirserver.search.config.CompositeSearchConfig;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
+import fr.ans.afas.fhirserver.search.expression.serialization.DefaultSerializeUrlEncrypter;
+import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
+import fr.ans.afas.fhirserver.search.expression.serialization.SerializeUrlEncrypter;
+import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
 import fr.ans.afas.mdbexpression.domain.fhir.searchconfig.ASComplexSearchConfig;
+import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
 import fr.ans.afas.rass.service.json.FhirBaseResourceDeSerializer;
+import fr.ans.afas.rass.service.json.GenericSerializer;
+import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -22,6 +32,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
@@ -46,9 +57,6 @@ public class TestFhirApplication {
      * @param args command line args (not used)
      */
     public static void main(String[] args) {
-        // Enable MongoDB logging in general
-        System.setProperty("DEBUG.MONGO", "false");
-        System.setProperty("DB.TRACE", "false");
         SpringApplication.run(TestFhirApplication.class, args);
     }
 
@@ -69,15 +77,16 @@ public class TestFhirApplication {
     public MongoDbFhirService fhirService(FhirContext fhirContext,
                                           MongoClient mongoClient,
                                           SearchConfig searchConfig,
+                                          ApplicationContext context,
                                           @Value("${afas.fhir.max-include-size:5000}") int maxIncludePageSize,
                                           @Value("${afas.mongodb.dbname}") String dbName
-                                          ) {
-        return new MongoDbFhirService(List.of(
-                new DefaultDeviceSerializer(fhirContext)),
+    ) throws BadHookConfiguration {
+        return new MongoDbFhirService(List.of(new GenericSerializer(searchConfig, fhirContext)),
                 new FhirBaseResourceDeSerializer(fhirContext),
                 mongoClient,
                 searchConfig,
                 fhirContext,
+                new HookService(context),
                 maxIncludePageSize,
                 dbName
         );
@@ -108,4 +117,34 @@ public class TestFhirApplication {
     public SearchConfig searchConfig() {
         return new CompositeSearchConfig(List.of(new ASComplexSearchConfig()));
     }
+
+    /**
+     * Create the url serializer
+     *
+     * @return the url serializer
+     */
+    @Bean
+    SerializeUrlEncrypter serializeUrlEncrypter(@Value("afas.fhir.next-url-encryption-key") String key) {
+        return new DefaultSerializeUrlEncrypter(key);
+    }
+
+    /**
+     * Create the expression serializer for mongodb
+     *
+     * @return the expression serializer
+     */
+    @Bean
+    @Autowired
+    ExpressionSerializer<Bson> expressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
+        return new MongoDbExpressionSerializer(expressionFactory, searchConfig);
+    }
+
+    @Bean
+    @Autowired
+    NextUrlManager nextUrlManager(MongoClient mongoClient, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter,
+                                  @Value("${spring.data.mongodb.database}") String dbName
+    ) {
+        return new MongoDbNextUrlManager(mongoClient, maxNextUrlLength, expressionSerializer, serializeUrlEncrypter, dbName);
+    }
+
 }

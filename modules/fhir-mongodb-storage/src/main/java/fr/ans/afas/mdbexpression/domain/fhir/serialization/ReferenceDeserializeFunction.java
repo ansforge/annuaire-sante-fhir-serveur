@@ -9,7 +9,7 @@ import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
+import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbReferenceExpression;
 import org.bson.conversions.Bson;
 
@@ -21,7 +21,7 @@ import org.bson.conversions.Bson;
  */
 public class ReferenceDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionDeserializer expressionDeserializer, String val) {
+    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
         var parts = val.split("\\$");
         if (parts.length != 4) {
             throw new SerializationException("Error during the Reference deserialization. 4 parameters wanted. " + parts.length + " found. Params:" + val);

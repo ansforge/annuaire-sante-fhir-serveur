@@ -2,10 +2,10 @@ package fr.ans.afas.service;
 
 import com.mongodb.client.MongoClient;
 import fr.ans.afas.config.CleanRevisionDataConfiguration;
+import fr.ans.afas.fhirserver.service.exception.TooManyElementToDeleteException;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.rass.service.MongoDbFhirService;
 import org.hl7.fhir.r4.model.Device;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,6 +17,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test the deletion of fhir element with an old storage date
@@ -65,9 +69,10 @@ public class DeleteNotStoredSinceIT {
      * Test the deletion of old elements
      */
     @Test
-    public void testDeleteOldElements() throws InterruptedException {
+    public void testDeleteOldElements() throws InterruptedException, TooManyElementToDeleteException {
 
         var t1 = System.currentTimeMillis();
+
         var d1 = new Device();
         d1.setId("1234-1");
         d1.setLotNumber("Lot 1");
@@ -75,29 +80,35 @@ public class DeleteNotStoredSinceIT {
         var d2 = new Device();
         d2.setId("1234-2");
         d2.setLotNumber("Lot 2");
-        Thread.sleep(1);
+
+        await().atLeast(1, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 1);
+
         mongoDbFhirService.store(List.of(d1), true);
-        Thread.sleep(1);
+
+        await().atLeast(1, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 5);
         var t2 = System.currentTimeMillis();
         mongoDbFhirService.store(List.of(d2), true);
-        Thread.sleep(1);
-        var t3 = System.currentTimeMillis();
+        await().atLeast(1, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 10);
 
         var deviceCollection = mongoClient.getDatabase(dbName).getCollection("Device");
-        Assert.assertEquals(2, deviceCollection.countDocuments());
+        assertEquals(2, deviceCollection.countDocuments());
+
+
+        // add some device because the server can't suppress more that 15% of data:
+        for (var i = 0; i < 100; i++) {
+            var d = new Device();
+            d.setId("a-" + i);
+            this.mongoDbFhirService.store(List.of(d), true);
+        }
+
 
         // if the date is older we delete nothing:
         mongoDbFhirService.deleteElementsNotStoredSince(t1);
-        Assert.assertEquals(2, deviceCollection.countDocuments());
+        assertEquals(102, deviceCollection.countDocuments());
 
         // if the date is between the first and the second insert, we delete the first inset:
         mongoDbFhirService.deleteElementsNotStoredSince(t2);
-        Assert.assertEquals(1, deviceCollection.countDocuments());
-
-        // if the date is after all inserts, we delete all:
-        mongoDbFhirService.deleteElementsNotStoredSince(t3);
-        Assert.assertEquals(0, deviceCollection.countDocuments());
-
+        assertEquals(101, deviceCollection.countDocuments());
     }
 
 
@@ -105,7 +116,7 @@ public class DeleteNotStoredSinceIT {
      * Test the deletion of old elements on updated elements
      */
     @Test
-    public void testDeleteOldElementsOnUpdated() throws InterruptedException {
+    public void testDeleteOldElementsOnUpdated() throws TooManyElementToDeleteException {
 
         var t1 = System.currentTimeMillis();
         var d1 = new Device();
@@ -125,30 +136,63 @@ public class DeleteNotStoredSinceIT {
         d1.setLotNumber("Lot 1 updated");
         d2.setLotNumber("Lot 2 updated");
 
-        Thread.sleep(1);
+        await().atLeast(1, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 5);
         mongoDbFhirService.store(List.of(d1), true);
-        Thread.sleep(1);
+        await().atLeast(1, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 10);
         var t2 = System.currentTimeMillis();
         mongoDbFhirService.store(List.of(d2), true);
-        Thread.sleep(1);
-        var t3 = System.currentTimeMillis();
+        await().atLeast(1, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 15);
 
         // 2 versions of 2 devices:
         var deviceCollection = mongoClient.getDatabase(dbName).getCollection("Device");
-        Assert.assertEquals(4, deviceCollection.countDocuments());
+        assertEquals(4, deviceCollection.countDocuments());
 
+
+        // add some device because the server can't suppress more that 15% of data:
+        for (var i = 0; i < 100; i++) {
+            var d = new Device();
+            d.setId("a-" + i);
+            this.mongoDbFhirService.store(List.of(d), true);
+        }
 
         // if the date is older we delete nothing:
         mongoDbFhirService.deleteElementsNotStoredSince(t1);
-        Assert.assertEquals(4, deviceCollection.countDocuments());
+        assertEquals(104, deviceCollection.countDocuments());
 
         // if the date is between the first and the second insert, we delete the first inset:
         mongoDbFhirService.deleteElementsNotStoredSince(t2);
-        Assert.assertEquals(2, deviceCollection.countDocuments());
+        assertEquals(102, deviceCollection.countDocuments());
 
-        // if the date is after all inserts, we delete all:
-        mongoDbFhirService.deleteElementsNotStoredSince(t3);
-        Assert.assertEquals(0, deviceCollection.countDocuments());
+    }
+
+
+    /**
+     * Test an error when we try de delete too much elements
+     */
+    @Test(expected = TooManyElementToDeleteException.class)
+    public void testDeleteError() throws InterruptedException, TooManyElementToDeleteException {
+
+
+        var d1 = new Device();
+        d1.setId("1234-1");
+        d1.setLotNumber("Lot 1");
+
+        var d2 = new Device();
+        d2.setId("1234-2");
+        d2.setLotNumber("Lot 2");
+        mongoDbFhirService.store(List.of(d1, d2), true);
+
+
+        var t1 = System.currentTimeMillis();
+
+        var d3 = new Device();
+        d3.setId("1234-3");
+        d3.setLotNumber("Lot 3");
+        mongoDbFhirService.store(List.of(d3), true);
+
+
+        mongoDbFhirService.deleteElementsNotStoredSince(t1);
+
     }
 
 }

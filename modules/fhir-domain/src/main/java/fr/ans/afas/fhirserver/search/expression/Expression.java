@@ -4,7 +4,6 @@
 
 package fr.ans.afas.fhirserver.search.expression;
 
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 
 /**
@@ -43,6 +42,6 @@ public interface Expression<T> {
     String serialize(ExpressionSerializer<T> expressionSerializer);
 
 
-    Expression<T> deserialize(ExpressionDeserializer<T> expressionDeserializer);
+    Expression<T> deserialize(ExpressionSerializer<T> expressionDeserializer);
 
 }

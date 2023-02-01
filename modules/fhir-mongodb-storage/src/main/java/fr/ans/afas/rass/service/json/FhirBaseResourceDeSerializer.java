@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import org.hl7.fhir.r4.model.DomainResource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
@@ -24,7 +23,6 @@ import java.io.IOException;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-@Service
 public class FhirBaseResourceDeSerializer extends JsonDeserializer<DomainResource> {
 
     /**

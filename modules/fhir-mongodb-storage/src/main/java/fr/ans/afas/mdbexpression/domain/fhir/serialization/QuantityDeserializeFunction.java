@@ -9,7 +9,7 @@ import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.QuantityExpression;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
+import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbQuantityExpression;
 import org.bson.conversions.Bson;
 
@@ -21,7 +21,7 @@ import org.bson.conversions.Bson;
  */
 public class QuantityDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionDeserializer expressionDeserializer, String val) {
+    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
         var parts = val.split("\\$");
         var operator = QuantityExpression.Operator.values()[Integer.parseInt(parts[0])];
         var doubleValue = Double.parseDouble(parts[1]);

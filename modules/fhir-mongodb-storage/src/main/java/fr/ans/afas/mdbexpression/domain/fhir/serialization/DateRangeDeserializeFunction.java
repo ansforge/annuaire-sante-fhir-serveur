@@ -10,7 +10,7 @@ import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
+import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbDateRangeExpression;
 import org.bson.conversions.Bson;
 
@@ -24,7 +24,7 @@ import java.util.Date;
  */
 public class DateRangeDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionDeserializer expressionDeserializer, String val) {
+    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
         var parts = val.split("\\$");
         var date = new Date(Long.parseLong(parts[0]));
         var resource = parts[1];

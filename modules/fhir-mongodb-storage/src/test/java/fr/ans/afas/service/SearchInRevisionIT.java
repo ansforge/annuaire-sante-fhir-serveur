@@ -5,6 +5,7 @@
 package fr.ans.afas.service;
 
 import fr.ans.afas.fhirserver.search.FhirServerConstants;
+import fr.ans.afas.fhirserver.search.data.SearchContext;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
 import fr.ans.afas.fhirserver.service.FhirPage;
@@ -23,9 +24,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /***
  * Test the consistency of a search when data are updated
@@ -74,9 +73,9 @@ public class SearchInRevisionIT {
         insert(count, "first-set");
         var sE = new SelectExpression<>(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME, expressionFactory);
         sE.setCount(1);
-        Map searchContext = new HashMap<String, Object>();
+        SearchContext searchContext = null;
         for (var i = 0; i < count; i++) {
-            FhirPage page = mongoDbFhirService.search("Device", 1, searchContext, sE);
+            FhirPage page = mongoDbFhirService.search(searchContext, sE);
             Assert.assertTrue(((Device) page.getPage().get(0)).getLotNumber().contains("first-set"));
             searchContext = page.getContext();
             if (i == 4) {
@@ -85,9 +84,9 @@ public class SearchInRevisionIT {
         }
 
         // search again and the data must be the new one:
-        searchContext = new HashMap<String, Object>();
+        searchContext = null;
         for (var i = 0; i < count; i++) {
-            FhirPage page = mongoDbFhirService.search("Device", 1, searchContext, sE);
+            FhirPage page = mongoDbFhirService.search(searchContext, sE);
             Assert.assertTrue(((Device) page.getPage().get(0)).getLotNumber().contains("second-set"));
             searchContext = page.getContext();
         }

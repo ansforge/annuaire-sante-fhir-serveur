@@ -33,7 +33,6 @@ public class WithMockedFhirTest {
      * A Nginx container with static files to simulate IRIS DA
      */
     public static GenericContainer<?> mockedFhirContainer;
-
     /**
      * true if test data are init
      */
@@ -68,20 +67,21 @@ public class WithMockedFhirTest {
 
 
             var dockerRegistryUrl = configurableApplicationContext.getEnvironment().getProperty("docker.registry.url.nginx");
-            mockedFhirContainer = new GenericContainer<>(DockerImageName.parse(dockerRegistryUrl != null ? dockerRegistryUrl : "nginx:1.21.4"))
-                    .withClasspathResourceMapping("docker/nginx-mock-fhir.conf",
-                            "/etc/nginx/nginx.conf",
-                            BindMode.READ_ONLY)
-                    .withClasspathResourceMapping("docker/mocked-da",
-                            "/usr/share/nginx/html/",
-                            BindMode.READ_ONLY)
-                    .withExposedPorts(80);
+            try (var mockedFhirContainer = new GenericContainer<>(DockerImageName.parse(dockerRegistryUrl != null ? dockerRegistryUrl : "nginx:1.21.4"))) {
+                mockedFhirContainer.withClasspathResourceMapping("docker/nginx-mock-fhir.conf",
+                                "/etc/nginx/nginx.conf",
+                                BindMode.READ_ONLY)
+                        .withClasspathResourceMapping("docker/mocked-da",
+                                "/usr/share/nginx/html/",
+                                BindMode.READ_ONLY)
+                        .withExposedPorts(80);
 
-            // if you encounter some problems with docker, disable RYUK with this env var:  TESTCONTAINERS_RYUK_DISABLED=true
-            setup = false;
-            mockedFhirContainer.start();
-            TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
-                    configurableApplicationContext, "afas.fhir-import-data.daApiUrl=http://localhost:" + mockedFhirContainer.getMappedPort(80));
+                // if you encounter some problems with docker, disable RYUK with this env var:  TESTCONTAINERS_RYUK_DISABLED=true
+                setup = false;
+                mockedFhirContainer.start();
+                TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
+                        configurableApplicationContext, "afas.fhir-import-data.daApiUrl=http://localhost:" + mockedFhirContainer.getMappedPort(80));
+            }
         }
     }
 

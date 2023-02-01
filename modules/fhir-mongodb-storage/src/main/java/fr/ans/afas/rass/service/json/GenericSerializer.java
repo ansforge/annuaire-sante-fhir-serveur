@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-@Service
 public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource> {
 
 
@@ -53,7 +51,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
     @Override
     public void serialize(DomainResource value, JsonGenerator gen, SerializerProvider provider) throws IOException {
         var configs = searchConfig.getAllByFhirResource(value.fhirType());
-        if(configs == null) {
+        if (configs == null) {
             if (logger.isErrorEnabled()) {
                 logger.error("Can't write {} resource. If you want to support this type, considère adding a specific configuration for this type.", value.fhirType());
             }
@@ -133,6 +131,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
 
     /**
      * Extract the value for one level
+     *
      * @param values
      * @param stringPath
      * @return
@@ -144,12 +143,12 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
         for (var eachValue : values) {
             var context = new StandardEvaluationContext(eachValue);
             var result = expression.getValue(context);
-            if(result == null){
+            if (result == null) {
                 continue;
             }
             if (result instanceof Collection) {
                 // array
-                results.addAll( (Collection) result );
+                results.addAll((Collection) result);
             } else {
                 // single item
                 results.add(result);
@@ -163,9 +162,6 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
             return extractValuesInternal(results, stringPath);
         }
     }
-
-
-
 
 
     @Override

@@ -2,7 +2,7 @@
  * (c) Copyright 1998-2022, ANS. All rights reserved.
  */
 
-package fr.ans.afas.exception;
+package fr.ans.afas.fhirserver.service.exception;
 
 /**
  * Exception when user supply bad parameters to the search service

@@ -33,6 +33,11 @@ public class YamlPropertySourceFactory implements PropertySourceFactory {
         YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
         factory.setResources(encodedResource.getResource());
         Properties properties = factory.getObject();
+
+        if (properties == null || encodedResource.getResource().getFilename() == null) {
+            throw new NullPointerException();
+        }
+
         return new PropertiesPropertySource(encodedResource.getResource().getFilename(), properties);
     }
 }

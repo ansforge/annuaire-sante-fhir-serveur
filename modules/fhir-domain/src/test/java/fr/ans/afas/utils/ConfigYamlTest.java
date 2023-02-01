@@ -1,3 +1,7 @@
+/*
+ * (c) Copyright 1998-2022, ANS. All rights reserved.
+ */
+
 package fr.ans.afas.utils;
 
 import fr.ans.afas.fhirserver.search.config.yaml.YamlSearchConfig;
@@ -10,6 +14,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 /**
  * Test the property service for yaml configuration
+ *
+ * @author Guillaume Poulériguen
+ * @since 1.0.0
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest

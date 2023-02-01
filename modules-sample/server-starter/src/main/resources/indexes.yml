@@ -10,6 +10,13 @@ fhir:
           resourcePaths:
             - path: identifier
           indexName: t_identifier
+        - name: _lastUpdated
+          urlParameter: _lastUpdated
+          searchType: date
+          description: Last updated
+          resourcePaths:
+            - path: meta|lastUpdated
+          indexName: t_lastupdated
         - name: device-name
           urlParameter: device-name
           searchType: string

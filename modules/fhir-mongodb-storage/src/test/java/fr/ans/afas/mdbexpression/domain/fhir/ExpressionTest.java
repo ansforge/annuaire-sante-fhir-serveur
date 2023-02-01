@@ -15,6 +15,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Date;
+import java.util.regex.Pattern;
 
 /**
  * Test the mongodb implementation of expressions
@@ -242,14 +243,22 @@ public class ExpressionTest {
         var string = "Sample";
         var mongoDbStringExpression = new MongoDbStringExpression(testSearchConfig, fhirPath, string, StringExpression.Operator.EQUALS);
         var result = mongoDbStringExpression.interpreter(expressionContext);
-        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + "', operator='$eq', value=BsonRegularExpression{pattern='^" + string + "', options='i'}}", result.toString());
+        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + "', operator='$eq', value=BsonRegularExpression{pattern='^" + Pattern.quote(string) + "', options='i'}}", result.toString());
 
         mongoDbStringExpression = new MongoDbStringExpression(testSearchConfig, fhirPath, string, StringExpression.Operator.CONTAINS);
         result = mongoDbStringExpression.interpreter(expressionContext);
-        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + "', operator='$eq', value=BsonRegularExpression{pattern='" + string + "', options='i'}}", result.toString());
+        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + "', operator='$eq', value=BsonRegularExpression{pattern='" + Pattern.quote(string) + "', options='i'}}", result.toString());
 
         mongoDbStringExpression = new MongoDbStringExpression(testSearchConfig, fhirPath, string, StringExpression.Operator.EXACT);
         result = mongoDbStringExpression.interpreter(expressionContext);
         Assert.assertEquals("Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + "', value=" + string + "}", result.toString());
+
+
+        String stringWithComplexChars = "Sample?a=b&b=c";
+        mongoDbStringExpression = new MongoDbStringExpression(testSearchConfig, fhirPath, stringWithComplexChars, StringExpression.Operator.CONTAINS);
+        result = mongoDbStringExpression.interpreter(expressionContext);
+        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + "', operator='$eq', value=BsonRegularExpression{pattern='" + Pattern.quote(stringWithComplexChars) + "', options='i'}}", result.toString());
+
+
     }
 }

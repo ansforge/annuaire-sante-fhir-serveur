@@ -7,7 +7,7 @@ package fr.ans.afas.mdbexpression.domain.fhir.serialization;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
+import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbOrExpression;
 import org.bson.conversions.Bson;
 import org.springframework.util.StringUtils;
@@ -20,7 +20,7 @@ import org.springframework.util.StringUtils;
  */
 public class OrDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionDeserializer expressionDeserializer, String val) {
+    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
         var mongoDbOrExpression = new MongoDbOrExpression();
         if (StringUtils.hasLength(val)) {
             var parts = val.split("\\" + Expression.SERIALIZE_SEPARATOR);

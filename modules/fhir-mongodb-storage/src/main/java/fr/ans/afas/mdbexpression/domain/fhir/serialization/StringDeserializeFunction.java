@@ -9,7 +9,7 @@ import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.StringExpression;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
+import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbStringExpression;
 import org.bson.conversions.Bson;
 
@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class StringDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionDeserializer expressionDeserializer, String val) {
+    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
         var parts = val.split("\\$");
         var operator = StringExpression.Operator.values()[Integer.parseInt(parts[0])];
         var valueData = URLDecoder.decode(parts[1], StandardCharsets.UTF_8);

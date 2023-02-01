@@ -3,23 +3,31 @@
   ~ (c) Copyright 1998-2022, ANS. All rights reserved.
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>annuaire-sante-fhir-serveur</artifactId>
         <groupId>fr.ans</groupId>
-        <version>1.15.0-SNAPSHOT</version>
+        <version>1.21.2-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>fhir-domain</artifactId>
-    <version>1.15.0-SNAPSHOT</version>
+    <version>1.21.2-SNAPSHOT</version>
     <name>fhir-domain</name>
 
     <properties>
         <java.version>11</java.version>
     </properties>
-
+    <scm>
+        <developerConnection>${developperConnectionJenkinsfile}</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+    <distributionManagement>
+        <repository>
+            <id>artifactory</id>
+            <url>${distributionRepositoryJenkinsfile}</url>
+        </repository>
+    </distributionManagement>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -48,10 +56,16 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>0.10.2</version>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

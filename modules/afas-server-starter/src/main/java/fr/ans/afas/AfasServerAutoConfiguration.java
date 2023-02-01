@@ -9,28 +9,33 @@ import ca.uhn.fhir.rest.server.IPagingProvider;
 import com.mongodb.client.MongoClient;
 import fr.ans.afas.config.MongoIndexConfiguration;
 import fr.ans.afas.fhir.AfasPagingProvider;
+import fr.ans.afas.fhir.TransactionalResourceProvider;
+import fr.ans.afas.fhirserver.hook.exception.BadHookConfiguration;
+import fr.ans.afas.fhirserver.hook.service.HookService;
 import fr.ans.afas.fhirserver.search.config.CompositeSearchConfig;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 import fr.ans.afas.fhirserver.search.config.yaml.YamlSearchConfig;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.serialization.DefaultSerializeUrlEncrypter;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.SerializeUrlEncrypter;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
+import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
-import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionDeserializer;
 import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
 import fr.ans.afas.rass.service.json.FhirBaseResourceDeSerializer;
 import fr.ans.afas.rass.service.json.FhirBaseResourceSerializer;
 import fr.ans.afas.rass.service.json.GenericSerializer;
+import fr.ans.afas.subscription.SubscriptionConfiguration;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.web.servlet.ServletComponentScan;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -38,14 +43,14 @@ import org.springframework.context.annotation.Import;
 import java.util.List;
 
 /**
- * Auto-configuration of the fhir server.
+ * Autoconfiguration of the fhir server.
  * This will set up a fhir server R4 without any resources. The storage is Mongodb.
  *
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
 @Configuration
-@Import({MongoConfig.class, YamlSearchConfig.class})
+@Import({MongoConfig.class, YamlSearchConfig.class, SubscriptionConfiguration.class})
 @ServletComponentScan
 public class AfasServerAutoConfiguration {
 
@@ -69,8 +74,6 @@ public class AfasServerAutoConfiguration {
     }
 
 
-
-
     /**
      * Create the url serializer
      *
@@ -89,8 +92,9 @@ public class AfasServerAutoConfiguration {
      */
     @ConditionalOnMissingBean
     @Bean
-    ExpressionSerializer<Bson> expressionSerializer() {
-        return new MongoDbExpressionSerializer();
+    @Autowired
+    ExpressionSerializer<Bson> expressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
+        return new MongoDbExpressionSerializer(expressionFactory, searchConfig);
     }
 
     /**
@@ -101,8 +105,9 @@ public class AfasServerAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean
     @Autowired
-    ExpressionDeserializer<Bson> expressionDeserializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
-        return new MongoDbExpressionDeserializer(expressionFactory, searchConfig);
+    NextUrlManager nextUrlManager(MongoClient mongoClient, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter, @Value("${spring.data.mongodb.database}") String dbName) {
+        return new MongoDbNextUrlManager(mongoClient, maxNextUrlLength, expressionSerializer, serializeUrlEncrypter, dbName);
+
     }
 
     /**
@@ -113,7 +118,7 @@ public class AfasServerAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean
     IPagingProvider afasPagingProvider() {
-        return new AfasPagingProvider();
+        return new AfasPagingProvider<Bson>();
     }
 
 
@@ -138,16 +143,18 @@ public class AfasServerAutoConfiguration {
             MongoClient mongoClient,
             SearchConfig searchConfig,
             FhirContext fhirContext,
+            ApplicationContext context,
             @Value("${afas.fhir.max-include-size:5000}")
-            int maxIncludePageSize,
+                    int maxIncludePageSize,
             @Value("${afas.mongodb.dbname}")
-            String dbName) {
+                    String dbName) throws BadHookConfiguration {
         return new MongoDbFhirService(
                 serializers,
                 fhirBaseResourceDeSerializer,
                 mongoClient,
                 searchConfig,
                 fhirContext,
+                new HookService(context),
                 maxIncludePageSize,
                 dbName
         );
@@ -192,5 +199,17 @@ public class AfasServerAutoConfiguration {
         return new GenericSerializer(searchConfig, fhirContext);
     }
 
+
+    /**
+     * Create the fhir hapi transaction provider
+     *
+     * @return the transaction provider
+     */
+    @ConditionalOnMissingBean
+    @Autowired
+    @Bean
+    public TransactionalResourceProvider transactionalResourceProvider(FhirStoreService<?> fhirStoreService) {
+        return new TransactionalResourceProvider(fhirStoreService);
+    }
 
 }

@@ -11,12 +11,12 @@ import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
 import fr.ans.afas.fhirserver.search.expression.StringExpression;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import lombok.Getter;
 import org.bson.conversions.Bson;
 
 import javax.validation.constraints.NotNull;
+import java.util.regex.Pattern;
 
 /**
  * Implementation of the string expression for Mongodb
@@ -58,10 +58,10 @@ public class MongoDbStringExpression extends StringExpression<Bson> {
                 ret = Filters.eq(config.get().getIndexName(), value);
                 break;
             case EQUALS:
-                ret = Filters.regex(config.get().getIndexName(), "^" + value, "i");
+                ret = Filters.regex(config.get().getIndexName(), "^" + Pattern.quote(value), "i");
                 break;
             case CONTAINS:
-                ret = Filters.regex(config.get().getIndexName(), value, "i");
+                ret = Filters.regex(config.get().getIndexName(), Pattern.quote(value), "i");
                 break;
         }
         return ret;
@@ -74,7 +74,7 @@ public class MongoDbStringExpression extends StringExpression<Bson> {
     }
 
     @Override
-    public Expression<Bson> deserialize(ExpressionDeserializer expressionDeserializer) {
+    public Expression<Bson> deserialize(ExpressionSerializer expressionDeserializer) {
         return null;
     }
 

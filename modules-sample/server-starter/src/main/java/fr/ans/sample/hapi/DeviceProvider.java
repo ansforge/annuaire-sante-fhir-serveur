@@ -5,9 +5,8 @@
 package fr.ans.sample.hapi;
 
 import ca.uhn.fhir.model.api.annotation.Description;
-import ca.uhn.fhir.rest.annotation.Count;
-import ca.uhn.fhir.rest.annotation.OptionalParam;
-import ca.uhn.fhir.rest.annotation.Search;
+import ca.uhn.fhir.rest.annotation.*;
+import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.api.server.IBundleProvider;
 import ca.uhn.fhir.rest.param.StringAndListParam;
 import ca.uhn.fhir.rest.param.TokenAndListParam;
@@ -22,6 +21,7 @@ import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializ
 import fr.ans.afas.fhirserver.search.expression.serialization.SerializeUrlEncrypter;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import org.hl7.fhir.r4.model.Device;
+import org.hl7.fhir.r4.model.IdType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -32,16 +32,16 @@ import org.springframework.stereotype.Component;
  * @since 1.0.0
  */
 @Component
-public class DeviceProvider extends AsBaseResourceProvider implements IResourceProvider {
+public class DeviceProvider<T> extends AsBaseResourceProvider<T> implements IResourceProvider {
 
     /**
      * The expression factory
      */
     @Autowired
-    ExpressionFactory<?> expressionFactory;
+    ExpressionFactory<T> expressionFactory;
 
     @Autowired
-    ExpressionSerializer expressionSerializer;
+    ExpressionSerializer<T> expressionSerializer;
 
     /**
      * The encrypter for urls
@@ -54,7 +54,7 @@ public class DeviceProvider extends AsBaseResourceProvider implements IResourceP
      * * @param fhirStoreService the service that store fhir resources
      */
     @Autowired
-    protected DeviceProvider(FhirStoreService<?> fhirStoreService, ExpressionFactory<?> expressionFactory) {
+    protected DeviceProvider(FhirStoreService<T> fhirStoreService, ExpressionFactory<T> expressionFactory) {
         super("Device", fhirStoreService);
         this.expressionFactory = expressionFactory;
     }
@@ -72,7 +72,20 @@ public class DeviceProvider extends AsBaseResourceProvider implements IResourceP
         selectExpression.setCount(theCount);
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path(Device.SP_IDENTIFIER).build(), theIdentifier);
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path(Device.SP_DEVICE_NAME).build(), theName);
-        return new AfasBundleProvider<>(fhirStoreService, expressionSerializer, selectExpression, serializeUrlEncrypter);
+        return new AfasBundleProvider<T>(fhirStoreService, expressionSerializer, selectExpression, serializeUrlEncrypter);
+    }
+
+
+    /**
+     * Update a resource of type Device
+     *
+     * @param id     the id of the device
+     * @param device the device to update
+     * @return the operation outcome
+     */
+    @Update
+    public MethodOutcome update(@IdParam IdType id, @ResourceParam Device device) {
+        return super.update(id, device);
     }
 
     @Override

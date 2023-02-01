@@ -8,13 +8,14 @@ package fr.ans.afas.fhirserver.search.expression;
 import ca.uhn.fhir.model.api.Include;
 import ca.uhn.fhir.rest.param.*;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
+import fr.ans.afas.fhirserver.search.data.TotalMode;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import lombok.Getter;
 import org.springframework.util.Assert;
 
 import javax.validation.constraints.NotNull;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +29,11 @@ import java.util.Set;
 @Getter
 public class SelectExpression<T> implements Expression<T> {
 
+
+    /**
+     * The default size of pages
+     */
+    public static final int DEFAULT_PAGE_SIZE = 50;
 
     /**
      * The maximum size of a select expression. Hardcoded, juste to ensure that there is no abuse.
@@ -61,7 +67,19 @@ public class SelectExpression<T> implements Expression<T> {
     /**
      * Item per pages
      */
-    Integer count = 50;
+    Integer count = DEFAULT_PAGE_SIZE;
+
+
+    /**
+     * Mode of the count calculation
+     */
+    TotalMode totalMode = TotalMode.BEST_EFFORT;
+
+    /**
+     * The "_since" parameter to limit the request on object that have a modification date after this value.
+     * If null, the parameter is not used
+     */
+    Date since;
 
     /**
      * Construct a SelectExpression.
@@ -285,13 +303,55 @@ public class SelectExpression<T> implements Expression<T> {
         }
     }
 
+
+    /**
+     * Set the "_since" parameter to limit the request on object that have a modification date after this value.
+     * If null, the parameter is not used
+     *
+     * @param since the date or null
+     */
+    public void setSince(Date since) {
+        this.since = since;
+    }
+
     public String serialize(ExpressionSerializer expressionSerializer) {
         return expressionSerializer.serialize(this);
     }
 
     @Override
-    public Expression<T> deserialize(ExpressionDeserializer expressionDeserializer) {
+    public Expression<T> deserialize(ExpressionSerializer expressionDeserializer) {
         return expressionDeserializer.deserialize("");
+    }
+
+    /**
+     * Set the mode of the count calculation
+     *
+     * @param totalMode the mode
+     */
+    public void setTotalMode(TotalMode totalMode) {
+        this.totalMode = totalMode;
+    }
+
+    /**
+     * Set the mode of the count calculation from a string.
+     * Allowed values are accurate, none, estimate
+     *
+     * @param totalMode the mode
+     */
+    public void setTotalMode(String totalMode) {
+        if (totalMode != null) {
+            switch (totalMode) {
+                case "accurate":
+                case "estimate":
+                    this.setTotalMode(TotalMode.ALWAYS);
+                    break;
+                case "none":
+                    this.setTotalMode(TotalMode.NONE);
+                    break;
+                default:
+                    throw new RuntimeException("Bad value for the _total parameter. Allowed values are : accurate, none, estimate");
+            }
+        }
     }
 
 

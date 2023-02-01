@@ -1,0 +1,45 @@
+fhir:
+  resources:
+    - name: Device
+      profile: http://hl7.org/fhir/StructureDefinition/Device
+      searchParams:
+        - name: identifier
+          urlParameter: identifier
+          searchType: token
+          description: The device identifier
+          resourcePaths:
+            - path: identifier
+          indexName: t_identifier
+        - name: _lastUpdated
+          urlParameter: _lastUpdated
+          searchType: date
+          description: Last updated
+          resourcePaths:
+            - path: meta|lastUpdated
+          indexName: t_lastupdated
+        - name: device-name
+          urlParameter: device-name
+          searchType: string
+          description: The device name
+          resourcePaths:
+            - path: deviceName|name
+          indexName: t_name
+        - name: organization
+          urlParameter: organization
+          searchType: reference
+          description:
+          resourcePaths:
+            - path: owner
+          indexName: t_name
+    - name: Organization
+      profile: http://hl7.org/fhir/StructureDefinition/Organization
+      searchParams:
+        - name: identifier
+          urlParameter: identifier
+          searchType: token
+          description: The device identifier
+          resourcePaths:
+            - path: identifier
+          indexName: t_identifier
+
+

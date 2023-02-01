@@ -22,10 +22,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 /**
  * Test the serialization of {@link Organization} for MongoDB
@@ -112,8 +110,6 @@ public class RassOrganizationSerializationTest {
      */
     @Test
     public void testDefaultFields() throws IOException {
-        var tz = TimeZone.getDefault();
-        var offset = ZoneOffset.ofTotalSeconds(tz.getRawOffset() / 1000);
         var writer = new StringWriter();
         var factory = new JsonFactory();
         var generator = factory.createGenerator(writer);
@@ -125,12 +121,12 @@ public class RassOrganizationSerializationTest {
 
         // test all indexes fields:
         Assert.assertEquals(ORGANIZATION_1_ID, jsonContext.read("$." + StorageConstants.INDEX_T_ID));
-        Assert.assertEquals((ORGANIZATION_1_LAST_UPDATED.getTime()) / 1000L + offset.getTotalSeconds(), ((Integer) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED)).longValue());
-        Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.SECOND), ((Integer) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_SECOND)).longValue());
-        Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.MINUTE), ((Integer) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_MINUTE)).longValue());
-        Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.DAY), ((Integer) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_DATE)).longValue());
-        Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.MONTH), ((Integer) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_MONTH)).longValue());
-        Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.YEAR), ((Integer) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_YEAR)).longValue());
+        Assert.assertEquals(ORGANIZATION_1_LAST_UPDATED.getTime(), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED)).longValue());
+        Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.SECOND), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_SECOND)).longValue());
+        Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.MINUTE), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_MINUTE)).longValue());
+        Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.DAY), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_DATE)).longValue());
+        Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.MONTH), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_MONTH)).longValue());
+        Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.YEAR), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_YEAR)).longValue());
 
         Assert.assertEquals(ORGANIZATION_1_TYPE_SYSTEM, jsonContext.read("$." + StorageConstants.INDEX_ORGANIZATION_TYPE + StorageConstants.SYSTEM_SUFFIX + "[0]"));
         Assert.assertEquals(ORGANIZATION_1_TYPE_VALUE, jsonContext.read("$." + StorageConstants.INDEX_ORGANIZATION_TYPE + StorageConstants.VALUE_SUFFIX + "[0]"));
@@ -149,6 +145,8 @@ public class RassOrganizationSerializationTest {
         Assert.assertEquals(ORGANIZATION_1_PHARMACY_LICENCE, jsonContext.read("$." + "t_pharmacy-licence" + "[0]"));
         Assert.assertEquals(ORGANIZATION_1_PART_OF_TYPE + "/" + ORGANIZATION_1_PART_OF_ID, jsonContext.read("$.t_partof-reference[0]"));
         Assert.assertEquals(ORGANIZATION_1_PART_OF_ID, jsonContext.read("$." + StorageConstants.INDEX_ORGANIZATION_PARTOF + "-id[0]"));
+        Assert.assertEquals("M", jsonContext.read("$._contact-hn-prefix[0]"));
+
 
     }
 
@@ -165,6 +163,7 @@ public class RassOrganizationSerializationTest {
         organization1.addIdentifier().setSystem(ORGANIZATION_1_IDENTIFIER_SYSTEM).setValue(ORGANIZATION_1_IDENTIFIER_VALUE);
         organization1.setActiveElement(new BooleanType(true));
         organization1.setName(ORGANIZATION_1_NAME);
+        organization1.addContact().setName(new HumanName().addPrefix("M").addGiven("Guillaume").setFamily("Jert"));
         organization1.addAddress().setCity(ORGANIZATION_1_ADDRESS_CITY).setCountry(ORGANIZATION_1_ADDRESS_COUNTRY).setPostalCode(ORGANIZATION_1_ADDRESS_POSTAL_CODE).setState(ORGANIZATION_1_ADDRESS_STATE).setUse(ORGANIZATION_1_ADDRESS_USE);
         organization1.addExtension().setUrl("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/Organization-PharmacyLicence").setValue(new StringType(ORGANIZATION_1_PHARMACY_LICENCE));
         var partOf = new Reference();

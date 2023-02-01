@@ -5,14 +5,16 @@
 package fr.ans.afas.fhirserver.service;
 
 
+import fr.ans.afas.fhirserver.search.data.SearchContext;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
+import fr.ans.afas.fhirserver.service.data.CountResult;
+import fr.ans.afas.fhirserver.service.exception.TooManyElementToDeleteException;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.instance.model.api.IIdType;
 import org.hl7.fhir.r4.model.DomainResource;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A service that can persist a search FHIR resources.
@@ -34,13 +36,11 @@ public interface FhirStoreService<T> {
     /**
      * Search fhir resources.
      *
-     * @param type             the type of resource to search
-     * @param pageSize         the page size
      * @param searchContext    the search context
      * @param selectExpression the query expression
      * @return the found resources
      */
-    FhirPage search(String type, int pageSize, Map<String, Object> searchContext, SelectExpression<T> selectExpression);
+    FhirPage search(SearchContext searchContext, SelectExpression<T> selectExpression);
 
     /**
      * Count resources for a specific search
@@ -49,7 +49,7 @@ public interface FhirStoreService<T> {
      * @param selectExpression the query expression
      * @return the resource count
      */
-    long count(String type, SelectExpression<T> selectExpression);
+    CountResult count(String type, SelectExpression<T> selectExpression);
 
     /**
      * Find the resource by id
@@ -70,5 +70,14 @@ public interface FhirStoreService<T> {
      *
      * @param timestamp the date in ms to compare
      */
-    void deleteElementsNotStoredSince(long timestamp);
+    void deleteElementsNotStoredSince(long timestamp) throws TooManyElementToDeleteException;
+
+    /**
+     * Delete an element
+     *
+     * @param type  the type of the element
+     * @param theId the id of the element
+     * @return true if an element was deleted
+     */
+    boolean delete(String type, IIdType theId);
 }

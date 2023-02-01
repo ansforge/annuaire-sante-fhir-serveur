@@ -14,7 +14,6 @@ import fr.ans.afas.fhirserver.search.exception.BadPrecisionException;
 import fr.ans.afas.fhirserver.search.expression.DateRangeExpression;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
-import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionDeserializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.utils.FhirDateUtils;
 import lombok.Getter;
@@ -175,7 +174,7 @@ public class MongoDbDateRangeExpression extends DateRangeExpression<Bson> {
     }
 
     @Override
-    public Expression<Bson> deserialize(ExpressionDeserializer expressionDeserializer) {
+    public Expression<Bson> deserialize(ExpressionSerializer expressionDeserializer) {
         return null;
     }
 
