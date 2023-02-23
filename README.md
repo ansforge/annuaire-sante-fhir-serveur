@@ -1,5 +1,5 @@
 # Serveur FHIR de l'annuaire santé IRIS DP - code source
-[![License][Badge-License]][Link-License]
+
 
 **Le serveur FHIR de l'annuaire santé a été développé en se basant sur la librairie HAPI FHIR.**
 
