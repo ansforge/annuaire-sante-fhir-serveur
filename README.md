@@ -23,7 +23,4 @@ Notre serveur FHIR a été pensé pour répondre à certaines exigences fonction
 
 ### Contributions
 * Le code de conduite est disponible ici : https://ansforge.github.io/Documentation/pages/docs/codedeconduite.html
-
-
-
-
+* Pull Request : faire la PR sur la branche main.
