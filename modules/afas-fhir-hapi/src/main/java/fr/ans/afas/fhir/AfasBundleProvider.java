@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.fhir;
@@ -96,7 +96,7 @@ public class AfasBundleProvider<T> implements IBundleProvider {
                     .pageSize(pageSize)
                     .size(size)
                     .type(type)
-                    .selectExpression(selectExpression)
+                    .selectExpression((SelectExpression<Object>) selectExpression)
                     .uuid(uuid)
                     .timestamp(this.context.getRevision())
                     .lastId(this.context.getFirstId())
@@ -114,12 +114,16 @@ public class AfasBundleProvider<T> implements IBundleProvider {
      * @param thePageId        id of the current paging
      * @param theLastId        id of the first element to get.
      */
-    public AfasBundleProvider(FhirStoreService<T> fhirStoreService, NextUrlManager nextUrlManager, String thePageId, String theLastId) throws BadLinkException {
+    public AfasBundleProvider(FhirStoreService<T> fhirStoreService, NextUrlManager<T> nextUrlManager, String thePageId, String theLastId) throws BadLinkException {
 
         this.nextUrlManager = nextUrlManager;
         this.fhirStoreService = fhirStoreService;
 
-        var pagingData = nextUrlManager.find(thePageId).get();
+        var link = nextUrlManager.find(thePageId);
+        if (!link.isPresent()) {
+            throw new BadLinkException("Error in the link");
+        }
+        var pagingData = link.get();
 
         this.pageSize = pagingData.getPageSize();
         this.size = pagingData.getSize();

@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.provider;
@@ -24,7 +24,7 @@ import org.hl7.fhir.r4.model.Organization;
 /**
  * A simple Organization provider with standard fhir parameters.
  */
-public class OrganizationProvider extends AsBaseResourceProvider implements IResourceProvider {
+public class OrganizationProvider<T> extends AsBaseResourceProvider<T> implements IResourceProvider {
 
     /**
      * The fhir context
@@ -34,7 +34,7 @@ public class OrganizationProvider extends AsBaseResourceProvider implements IRes
     /**
      * The expression factory
      */
-    final ExpressionFactory expressionFactory;
+    final ExpressionFactory<T> expressionFactory;
 
 
     /**
@@ -43,7 +43,7 @@ public class OrganizationProvider extends AsBaseResourceProvider implements IRes
     final NextUrlManager nextUrlManager;
 
 
-    public OrganizationProvider(FhirStoreService fhirStoreService, FhirContext fhirContext, ExpressionFactory expressionFactory, NextUrlManager nextUrlManager) {
+    public OrganizationProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager nextUrlManager) {
         super(fhirStoreService);
         this.fhirContext = fhirContext;
         this.expressionFactory = expressionFactory;

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ (c) Copyright 1998-2022, ANS. All rights reserved.
+  ~ (c) Copyright 1998-2023, ANS. All rights reserved.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>fr.ans</groupId>
@@ -12,7 +13,7 @@
     </parent>
     <groupId>fr.ans</groupId>
     <artifactId>annuaire-sante-fhir-serveur</artifactId>
-    <version>1.21.2-SNAPSHOT</version>
+    <version>1.22.0-SNAPSHOT</version>
     <name>annuaire-sante-fhir-serveur</name>
     <packaging>pom</packaging>
     <description>A FHIR server based on Hapi and MongoDB to expose FHIR resources.</description>

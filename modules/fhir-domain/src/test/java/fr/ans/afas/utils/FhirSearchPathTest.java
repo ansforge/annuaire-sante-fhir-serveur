@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.utils;
@@ -41,14 +41,15 @@ public class FhirSearchPathTest {
     public void testFhirSearchPathNullEntries() {
 
         Assert.assertThrows(NullPointerException.class, () -> {
-            FhirSearchPath.builder().path(null).resource("r").build();
+            FhirSearchPath.builder().path(null);
         });
+
+        var p2 = FhirSearchPath.builder().path("r");
         Assert.assertThrows(NullPointerException.class, () -> {
-            FhirSearchPath.builder().path("r").resource(null).build();
+            p2.resource(null);
         });
-        Assert.assertThrows(NullPointerException.class, () -> {
-            FhirSearchPath.builder().path(null).resource(null).build();
-        });
+
+
         Assert.assertThrows(NullPointerException.class, () -> {
             new FhirSearchPath(null, null);
         });

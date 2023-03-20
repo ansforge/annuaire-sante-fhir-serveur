@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.utils;
@@ -57,12 +57,14 @@ public class AsBaseResourceProviderTest {
         Assert.assertEquals(OperationOutcome.IssueType.INVALID, issue.getCode());
 
         p.setUpdateOk(false);
+        var id = new IdType();
         Assert.assertThrows(UnprocessableEntityException.class, () -> {
-            p.update(new IdType(), d1);
+            p.update(id, d1);
         });
 
 
     }
+
 
     @Test
     public void deleteTest() {
@@ -70,12 +72,12 @@ public class AsBaseResourceProviderTest {
         d1.setId("01");
         var p = new SomeAsBaseResourceProvider();
         p.setDeleteOk(true);
-        var methodOutcome = p.delete(d1.getIdElement(), d1);
+        var methodOutcome = p.delete(d1.getIdElement());
         Assert.assertEquals("01", methodOutcome.getId().getIdPart());
 
         p.setDeleteOk(false);
 
-        var outcome = p.delete(d1.getIdElement(), d1);
+        var outcome = p.delete(d1.getIdElement());
         Assert.assertEquals(OperationOutcome.IssueType.NOTFOUND, ((OperationOutcome) outcome.getOperationOutcome()).getIssue().get(0).getCode());
         Assert.assertEquals(OperationOutcome.IssueSeverity.ERROR, ((OperationOutcome) outcome.getOperationOutcome()).getIssue().get(0).getSeverity());
 

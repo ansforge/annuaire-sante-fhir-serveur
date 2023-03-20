@@ -1,11 +1,12 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 package fr.ans.afas.hook;
 
 import fr.ans.afas.domain.SubscriptionMessage;
 import fr.ans.afas.exception.WebHookConfigurationException;
 import fr.ans.afas.service.SignatureService;
+import fr.ans.afas.utils.AesEncrypter;
 import org.apache.logging.log4j.util.Strings;
 import org.hl7.fhir.r4.model.StringType;
 import org.hl7.fhir.r4.model.Subscription;
@@ -34,12 +35,14 @@ public class FhirHookPublisher {
 
     private final int timeout;
 
+    private final AesEncrypter aesEncrypter;
+
     /**
      * To format the date in the header
      */
     DateFormat dfHeader = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
-    public FhirHookPublisher(int timeout, SignatureService signatureService) {
+    public FhirHookPublisher(int timeout, SignatureService signatureService, AesEncrypter aesEncrypter) {
         this.signatureService = signatureService;
         this.timeout = timeout;
         this.executorService = Executors.newFixedThreadPool(5);
@@ -48,6 +51,7 @@ public class FhirHookPublisher {
                 .connectTimeout(Duration.ofSeconds(timeout))
                 .executor(executorService)
                 .build();
+        this.aesEncrypter = aesEncrypter;
     }
 
     /**
@@ -121,11 +125,12 @@ public class FhirHookPublisher {
         HashMap<String, String> headers = new LinkedHashMap<>();
 
         for (StringType stringType : subscription.getChannel().getHeader()) {
-            if (!stringType.getValue().contains(":")) {
+            var header = decryptHeader(stringType.getValue());
+            if (!header.contains(":")) {
                 throw new WebHookConfigurationException(WebHookConstants.HEADER_MALFORMED_ERROR);
             }
 
-            var parts = stringType.getValue().split(":");
+            var parts = header.split(":");
 
             if (parts.length != 2) {
                 throw new WebHookConfigurationException(WebHookConstants.HEADER_MALFORMED_ERROR);
@@ -134,6 +139,16 @@ public class FhirHookPublisher {
             headers.put(parts[0], parts[1]);
         }
         return headers;
+    }
+
+
+    protected String decryptHeader(String header) {
+        if (header.startsWith("0$")) {
+            return aesEncrypter.decrypt(header.substring(2));
+
+        } else {
+            return header;
+        }
     }
 
 }

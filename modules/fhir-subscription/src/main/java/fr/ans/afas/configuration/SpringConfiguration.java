@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.configuration;
@@ -13,8 +13,9 @@ import fr.ans.afas.hook.FhirHookPublisher;
 import fr.ans.afas.repository.SubscriptionMessageRepository;
 import fr.ans.afas.service.SignatureService;
 import fr.ans.afas.service.SubscriptionManager;
-import fr.ans.afas.service.impl.MongoSubscriptionManager;
+import fr.ans.afas.service.impl.DefaultSubscriptionManager;
 import fr.ans.afas.task.SubscriptionCron;
+import fr.ans.afas.utils.AesEncrypter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -45,22 +46,22 @@ public class SpringConfiguration {
 
     @Bean
     SubscriptionManager subscriptionManager(FhirContext context, SubscriptionMessageRepository subscriptionMessageRepository, SignatureService signService) {
-        return new MongoSubscriptionManager(context, subscriptionMessageRepository, signService);
+        return new DefaultSubscriptionManager(context, subscriptionMessageRepository, signService);
     }
 
     @Bean
-    FhirHookPublisher fhirHookPublisher(SignatureService signatureService) {
-        return new FhirHookPublisher(timeout, signatureService);
+    FhirHookPublisher fhirHookPublisher(SignatureService signatureService, @Value("afas.fhir.next-url-encryption-key") String secretKey) {
+        return new FhirHookPublisher(timeout, signatureService, new AesEncrypter(secretKey));
     }
 
     @Bean
-    <T> SubscriptionCron subscriptionCron(ExpressionFactory<T> expressionFactory, FhirStoreService<T> fhirStoreService, SearchConfig searchConfig, SubscriptionManager subscriptionManager) {
-        return new SubscriptionCron<T>(expressionFactory, fhirStoreService, searchConfig, subscriptionManager, this.pageSize);
+    <T> SubscriptionCron<T> subscriptionCron(ExpressionFactory<T> expressionFactory, FhirStoreService<T> fhirStoreService, SearchConfig searchConfig, SubscriptionManager subscriptionManager) {
+        return new SubscriptionCron<>(expressionFactory, fhirStoreService, searchConfig, subscriptionManager, this.pageSize);
     }
 
     @Bean
-    <T> FhirHookManager fhirHookManager(SubscriptionMessageRepository subscriptionMessageRepository, FhirStoreService<T> fhirStoreService, FhirHookPublisher publisher) {
-        return new FhirHookManager<T>(subscriptionMessageRepository, fhirStoreService, publisher, this.maxWebhookTry, this.pageSize, this.waitBeforeRetry, this.nbRequestMax);
+    <T> FhirHookManager<T> fhirHookManager(SubscriptionMessageRepository subscriptionMessageRepository, FhirStoreService<T> fhirStoreService, FhirHookPublisher publisher) {
+        return new FhirHookManager<>(subscriptionMessageRepository, fhirStoreService, publisher, this.maxWebhookTry, this.pageSize, this.waitBeforeRetry, this.nbRequestMax);
     }
 
 }

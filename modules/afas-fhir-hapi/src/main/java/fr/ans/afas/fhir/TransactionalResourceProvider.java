@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.fhir;
@@ -92,7 +92,7 @@ public class TransactionalResourceProvider<T> extends AsBaseResourceProvider<T> 
         }
         if (!toDeleteList.isEmpty()) {
             for (var delete : toDeleteList) {
-                toDeleteOutcomes.add(delete(delete.getIdElement(), delete));
+                toDeleteOutcomes.add(delete(delete.getIdElement()));
             }
         }
 
@@ -100,7 +100,7 @@ public class TransactionalResourceProvider<T> extends AsBaseResourceProvider<T> 
         var retVal = new Bundle();
         for (var toCreateOutcome : toCreateOutcomes) {
             Bundle.BundleEntryResponseComponent resp;
-            if (toCreateOutcome.getCreated()) {
+            if (Boolean.TRUE.equals(toCreateOutcome.getCreated())) {
                 resp = this.createResponse("201 Created", toCreateOutcome);
             } else {
                 resp = this.createResponse("422 Unprocessable Entity", toCreateOutcome);
@@ -110,7 +110,7 @@ public class TransactionalResourceProvider<T> extends AsBaseResourceProvider<T> 
 
         for (var toUpdateOutcome : toUpdateOutcomes) {
             Bundle.BundleEntryResponseComponent resp;
-            if (toUpdateOutcome.getCreated()) {
+            if (Boolean.TRUE.equals(toUpdateOutcome.getCreated())) {
                 resp = this.createResponse("200 OK", toUpdateOutcome);
             } else {
                 resp = this.createResponse("400 Bad Request", toUpdateOutcome);

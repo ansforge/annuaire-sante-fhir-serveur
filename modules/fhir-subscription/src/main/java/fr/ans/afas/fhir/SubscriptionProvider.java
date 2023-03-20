@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.fhir;
@@ -17,17 +17,15 @@ import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.FhirServerConstants;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
-import fr.ans.afas.fhirserver.service.FhirPage;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
+import fr.ans.afas.utils.AesEncrypter;
 import org.hl7.fhir.instance.model.api.IAnyResource;
-import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.StringType;
 import org.hl7.fhir.r4.model.Subscription;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Resource provider implementation for {@link org.hl7.fhir.r4.model.Subscription}.
@@ -37,7 +35,6 @@ import java.util.List;
  */
 public class SubscriptionProvider<T> extends AsBaseResourceProvider<T> implements IResourceProvider {
 
-    private static final String STATUS_BEFORE_DEACTIVATION = "statusBeforeDeactivation";
 
     /**
      * The fhir context
@@ -55,15 +52,22 @@ public class SubscriptionProvider<T> extends AsBaseResourceProvider<T> implement
     final NextUrlManager nextUrlManager;
 
     /**
+     * Used to encrypt headers
+     */
+    final AesEncrypter encrypter;
+
+
+    /**
      * Construct the RassDevice provider
      *
      * @param fhirStoreService the service that store fhir resources
      */
-    public SubscriptionProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager nextUrlManager) {
+    public SubscriptionProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager nextUrlManager, String secretKey) {
         super(fhirStoreService);
         this.fhirContext = fhirContext;
         this.expressionFactory = expressionFactory;
         this.nextUrlManager = nextUrlManager;
+        this.encrypter = new AesEncrypter(secretKey);
     }
 
     /**
@@ -141,86 +145,17 @@ public class SubscriptionProvider<T> extends AsBaseResourceProvider<T> implement
      */
     @Update
     public MethodOutcome update(@IdParam IdType id, @ResourceParam Subscription subscription) {
+        // encrypt the header:
+        if (subscription.getChannel() != null) {
+            var newHeaders = new ArrayList<StringType>();
+            var headers = subscription.getChannel().getHeader();
+            for (var header : headers) {
+                newHeaders.add(new StringType("0$" + this.encrypter.encrypt(header.getValue())));
+            }
+            subscription.getChannel().setHeader(newHeaders);
+        }
         return super.update(id, subscription);
     }
 
-    @Operation(name = "$deactivate-all", idempotent = false)
-    public void deactivateAllSubscription() {
-        var selectExpression = new SelectExpression<>(FhirServerConstants.SUBSCRIPTION_FHIR_RESOURCE_NAME, expressionFactory);
-
-        FhirPage subscriptionPage = fhirStoreService.search(null, selectExpression);
-        var resources = subscriptionPage.getPage();
-        var subscriptions = new LinkedList<Subscription>();
-
-        for (var resource : resources) {
-            var subscription = (Subscription) resource;
-
-            subscription.addExtension(STATUS_BEFORE_DEACTIVATION, new StringType(subscription.getStatus().toCode()));
-            subscription.setStatus(Subscription.SubscriptionStatus.OFF);
-            subscriptions.add(subscription);
-        }
-
-        fhirStoreService.store(subscriptions, true);
-    }
-
-    @Operation(name = "$activate-all", idempotent = false)
-    public void activateAllSubscription() {
-        var resourceName = FhirServerConstants.SUBSCRIPTION_FHIR_RESOURCE_NAME;
-        var selectExpression = new SelectExpression<>(resourceName, expressionFactory);
-
-        FhirPage subscriptionPage = fhirStoreService.search(null, selectExpression);
-        var resources = subscriptionPage.getPage();
-        var subscriptions = new LinkedList<Subscription>();
-
-        for (var resource : resources) {
-            var subscription = (Subscription) resource;
-
-            if (shouldActivate(subscription)) {
-                subscription.setExtension(removeBeforeDeactivation(subscription.getExtension()));
-
-                subscription.setStatus(Subscription.SubscriptionStatus.ACTIVE);
-                subscriptions.add(subscription);
-            }
-        }
-
-        fhirStoreService.store(subscriptions, true);
-    }
-
-    private boolean shouldActivate(Subscription subscription) {
-        var extensions = subscription.getExtension();
-
-        for (Extension extension : extensions) {
-
-            if (extension.getUrl().equals(STATUS_BEFORE_DEACTIVATION)) {
-                var value = (StringType) extension.getValue();
-                var status = Subscription.SubscriptionStatus.fromCode(value.getValue());
-
-                if (status == Subscription.SubscriptionStatus.ACTIVE || status == Subscription.SubscriptionStatus.REQUESTED) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private List<Extension> removeBeforeDeactivation(List<Extension> extensions) {
-        int index = 0;
-
-        for (var extension : extensions) {
-            if (extension.getUrl().equals(STATUS_BEFORE_DEACTIVATION)) {
-                break;
-            }
-
-            index++;
-        }
-
-        if (index < extensions.size()) {
-            extensions.remove(index);
-        }
-
-        return extensions;
-
-    }
 
 }

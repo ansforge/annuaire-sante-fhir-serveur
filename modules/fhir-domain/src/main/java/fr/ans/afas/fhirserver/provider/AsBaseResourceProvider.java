@@ -1,14 +1,13 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.fhirserver.provider;
 
 import ca.uhn.fhir.rest.annotation.IdParam;
-import ca.uhn.fhir.rest.annotation.ResourceParam;
 import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
@@ -103,10 +102,10 @@ public abstract class AsBaseResourceProvider<T> {
         throw new UnprocessableEntityException("Unknown error");
     }
 
-    public MethodOutcome delete(@IdParam IdType id, @ResourceParam DomainResource resource) {
+    public MethodOutcome delete(@IdParam IdType id) {
         var outcome = new MethodOutcome();
 
-        var ret = this.fhirStoreService.delete(resource.fhirType(), id);
+        var ret = this.fhirStoreService.delete(id.getResourceType(), id);
         if (!ret) {
             var operationOutcome = this.createOperationOutcomeError(OperationOutcome.IssueSeverity.ERROR, OperationOutcome.IssueType.NOTFOUND);
             outcome.setOperationOutcome(operationOutcome);

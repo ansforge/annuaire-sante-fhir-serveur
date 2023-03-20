@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.fhirserver.service.data;
@@ -15,7 +15,7 @@ import lombok.NonNull;
  * @since 1.0.0
  */
 @Getter
-public class PagingData {
+public class PagingData<T> {
 
     /**
      * The type of the bundle
@@ -24,7 +24,7 @@ public class PagingData {
     /**
      * The expression that have create the bundle
      */
-    final SelectExpression selectExpression;
+    final SelectExpression<T> selectExpression;
     /**
      * The default size of pages
      */
@@ -51,7 +51,7 @@ public class PagingData {
     final long timestamp;
 
     @Builder
-    public PagingData(@NonNull String type, @NonNull SelectExpression selectExpression, int pageSize, @NonNull CountResult size, @NonNull String uuid,
+    public PagingData(@NonNull String type, @NonNull SelectExpression<T> selectExpression, int pageSize, @NonNull CountResult size, @NonNull String uuid,
                       @NonNull String lastId, long timestamp) {
         this.type = type;
         this.selectExpression = selectExpression;

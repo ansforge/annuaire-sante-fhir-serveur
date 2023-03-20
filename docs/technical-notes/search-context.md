@@ -71,8 +71,8 @@ fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer"
 string:
 `serialized.append(this.selectExpression.serialize(expressionSerializer));`
 
-Enfin nous chiffrons la chaine de caractère avec AES afin de limiter les manipulations non maitrisées des paramètres.
-La classe pour faire cela est : "
+Enfin nous chiffrons la chaine de caractère avec AES afin de limiter les manipulations non maitrisées des paramètres. La
+classe pour faire cela est : "
 fr.ans.afas.fhirserver.search.expression.serialization.DefaultSerializeUrlEncrypter" `serializeUrlEncrypter.encrypt(serialized.toString())`
 
 ### Deserialization

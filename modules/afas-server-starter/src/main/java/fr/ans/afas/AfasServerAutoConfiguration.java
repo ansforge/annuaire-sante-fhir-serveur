@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas;
@@ -31,6 +31,7 @@ import fr.ans.afas.rass.service.json.FhirBaseResourceSerializer;
 import fr.ans.afas.rass.service.json.GenericSerializer;
 import fr.ans.afas.subscription.SubscriptionConfiguration;
 import org.bson.conversions.Bson;
+import org.hl7.fhir.r4.model.DomainResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -138,7 +139,7 @@ public class AfasServerAutoConfiguration {
     @Bean
     @Autowired
     FhirStoreService<Bson> fhirStoreService(
-            List<FhirBaseResourceSerializer> serializers,
+            List<FhirBaseResourceSerializer<DomainResource>> serializers,
             FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer,
             MongoClient mongoClient,
             SearchConfig searchConfig,
@@ -208,8 +209,8 @@ public class AfasServerAutoConfiguration {
     @ConditionalOnMissingBean
     @Autowired
     @Bean
-    public TransactionalResourceProvider transactionalResourceProvider(FhirStoreService<?> fhirStoreService) {
-        return new TransactionalResourceProvider(fhirStoreService);
+    public TransactionalResourceProvider<Bson> transactionalResourceProvider(FhirStoreService<Bson> fhirStoreService) {
+        return new TransactionalResourceProvider<>(fhirStoreService);
     }
 
 }

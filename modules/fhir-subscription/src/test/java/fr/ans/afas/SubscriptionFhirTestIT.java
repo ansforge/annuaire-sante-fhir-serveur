@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas;
@@ -17,6 +17,7 @@ import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.repository.SubscriptionMessageRepository;
 import fr.ans.afas.service.SubscriptionManager;
+import fr.ans.afas.service.impl.DefaultSubscriptionOperationService;
 import fr.ans.afas.task.SubscriptionCron;
 import org.hl7.fhir.r4.model.*;
 import org.junit.*;
@@ -91,6 +92,12 @@ public class SubscriptionFhirTestIT {
     @Autowired
     SubscriptionMessageRepository subscriptionMessageRepository;
     /**
+     * The subscription manager
+     */
+    @Autowired
+    DefaultSubscriptionOperationService defaultSubscriptionOperationService;
+
+    /**
      * The secure key
      */
     @Value("${afas.fhir.write-mode-secure-key:}")
@@ -119,8 +126,9 @@ public class SubscriptionFhirTestIT {
 
     @Autowired
     @Bean
-    SubscriptionProvider subscriptionProvider(ExpressionFactory<?> expressionFactory, FhirStoreService<?> fhirStoreService, FhirContext fhirContext, NextUrlManager nextUrlManager) {
-        this.subscriptionProvider = new SubscriptionProvider(fhirStoreService, fhirContext, expressionFactory, nextUrlManager);
+    SubscriptionProvider subscriptionProvider(ExpressionFactory<?> expressionFactory, FhirStoreService<?> fhirStoreService, FhirContext fhirContext, NextUrlManager nextUrlManager,
+                                              @Value("afas.fhir.next-url-encryption-key") String secretKey) {
+        this.subscriptionProvider = new SubscriptionProvider(fhirStoreService, fhirContext, expressionFactory, nextUrlManager, secretKey);
         return this.subscriptionProvider;
     }
 
@@ -298,7 +306,7 @@ public class SubscriptionFhirTestIT {
             Assert.assertEquals(Subscription.SubscriptionStatus.ACTIVE, sub.getStatus());
         }
 
-        this.subscriptionProvider.deactivateAllSubscription();
+        this.defaultSubscriptionOperationService.deactivateAllSubscription();
 
         pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
 
@@ -317,7 +325,7 @@ public class SubscriptionFhirTestIT {
         var subscription2 = this.buildSubscription(SUBSCRIPTION_ID_2, DEVICE_ID_1);
         this.fhirStoreService.store(List.of(subscription, subscription2), true);
 
-        this.subscriptionProvider.deactivateAllSubscription();
+        this.defaultSubscriptionOperationService.deactivateAllSubscription();
 
         var pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
 
@@ -328,7 +336,7 @@ public class SubscriptionFhirTestIT {
             Assert.assertEquals(Subscription.SubscriptionStatus.OFF, sub.getStatus());
         }
 
-        this.subscriptionProvider.activateAllSubscription();
+        this.defaultSubscriptionOperationService.activateAllSubscription();
 
         pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
 
@@ -349,13 +357,13 @@ public class SubscriptionFhirTestIT {
 
         this.fhirStoreService.store(List.of(subscription, subscription2), true);
 
-        this.subscriptionProvider.deactivateAllSubscription();
+        this.defaultSubscriptionOperationService.deactivateAllSubscription();
 
         var pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
 
         Assert.assertEquals(2, pageResult.getPage().size());
 
-        this.subscriptionProvider.activateAllSubscription();
+        this.defaultSubscriptionOperationService.activateAllSubscription();
 
         pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
 

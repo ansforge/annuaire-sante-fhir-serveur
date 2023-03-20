@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.sample.hapi;
@@ -55,7 +55,7 @@ public class DeviceProvider<T> extends AsBaseResourceProvider<T> implements IRes
      */
     @Autowired
     protected DeviceProvider(FhirStoreService<T> fhirStoreService, ExpressionFactory<T> expressionFactory) {
-        super("Device", fhirStoreService);
+        super(fhirStoreService);
         this.expressionFactory = expressionFactory;
     }
 

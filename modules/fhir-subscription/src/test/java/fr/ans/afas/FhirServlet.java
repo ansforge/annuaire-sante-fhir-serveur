@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas;
@@ -7,6 +7,7 @@ package fr.ans.afas;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.api.EncodingEnum;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import fr.ans.afas.fhir.GlobalProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.servlet.annotation.WebServlet;
@@ -23,9 +24,11 @@ public class FhirServlet extends ca.uhn.fhir.rest.server.RestfulServer {
 
     @Autowired
     public FhirServlet(FhirContext ctx,
-                       List<IResourceProvider> providers) {
+                       List<IResourceProvider> providers,
+                       GlobalProvider globalProvider) {
         super(ctx);
         this.setDefaultResponseEncoding(EncodingEnum.JSON);
         registerProviders(providers);
+        registerProvider(globalProvider);
     }
 }

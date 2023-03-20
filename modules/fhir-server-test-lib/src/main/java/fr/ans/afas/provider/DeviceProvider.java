@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.provider;
@@ -28,7 +28,7 @@ import java.util.Set;
 /**
  * A simple Device provider with standard fhir parameters.
  */
-public class DeviceProvider extends AsBaseResourceProvider implements IResourceProvider {
+public class DeviceProvider<T> extends AsBaseResourceProvider<T> implements IResourceProvider {
 
 
     /**
@@ -39,14 +39,14 @@ public class DeviceProvider extends AsBaseResourceProvider implements IResourceP
     /**
      * The expression factory
      */
-    final ExpressionFactory expressionFactory;
+    final ExpressionFactory<T> expressionFactory;
     /**
      * Manager for next urls (paging)
      */
     final NextUrlManager nextUrlManager;
 
 
-    public DeviceProvider(FhirStoreService fhirStoreService, FhirContext fhirContext, ExpressionFactory expressionFactory, NextUrlManager nextUrlManager) {
+    public DeviceProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager nextUrlManager) {
         super(fhirStoreService);
         this.fhirContext = fhirContext;
         this.expressionFactory = expressionFactory;

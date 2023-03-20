@@ -4,14 +4,14 @@ Ce guide vous permet de créer votre propre serveur FHIR.
 
 ## Création du projet Maven
 
-Le serveur se base sur les librairies Spring Boot et Hapi.
+Le serveur se base sur les librairies Spring Boot et Hapi
 
-Pour démarrer, créer un projet spring boot avec le strater spring : [stater spring boot](https://start.spring.io/)
+Pour démarrer, créez un projet spring boot avec le strater spring : [stater spring boot](https://start.spring.io/)
 
+## Intégration du module afas
 
-## Intégration du module afas 
-
-Ajouter la dépendance maven comme suit : 
+Nous proposons l'utilisation d'un starter spring boot. Cela signifie que si vous ajoutez la dépendance maven, votre
+serveur est prêt à fonctionner.
 
 ``` xml
 <dependencies>
@@ -24,26 +24,23 @@ Ajouter la dépendance maven comme suit :
 </dependencies>
 ```
 
-afas.version doit être remplacée par la version souhaitée de la librairie. 
-
+afas.version doit être remplacée par la version souhaitée de la librairie.
 
 ## Créer une première ressource
 
-La configuration d'une ressource se fait en 2 étapes :
-- La première étape consiste à configurer le moteur de stockage 
-- et la seconde à configurer Hapi. 
+Il y a 2 étapes pour configurer une ressource. La première étape consiste à configurer le moteur de stockage et la
+seconde à configurer Hapi.
 
 Voir [add-parameter](add-parameter.md) pour plus de détails
 
 ## Configurer la servlet FHIR
 
-De manière optionnelle, il est possible de configurer la servlet FHIR fournie par Hapi. 
+De manière optionnelle il est possible de configurer la servlet FHIR fournie par Hapi.
 
+Pour ce faire, vous devez étendre la classe `fr.ans.afas.AfasServerConfigurerAdapter` puis vous pourrez configurer la
+servlet avec la méthode "void configureHapiServlet(FhirServlet fhirServlet)".
 
-Pour ce faire, vous devez étendre la classe `fr.ans.afas.AfasServerConfigurerAdapter` puis 
-vous pourrez configurer la servlet avec la méthode "void configureHapiServlet(FhirServlet fhirServlet)".
-
-Voici un exemple qui change le nom du serveur : 
+Voici un exemple qui change le nom du serveur :
 
 ``` java
 
@@ -72,4 +69,4 @@ public class FhirServerApplication extends AfasServerConfigurerAdapter {
 }
 ```
 
-Il s'agit de la servlet Hapi.
+Il s'agit de la servlet Hapi vous trouverez plus de documentation sur la documentation officielle Hapi.

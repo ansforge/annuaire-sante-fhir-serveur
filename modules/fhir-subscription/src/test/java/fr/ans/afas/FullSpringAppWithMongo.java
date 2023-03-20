@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas;
@@ -11,6 +11,7 @@ import fr.ans.afas.config.MongoIndexConfiguration;
 import fr.ans.afas.configuration.HapiConfiguration;
 import fr.ans.afas.configuration.SpringConfiguration;
 import fr.ans.afas.configuration.SubscriptionSearchConfig;
+import fr.ans.afas.fhir.GlobalProvider;
 import fr.ans.afas.fhirserver.hook.exception.BadHookConfiguration;
 import fr.ans.afas.fhirserver.hook.service.HookService;
 import fr.ans.afas.fhirserver.search.config.CompositeSearchConfig;
@@ -33,9 +34,11 @@ import fr.ans.afas.rass.service.json.FhirBaseResourceSerializer;
 import fr.ans.afas.rass.service.json.GenericSerializer;
 import fr.ans.afas.service.SignatureService;
 import fr.ans.afas.service.SubscriptionManager;
+import fr.ans.afas.service.impl.DefaultSubscriptionManager;
+import fr.ans.afas.service.impl.DefaultSubscriptionOperationService;
 import fr.ans.afas.service.impl.HMacSha256SignatureService;
-import fr.ans.afas.service.impl.MongoSubscriptionManager;
 import org.bson.conversions.Bson;
+import org.hl7.fhir.r4.model.DomainResource;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -171,7 +174,7 @@ public class FullSpringAppWithMongo {
     @Bean
     @Autowired
     FhirStoreService<Bson> fhirStoreService(
-            List<FhirBaseResourceSerializer> serializers,
+            List<FhirBaseResourceSerializer<DomainResource>> serializers,
             FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer,
             MongoClient mongoClient,
             SearchConfig searchConfig,
@@ -237,9 +240,22 @@ public class FullSpringAppWithMongo {
 
     @Bean
     SubscriptionManager subscriptionManagerMocked() {
-        var subscriptionManager = Mockito.mock(MongoSubscriptionManager.class);
+        var subscriptionManager = Mockito.mock(DefaultSubscriptionManager.class);
         Mockito.doNothing().when(subscriptionManager).sendMessage(ArgumentMatchers.any(), ArgumentMatchers.any());
         return subscriptionManager;
+    }
+
+
+    @Bean
+    @Autowired
+    DefaultSubscriptionOperationService defaultSubscriptionOperationService(FhirStoreService storeService, ExpressionFactory expressionFactory) {
+        return new DefaultSubscriptionOperationService(storeService, expressionFactory);
+    }
+
+    @Bean
+    @Autowired
+    GlobalProvider globalProvider(DefaultSubscriptionOperationService defaultSubscriptionOperationService) {
+        return new GlobalProvider(defaultSubscriptionOperationService);
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.rass.service.impl;
@@ -109,7 +109,7 @@ public class MongoDbNextUrlManager implements NextUrlManager {
 
         var selectExpression = (SelectExpression<Bson>) expressionSerializer.deserialize(exp);
 
-        return Optional.of(PagingData.builder()
+        return Optional.of(PagingData.<Bson>builder()
                 .uuid(uuid)
                 .pageSize(pageSize)
                 .size(size)

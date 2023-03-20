@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.fhirserver.service;
@@ -14,7 +14,7 @@ import java.util.Optional;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public interface NextUrlManager {
+public interface NextUrlManager<T> {
 
 
     /**
@@ -24,7 +24,7 @@ public interface NextUrlManager {
      * @return the found pagindata or empty
      * @throws BadLinkException if the id can't be processed
      */
-    Optional<PagingData> find(String id) throws BadLinkException;
+    Optional<PagingData<T>> find(String id) throws BadLinkException;
 
     /**
      * Store data
@@ -32,7 +32,7 @@ public interface NextUrlManager {
      * @param pagingData
      * @return
      */
-    String store(PagingData pagingData);
+    String store(PagingData<T> pagingData);
 
     /**
      * Clean stored urls older than a date

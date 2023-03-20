@@ -2,18 +2,16 @@
 
 ## Contexte
 
-Iris Dp stock les données dans une base de données MongoDb.
-Les données sont stockées au format FHIR comme elles sont recues avec en complément des champs techniques tel que les
-indexes.
+Iris Dp stock les données dans une base de données MongoDb. Les données sont stockées au format FHIR comme elles sont
+recues avec en complément des champs techniques tel que les indexes.
 
 Le service est un service qui a été pensé pour offrir des performances meilleures en lecture qu’en écriture. Pour avoir
 de bonnes performances en lecture le stockage est basé sur 2 concepts :
 
 * Utilisation d’indexes MongoDB généralisée : la plupart des champs recherchables sont indexés
 * Pré formatage de données à l’insertion : les champs recherchables de type non string sont décomposés en champs
-  techniques orientés pour les requêtes
-  L’opération de pré-formatage va engendrer pour chaque champs une série de champs technique proposant certains
-  combinatoires couramment recherchés afin d’accélérer la lecture.
+  techniques orientés pour les requêtes L’opération de pré-formatage va engendrer pour chaque champs une série de champs
+  technique proposant certains combinatoires couramment recherchés afin d’accélérer la lecture.
 
 ## Structure générale
 
@@ -101,26 +99,17 @@ Le champ est traité comme un CodeableConcept
 
 ### Type Reference
 
-Champs Description
-t_<index-name>-reference Définir
-t_<index-name>-type Définir
+Champs Description t_<index-name>-reference Définir t_<index-name>-type Définir
 
 ### Type Reference multiple
 
-Champs Description
-t_<index-name>-reference Définir
-t_<index-name>-type Définir
+Champs Description t_<index-name>-reference Définir t_<index-name>-type Définir
 
 ### Type Adresse
 
-Champs Description
-t_<index-name>-city Définir
-t_<index-name>-country Définir
+Champs Description t_<index-name>-city Définir t_<index-name>-country Définir
 
-t_<index-name>-postalcode Définir
-t_<index-name>-state Définir
-t_<index-name>-use Définir
-t_<index-name>    Définir
+t_<index-name>-postalcode Définir t_<index-name>-state Définir t_<index-name>-use Définir t_<index-name>    Définir
 
 _Exemple:_
 

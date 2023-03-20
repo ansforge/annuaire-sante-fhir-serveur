@@ -1,7 +1,7 @@
 # Configuration system
 
-Les ressources du serveur FHIR sont configurées grâce à un fichier de configuration. Ce fichier de configuration
-au format yaml permet de déclarer et définir les ressources, paramètres et indexes en base de données.
+Les ressources du serveur FHIR sont configurées grâce à un fichier de configuration. Ce fichier de configuration au
+format yaml permet de déclarer et définir les ressources, paramètres et indexes en base de données.
 
 ## Format du fichier
 
@@ -36,9 +36,7 @@ Les ressources sont définies sous le chemin `fhir.resources`.
 
 ## Configuration générale
 
-
-validationMode : non utilisé pour le moment
-resources : définition de toutes les ressources
+validationMode : non utilisé pour le moment resources : définition de toutes les ressources
 
 ## Ressources
 

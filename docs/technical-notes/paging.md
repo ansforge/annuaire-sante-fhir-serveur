@@ -3,16 +3,13 @@
 ## Implémentation
 
 Le système de pagination a été pensé pour être performant sur un volume de données > 10 millions. Cela fait partie des
-priorités de l'api
-qui permet entre autre à des systèmes tiers de se synchroniser.
+priorités de l'api qui permet entre autre à des systèmes tiers de se synchroniser.
 
 Pour réaliser cela nous utilisons une mécanique de "lastId".
 
 Toutes les requêtes sont triés par `_id`. Pour chaque requête, nous stockons le dernier id récupéré de la requête
-courante.
-Lorsque l'utilisateur effectue un appel à la page suivante, nous ajoutons une condition "WHERE" à la requête mongodb qui
-va aller récupérer les ids
-supérieurs au dernier id récupéré.
+courante. Lorsque l'utilisateur effectue un appel à la page suivante, nous ajoutons une condition "WHERE" à la requête
+mongodb qui va aller récupérer les ids supérieurs au dernier id récupéré.
 
 Prenons par exemple le résultat de recherche suivant:
 
@@ -44,9 +41,9 @@ Filters.gt("_id", new ObjectId("62d4841b269c580bb67c5c8f")),
 Cela permet d'effectuer une pagination sans réelle perte de performance.
 
 **Note sur le total:** Le système (au 2022/07/18) affiche le nombre total des ressources dans les résultats de recherche
-de la première page. Cela va causer un scan complet de la base de données.
-La première requête sera donc couteuse non pas à cause de la complexité de la requête, mais à cause du count. Le total
-est ensuite caché dans le contexte de la requête.
+de la première page. Cela va causer un scan complet de la base de données. La première requête sera donc couteuse non
+pas à cause de la complexité de la requête, mais à cause du count. Le total est ensuite caché dans le contexte de la
+requête.
 
 ## Inconvénients
 

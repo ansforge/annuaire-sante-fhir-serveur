@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.servlet;
@@ -11,6 +11,7 @@ import ca.uhn.fhir.rest.server.HardcodedServerAddressStrategy;
 import ca.uhn.fhir.rest.server.IPagingProvider;
 import ca.uhn.fhir.rest.server.IResourceProvider;
 import fr.ans.afas.AfasServerConfigurerAdapter;
+import fr.ans.afas.fhir.GlobalProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -43,11 +44,15 @@ public class FhirServlet extends ca.uhn.fhir.rest.server.RestfulServer {
                        @Value("${afas.publicUrl}") String serverBaseUrl,
                        @Value("${afas.fhir.max-page-size:2500}") int maxPageSize,
                        @Value("${afas.fhir.default-page-size:50}") int defaultPageSize,
-                       AfasServerConfigurerAdapter afasConfigurerAdapter) {
+                       AfasServerConfigurerAdapter afasConfigurerAdapter,
+                       @Autowired(required = false) GlobalProvider globalProvider) {
         super(ctx);
         this.setDefaultResponseEncoding(EncodingEnum.JSON);
         this.setServerAddressStrategy(new HardcodedServerAddressStrategy(serverBaseUrl));
         registerProviders(providers);
+        if (globalProvider != null) {
+            registerProvider(globalProvider);
+        }
 
         setServerName("Afas Fhir server");
         setServerVersion("V1-R4");

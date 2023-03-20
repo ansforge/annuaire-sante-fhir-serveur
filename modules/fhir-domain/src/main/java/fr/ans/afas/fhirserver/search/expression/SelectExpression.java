@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.fhirserver.search.expression;
@@ -349,7 +349,7 @@ public class SelectExpression<T> implements Expression<T> {
                     this.setTotalMode(TotalMode.NONE);
                     break;
                 default:
-                    throw new RuntimeException("Bad value for the _total parameter. Allowed values are : accurate, none, estimate");
+                    throw new BadParametersException("Bad value for the _total parameter. Allowed values are : accurate, none, estimate");
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.service.impl;
@@ -21,16 +21,19 @@ import java.util.UUID;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class MongoSubscriptionManager implements SubscriptionManager {
+public class DefaultSubscriptionManager implements SubscriptionManager {
 
     final FhirContext context;
     final SignatureService signService;
     final SubscriptionMessageRepository subscriptionMessageRepository;
 
-    public MongoSubscriptionManager(FhirContext context, SubscriptionMessageRepository subscriptionMessageRepository, SignatureService signService) {
+
+    public DefaultSubscriptionManager(FhirContext context, SubscriptionMessageRepository subscriptionMessageRepository,
+                                      SignatureService signService) {
         this.context = context;
         this.subscriptionMessageRepository = subscriptionMessageRepository;
         this.signService = signService;
+
     }
 
 

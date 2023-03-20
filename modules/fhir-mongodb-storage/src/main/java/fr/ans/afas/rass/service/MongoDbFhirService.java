@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 1998-2022, ANS. All rights reserved.
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
 package fr.ans.afas.rass.service;
@@ -133,7 +133,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
 
     @Autowired
     public MongoDbFhirService(
-            List<FhirBaseResourceSerializer> serializers,
+            List<FhirBaseResourceSerializer<DomainResource>> serializers,
             FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer,
             MongoClient mongoClient,
             SearchConfig searchConfig,
@@ -518,7 +518,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
      * @param bson             the current bson request
      * @return the new bson
      */
-    private Bson addSinceParam(SelectExpression selectExpression, Bson bson) {
+    private Bson addSinceParam(SelectExpression<Bson> selectExpression, Bson bson) {
         if (selectExpression.getSince() != null) {
             return Filters.and(
                     Filters.gte(LAST_WRITE_DATE, selectExpression.getSince().getTime()),
@@ -649,13 +649,13 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
                 } catch (MongoExecutionTimeoutException e) {
                     return CountResult.builder().total(null).build();
                 }
-            case NONE:
-                return CountResult.builder().total(null).build();
             case ALWAYS:
                 return CountResult.builder().total(collection.countDocuments(wrappedQuery)).build();
-        }
+            case NONE:
+            default:
+                return CountResult.builder().total(null).build();
 
-        return CountResult.builder().total(null).build();
+        }
     }
 
     /**
