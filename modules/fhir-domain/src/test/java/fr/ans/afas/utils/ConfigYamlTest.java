@@ -8,9 +8,10 @@ import fr.ans.afas.fhirserver.search.config.yaml.YamlSearchConfig;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import javax.inject.Inject;
 
 /**
  * Test the property service for yaml configuration
@@ -22,7 +23,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest
 public class ConfigYamlTest {
 
-    @Autowired
+    @Inject
     private YamlSearchConfig yamlSearchConfig;
 
     /**
@@ -30,7 +31,7 @@ public class ConfigYamlTest {
      */
     @Test
     public void testConfigOnly() {
-        var patientConfig = yamlSearchConfig.getResources().get(0);
+        var patientConfig = yamlSearchConfig.getResources().iterator().next();
         Assert.assertEquals("Patient", patientConfig.getName());
         Assert.assertEquals("http://hl7.org/fhir/StructureDefinition/Patient", patientConfig.getProfile());
         var orgP1 = patientConfig.getSearchParams().get(0);
@@ -44,6 +45,5 @@ public class ConfigYamlTest {
         Assert.assertEquals("active", rp.get(0).getPath());
         Assert.assertEquals("address.city", patientConfig.getSearchParams().get(1).getResourcePaths().get(1).getPath());
     }
-
 
 }

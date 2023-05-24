@@ -10,8 +10,8 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import org.hl7.fhir.r4.model.DomainResource;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.inject.Inject;
 import java.io.IOException;
 
 /**
@@ -39,7 +39,7 @@ public class FhirBaseResourceDeSerializer extends JsonDeserializer<DomainResourc
      *
      * @param fhirContext the fhir context
      */
-    @Autowired
+    @Inject
     public FhirBaseResourceDeSerializer(FhirContext fhirContext) {
         this.fhirContext = fhirContext;
         parser = fhirContext.newJsonParser();

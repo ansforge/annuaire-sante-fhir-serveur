@@ -16,9 +16,11 @@ import fr.ans.afas.fhirserver.service.exception.BadLinkException;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.instance.model.api.IPrimitiveType;
 import org.hl7.fhir.r4.model.InstantType;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,7 +35,7 @@ public class AfasBundleProvider<T> implements IBundleProvider {
     /**
      * A service that store paging
      */
-    protected final NextUrlManager nextUrlManager;
+    protected final NextUrlManager<T> nextUrlManager;
     /**
      * The id of the next url
      */
@@ -79,24 +81,24 @@ public class AfasBundleProvider<T> implements IBundleProvider {
      * @param selectExpression the Fhir expression of the bundle
      * @param nextUrlManager   the service that store paging information
      */
-    public AfasBundleProvider(FhirStoreService<T> fhirStoreService, SelectExpression<T> selectExpression, NextUrlManager nextUrlManager) {
+    public AfasBundleProvider(FhirStoreService<T> fhirStoreService, SelectExpression<T> selectExpression, NextUrlManager<T> nextUrlManager) {
         this.fhirStoreService = fhirStoreService;
         this.nextUrlManager = nextUrlManager;
         this.type = selectExpression.getFhirResource();
         this.uuid = UUID.randomUUID().toString();
         this.selectExpression = selectExpression;
-        this.size = this.fhirStoreService.count(this.type, this.selectExpression);
+        this.size = this.fhirStoreService.count(this.selectExpression);
         this.pageSize = selectExpression.getCount();
         // query: verify that the search is here (not duplicated)
         page = this.fhirStoreService.search(this.context, this.selectExpression);
         context = page.getContext();
 
         if (page.isHasNext()) {
-            this.nextUrlId = nextUrlManager.store(PagingData.builder()
+            this.nextUrlId = nextUrlManager.store(PagingData.<T>builder()
                     .pageSize(pageSize)
                     .size(size)
                     .type(type)
-                    .selectExpression((SelectExpression<Object>) selectExpression)
+                    .selectExpression(selectExpression)
                     .uuid(uuid)
                     .timestamp(this.context.getRevision())
                     .lastId(this.context.getFirstId())
@@ -120,7 +122,7 @@ public class AfasBundleProvider<T> implements IBundleProvider {
         this.fhirStoreService = fhirStoreService;
 
         var link = nextUrlManager.find(thePageId);
-        if (!link.isPresent()) {
+        if (link.isEmpty()) {
             throw new BadLinkException("Error in the link");
         }
         var pagingData = link.get();
@@ -154,7 +156,9 @@ public class AfasBundleProvider<T> implements IBundleProvider {
      */
     @Override
     public IPrimitiveType<Date> getPublished() {
-        return new InstantType(new Date(this.context.getRevision()));
+        var cal = new GregorianCalendar();
+        cal.setTimeInMillis(this.context.getRevision());
+        return new InstantType(cal);
     }
 
     /**
@@ -164,6 +168,7 @@ public class AfasBundleProvider<T> implements IBundleProvider {
      * @param to the to
      * @return the list of resources of the range
      */
+    @NotNull
     @Override
     public List<IBaseResource> getResources(int i, int to) {
         return page.getPage();

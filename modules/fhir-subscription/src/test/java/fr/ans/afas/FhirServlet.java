@@ -8,8 +8,8 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.api.EncodingEnum;
 import ca.uhn.fhir.rest.server.IResourceProvider;
 import fr.ans.afas.fhir.GlobalProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.inject.Inject;
 import javax.servlet.annotation.WebServlet;
 import java.util.List;
 
@@ -22,7 +22,7 @@ import java.util.List;
 @WebServlet(urlPatterns = {"/fhir/*", "/fhir/v1/*"})
 public class FhirServlet extends ca.uhn.fhir.rest.server.RestfulServer {
 
-    @Autowired
+    @Inject
     public FhirServlet(FhirContext ctx,
                        List<IResourceProvider> providers,
                        GlobalProvider globalProvider) {

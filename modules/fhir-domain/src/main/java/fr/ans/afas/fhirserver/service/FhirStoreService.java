@@ -43,13 +43,21 @@ public interface FhirStoreService<T> {
     FhirPage search(SearchContext searchContext, SelectExpression<T> selectExpression);
 
     /**
+     * Iterate over a fhir page
+     *
+     * @param searchContext    the search context
+     * @param selectExpression the query expression
+     * @return the iterator to get elements of the response
+     */
+    FhirPageIterator iterate(SearchContext searchContext, SelectExpression<T> selectExpression);
+
+    /**
      * Count resources for a specific search
      *
-     * @param type             the type of resource to search
      * @param selectExpression the query expression
      * @return the resource count
      */
-    CountResult count(String type, SelectExpression<T> selectExpression);
+    CountResult count(SelectExpression<T> selectExpression);
 
     /**
      * Find the resource by id

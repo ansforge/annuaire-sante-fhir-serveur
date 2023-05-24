@@ -15,13 +15,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.inject.Inject;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -42,13 +42,13 @@ public class RevisionStorageIT {
     /**
      * The storage service
      */
-    @Autowired
+    @Inject
     MongoDbFhirService mongoDbFhirService;
 
     /**
      * The mongodb client
      */
-    @Autowired
+    @Inject
     MongoClient mongoClient;
 
     /**
@@ -71,7 +71,7 @@ public class RevisionStorageIT {
      * Test the versioning system. When we update an object, the version must be incremented only if the data change.
      */
     @Test
-    public void testVersioning() throws InterruptedException {
+    public void testVersioning() {
         var idResource = "12345";
         var i = 1;
         var d = new Device();
@@ -164,7 +164,7 @@ public class RevisionStorageIT {
      * Test the update of documents already present. Only the "_lastWriteDate" attribute must change.
      */
     @Test
-    public void testUpdateWriteDateAttribute() throws InterruptedException {
+    public void testUpdateWriteDateAttribute() {
         var d = new Device();
         d.setId("123idupdate");
         d.setLotNumber("Lot 1");

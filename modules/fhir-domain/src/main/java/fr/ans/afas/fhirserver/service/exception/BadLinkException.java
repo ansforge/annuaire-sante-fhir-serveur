@@ -10,7 +10,7 @@ package fr.ans.afas.fhirserver.service.exception;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class BadLinkException extends Exception {
+public class BadLinkException extends Exception implements PublicException {
     /**
      * Constructs a new exception with the error message
      *

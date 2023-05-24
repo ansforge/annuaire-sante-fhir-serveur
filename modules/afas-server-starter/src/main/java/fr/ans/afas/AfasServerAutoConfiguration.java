@@ -32,7 +32,6 @@ import fr.ans.afas.rass.service.json.GenericSerializer;
 import fr.ans.afas.subscription.SubscriptionConfiguration;
 import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.DomainResource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.web.servlet.ServletComponentScan;
@@ -41,6 +40,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import javax.inject.Inject;
 import java.util.List;
 
 /**
@@ -69,7 +69,7 @@ public class AfasServerAutoConfiguration {
      */
     @ConditionalOnMissingBean
     @Bean
-    @Autowired
+    @Inject
     public ExpressionFactory<Bson> expressionFactory(SearchConfig searchConfig) {
         return new MongoDbExpressionFactory(searchConfig);
     }
@@ -93,7 +93,7 @@ public class AfasServerAutoConfiguration {
      */
     @ConditionalOnMissingBean
     @Bean
-    @Autowired
+    @Inject
     ExpressionSerializer<Bson> expressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
         return new MongoDbExpressionSerializer(expressionFactory, searchConfig);
     }
@@ -105,8 +105,8 @@ public class AfasServerAutoConfiguration {
      */
     @ConditionalOnMissingBean
     @Bean
-    @Autowired
-    NextUrlManager nextUrlManager(MongoClient mongoClient, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter, @Value("${spring.data.mongodb.database}") String dbName) {
+    @Inject
+    NextUrlManager<Bson> nextUrlManager(MongoClient mongoClient, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter, @Value("${spring.data.mongodb.database}") String dbName) {
         return new MongoDbNextUrlManager(mongoClient, maxNextUrlLength, expressionSerializer, serializeUrlEncrypter, dbName);
 
     }
@@ -125,7 +125,7 @@ public class AfasServerAutoConfiguration {
 
     @ConditionalOnMissingBean
     @Bean
-    @Autowired
+    @Inject
     FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer(FhirContext fhirContext) {
         return new FhirBaseResourceDeSerializer(fhirContext);
     }
@@ -137,7 +137,7 @@ public class AfasServerAutoConfiguration {
      */
     @ConditionalOnMissingBean(FhirStoreService.class)
     @Bean
-    @Autowired
+    @Inject
     FhirStoreService<Bson> fhirStoreService(
             List<FhirBaseResourceSerializer<DomainResource>> serializers,
             FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer,
@@ -146,9 +146,9 @@ public class AfasServerAutoConfiguration {
             FhirContext fhirContext,
             ApplicationContext context,
             @Value("${afas.fhir.max-include-size:5000}")
-                    int maxIncludePageSize,
+            int maxIncludePageSize,
             @Value("${afas.mongodb.dbname}")
-                    String dbName) throws BadHookConfiguration {
+            String dbName) throws BadHookConfiguration {
         return new MongoDbFhirService(
                 serializers,
                 fhirBaseResourceDeSerializer,
@@ -170,7 +170,7 @@ public class AfasServerAutoConfiguration {
 
     @ConditionalOnMissingBean
     @Bean
-    @Autowired
+    @Inject
     public SearchConfig searchConfigService(List<ServerSearchConfig> searchConfigs) {
         return new CompositeSearchConfig(searchConfigs);
     }
@@ -194,7 +194,7 @@ public class AfasServerAutoConfiguration {
      * @return the serializer
      */
     @ConditionalOnMissingBean
-    @Autowired
+    @Inject
     @Bean
     public GenericSerializer genericSerializer(SearchConfig searchConfig, FhirContext fhirContext) {
         return new GenericSerializer(searchConfig, fhirContext);
@@ -207,7 +207,7 @@ public class AfasServerAutoConfiguration {
      * @return the transaction provider
      */
     @ConditionalOnMissingBean
-    @Autowired
+    @Inject
     @Bean
     public TransactionalResourceProvider<Bson> transactionalResourceProvider(FhirStoreService<Bson> fhirStoreService) {
         return new TransactionalResourceProvider<>(fhirStoreService);

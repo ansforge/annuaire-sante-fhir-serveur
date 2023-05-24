@@ -14,25 +14,14 @@ import org.hl7.fhir.r4.model.Device;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.inject.Inject;
 import java.util.HashSet;
 import java.util.Set;
 
-
-/**
- * A spring bean that simulate a subscriber
- */
-@AfasSubscriber
-class SampleHookService {
-    @AfasSubscribe
-    public void on(BeforeCreateResourceEvent event) {
-        HookSystemTest.events.add(event);
-    }
-}
 
 /**
  * Test of the hook system with {@link  AfasSubscriber} ans {@link  AfasSubscribe} annotations
@@ -47,11 +36,8 @@ public class HookSystemTest {
 
     static Set<AfasEvent> events = new HashSet<>();
 
-    @Autowired
+    @Inject
     ApplicationContext context;
-
-    @Autowired
-    SampleHookService sampleHookService;
 
 
     /**

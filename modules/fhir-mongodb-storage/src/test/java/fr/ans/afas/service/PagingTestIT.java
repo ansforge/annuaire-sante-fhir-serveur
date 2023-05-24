@@ -3,7 +3,6 @@ package fr.ans.afas.service;
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.param.ParamPrefixEnum;
 import com.mongodb.client.MongoClient;
-import fr.ans.afas.config.CleanRevisionDataConfiguration;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
@@ -21,13 +20,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.inject.Inject;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -61,33 +60,28 @@ public class PagingTestIT {
     String dbName;
 
     /**
-     * The configuration that schedule deletion of old revisions
-     */
-    @Autowired
-    CleanRevisionDataConfiguration cleanRevisionDataConfiguration;
-    /**
      * The expression factory
      */
-    @Autowired
+    @Inject
     ExpressionFactory<Bson> expressionFactory;
 
 
-    @Autowired
+    @Inject
     SearchConfig searchConfig;
     /**
      * Service to access fhir data
      */
-    @Autowired
+    @Inject
     MongoDbFhirService mongoDbFhirService;
 
     /**
      * The mongodb client
      */
-    @Autowired
+    @Inject
     MongoClient mongoClient;
 
 
-    @Autowired
+    @Inject
     MongoDbNextUrlManager mongoDbNextUrlManager;
 
     @Before
@@ -197,12 +191,12 @@ public class PagingTestIT {
     }
 
 
-    private PagingData pd(SelectExpression selectExpression, long timestamp) {
+    private PagingData<Bson> pd(SelectExpression<Bson> selectExpression, long timestamp) {
         return this.pd(selectExpression, timestamp, UUID_1);
     }
 
-    private PagingData pd(SelectExpression selectExpression, long timestamp, String uuid) {
-        return PagingData.builder()
+    private PagingData<Bson> pd(SelectExpression<Bson> selectExpression, long timestamp, String uuid) {
+        return PagingData.<Bson>builder()
                 .lastId(LAST_ID_1)
                 .timestamp(timestamp)
                 .selectExpression(selectExpression)

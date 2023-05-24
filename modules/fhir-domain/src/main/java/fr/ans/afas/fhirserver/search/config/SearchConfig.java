@@ -6,6 +6,7 @@ package fr.ans.afas.fhirserver.search.config;
 
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
+import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +19,13 @@ import java.util.Set;
  * @since 1.0.0
  */
 public interface SearchConfig {
+
+    /**
+     * Get configuration for the server
+     *
+     * @return the configuration
+     */
+    ServerSearchConfig getServerSearchConfig();
 
     /**
      * Get all configurations for a specific resource

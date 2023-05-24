@@ -25,7 +25,6 @@ import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
 import fr.ans.afas.rass.service.json.FhirBaseResourceDeSerializer;
 import fr.ans.afas.rass.service.json.GenericSerializer;
 import org.bson.conversions.Bson;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -36,6 +35,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
+import javax.inject.Inject;
 import java.util.List;
 
 /**
@@ -72,7 +72,7 @@ public class TestFhirApplication {
         return MongoClients.create(mongoUri);
     }
 
-    @Autowired
+    @Inject
     @Bean
     public MongoDbFhirService fhirService(FhirContext fhirContext,
                                           MongoClient mongoClient,
@@ -109,7 +109,7 @@ public class TestFhirApplication {
      * @return the expression factory
      */
     @Bean
-    public ExpressionFactory expressionFactory(SearchConfig searchConfig) {
+    public ExpressionFactory<Bson> expressionFactory(SearchConfig searchConfig) {
         return new MongoDbExpressionFactory(searchConfig);
     }
 
@@ -134,15 +134,15 @@ public class TestFhirApplication {
      * @return the expression serializer
      */
     @Bean
-    @Autowired
+    @Inject
     ExpressionSerializer<Bson> expressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
         return new MongoDbExpressionSerializer(expressionFactory, searchConfig);
     }
 
     @Bean
-    @Autowired
-    NextUrlManager nextUrlManager(MongoClient mongoClient, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter,
-                                  @Value("${spring.data.mongodb.database}") String dbName
+    @Inject
+    NextUrlManager<Bson> nextUrlManager(MongoClient mongoClient, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter,
+                                        @Value("${spring.data.mongodb.database}") String dbName
     ) {
         return new MongoDbNextUrlManager(mongoClient, maxNextUrlLength, expressionSerializer, serializeUrlEncrypter, dbName);
     }

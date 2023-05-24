@@ -21,16 +21,13 @@ import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,30 +47,27 @@ public class GenericFhirTest {
      * The Fhir client
      */
     protected static IGenericClient client;
-    /**
-     * Date formater to use dates in tests
-     */
-    final DateFormat dateFormatForTests = new SimpleDateFormat("yyyy-MM-dd-HH:mm");
-    private final String DEVICE_ID_1 = "device1";
-    private final String DEVICE_ID_2 = "device2";
-    private final String DEVICE_ID_3 = "device3";
+
     /**
      * The port of the server used in tests
      */
     @LocalServerPort
     int port;
-    @Autowired
-    TransactionalResourceProvider transactionalResourceProvider;
+
+    @Inject
+    TransactionalResourceProvider<?> transactionalResourceProvider;
+
     /**
      * Service to access fhir data
      */
-    @Autowired
+    @Inject
     private FhirStoreService<Bson> fhirStoreService;
-    /**
-     * Manager for next urls (paging)
-     */
-    private NextUrlManager nextUrlManager;
-    @Autowired
+
+    @Inject
+    private NextUrlManager<Bson> nextUrlManager;
+
+
+    @Inject
     private ExpressionFactory<Bson> expressionFactory;
 
     @AfterClass
@@ -90,7 +84,7 @@ public class GenericFhirTest {
      * Setup test context
      */
     @Before
-    public void init() throws ParseException {
+    public void init() {
         setupClient();
         createSampleData(true, true);
     }
@@ -111,14 +105,14 @@ public class GenericFhirTest {
      */
     @Test
     public void testDeviceSearch() {
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.setCount(2);
 
-        var selectCount = fhirStoreService.count("Device", selectExpression);
+        var selectCount = fhirStoreService.count(selectExpression);
         Assert.assertEquals(3L, (long) selectCount.getTotal());
 
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource("Device").path(Device.IDENTIFIER.getParamName()).build(), new TokenAndListParam().addAnd(new TokenParam("1")));
-        selectCount = fhirStoreService.count("Device", selectExpression);
+        selectCount = fhirStoreService.count(selectExpression);
         Assert.assertEquals(1, (long) selectCount.getTotal());
     }
 
@@ -129,7 +123,7 @@ public class GenericFhirTest {
     public void testDeviceNameSearch() {
         final var deviceName = "Device";
         final var deviceNameParameter = Device.DEVICE_NAME.getParamName();
-        var selectExpression = new SelectExpression<Bson>(deviceName, expressionFactory);
+        var selectExpression = new SelectExpression<>(deviceName, expressionFactory);
 
         // single match search
         var stringSearchParam = new StringAndListParam().addAnd(new StringParam("Some dName"));
@@ -139,32 +133,32 @@ public class GenericFhirTest {
                         stringSearchParam
                 );
 
-        var selectCount = fhirStoreService.count(deviceName, selectExpression);
+        var selectCount = fhirStoreService.count(selectExpression);
         Assert.assertEquals(2, (long) selectCount.getTotal());
 
         // single exact search
         stringSearchParam = new StringAndListParam().addAnd(new StringParam("Some dName", true));
-        selectExpression = new SelectExpression<Bson>(deviceName, expressionFactory);
+        selectExpression = new SelectExpression<>(deviceName, expressionFactory);
         selectExpression
                 .fromFhirParams(
                         FhirSearchPath.builder().resource(deviceName).path(deviceNameParameter).build(),
                         stringSearchParam
                 );
 
-        selectCount = fhirStoreService.count(deviceName, selectExpression);
+        selectCount = fhirStoreService.count(selectExpression);
         Assert.assertEquals(1, (long) selectCount.getTotal());
 
         // multiple exact or search
         stringSearchParam = new StringAndListParam()
                 .addAnd(new StringOrListParam().addOr(new StringParam("Some dName", true)).addOr(new StringParam("Some dName 2", true)));
-        selectExpression = new SelectExpression<Bson>(deviceName, expressionFactory);
+        selectExpression = new SelectExpression<>(deviceName, expressionFactory);
         selectExpression
                 .fromFhirParams(
                         FhirSearchPath.builder().resource(deviceName).path(deviceNameParameter).build(),
                         stringSearchParam
                 );
 
-        selectCount = fhirStoreService.count(deviceName, selectExpression);
+        selectCount = fhirStoreService.count(selectExpression);
         Assert.assertEquals(2, (long) selectCount.getTotal());
     }
 
@@ -172,7 +166,7 @@ public class GenericFhirTest {
     public void testDevicePagination() {
         final var deviceName = "Device";
         final var deviceNameParameter = Device.DEVICE_NAME.getParamName();
-        var selectExpression = new SelectExpression<Bson>(deviceName, expressionFactory);
+        var selectExpression = new SelectExpression<>(deviceName, expressionFactory);
 
         // single match search
         var stringSearchParam = new StringAndListParam();
@@ -219,7 +213,7 @@ public class GenericFhirTest {
         final var resourceName = "Device";
         final var organizationParameter = Device.ORGANIZATION.getParamName();
 
-        var selectExpression = new SelectExpression<Bson>(resourceName, expressionFactory);
+        var selectExpression = new SelectExpression<>(resourceName, expressionFactory);
         selectExpression.setCount(2);
 
         var searchParams = FhirSearchPath.builder().resource(resourceName).path(organizationParameter).build();
@@ -227,12 +221,12 @@ public class GenericFhirTest {
 
         selectExpression.fromFhirParams(searchParams, tokenParam);
 
-        var selectCount = fhirStoreService.count(resourceName, selectExpression);
+        var selectCount = fhirStoreService.count(selectExpression);
 
         Assert.assertEquals(1, (long) selectCount.getTotal());
 
         // multiple search
-        selectExpression = new SelectExpression<Bson>(resourceName, expressionFactory);
+        selectExpression = new SelectExpression<>(resourceName, expressionFactory);
         selectExpression.setCount(2);
 
         searchParams = FhirSearchPath.builder().resource(resourceName).path(organizationParameter).build();
@@ -242,7 +236,7 @@ public class GenericFhirTest {
 
         selectExpression.fromFhirParams(searchParams, tokenParam);
 
-        selectCount = fhirStoreService.count(resourceName, selectExpression);
+        selectCount = fhirStoreService.count(selectExpression);
 
         Assert.assertEquals(2, (long) selectCount.getTotal());
     }
@@ -289,10 +283,10 @@ public class GenericFhirTest {
     @Test
     public void testOrganizationRevincludeDeviceSearch() {
         Set<Include> theRevIncludes = Set.of(new Include("Device:organization"));
-        var selectExpression = new SelectExpression<Bson>("Organization", expressionFactory);
+        var selectExpression = new SelectExpression<>("Organization", expressionFactory);
         selectExpression.fromFhirParamsRevInclude(theRevIncludes);
 
-        var result = new AfasBundleProvider<Bson>(fhirStoreService, selectExpression, nextUrlManager);
+        var result = new AfasBundleProvider<>(fhirStoreService, selectExpression, nextUrlManager);
 
         Assert.assertEquals(2, result.getAllResources().size());
         Assert.assertTrue(result.getAllResources().get(0) instanceof Organization);
@@ -303,7 +297,7 @@ public class GenericFhirTest {
     public void testTransactionalBundleHandling() {
         // clean & check that there's no data
         this.clean();
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         var search = fhirStoreService.search(null, selectExpression);
         Assert.assertEquals(0, search.getPage().size());
 
@@ -363,7 +357,7 @@ public class GenericFhirTest {
             Assert.assertTrue(resp2.getLocation().startsWith(resourceName));
             Assert.assertTrue(resp3.getLocation().endsWith("/" + idsPrefixMapping.get(resourceName) + "2"));
 
-            selectExpression = new SelectExpression<Bson>(resourceName, expressionFactory);
+            selectExpression = new SelectExpression<>(resourceName, expressionFactory);
 
             search = fhirStoreService.search(null, selectExpression);
             Assert.assertEquals(3, search.getPage().size());
@@ -371,7 +365,7 @@ public class GenericFhirTest {
             resourceName = resources.get(3).getResourceType().name();
             Assert.assertTrue(resp4.getLocation().startsWith(resourceName));
 
-            selectExpression = new SelectExpression<Bson>(resourceName, expressionFactory);
+            selectExpression = new SelectExpression<>(resourceName, expressionFactory);
 
             search = fhirStoreService.search(null, selectExpression);
             Assert.assertEquals(1, search.getPage().size());
@@ -400,6 +394,7 @@ public class GenericFhirTest {
     protected List<DomainResource> createSampleData(boolean store, boolean createOrganization) {
         var extArhgos = "https://annuaire.sante.gouv.fr/fhir/StructureDefinition/Device-NumberAuthorizationARHGOS";
         var rassDevice1 = new Device();
+        String DEVICE_ID_1 = "device1";
         rassDevice1.setId(DEVICE_ID_1);
         rassDevice1.addIdentifier().setSystem("http://samplesysyem").setValue("1");
         rassDevice1.addDeviceName().setName("Some dName");
@@ -419,7 +414,8 @@ public class GenericFhirTest {
         rassDevice1.addExtension().setUrl(extArhgos).setValue(new StringType("56565.6456.45789531230001"));
 
         var rassDevice2 = new Device();
-        rassDevice2.setId(DEVICE_ID_2);
+        String deviceId2 = "device2";
+        rassDevice2.setId(deviceId2);
         rassDevice2.addDeviceName().setName("Some dName 2");
         rassDevice2.addIdentifier().setSystem("http://samplesysyem").setValue("2");
         var location2 = new Reference();
@@ -438,6 +434,7 @@ public class GenericFhirTest {
         rassDevice2.addExtension().setUrl(extArhgos).setValue(new StringType("56565.6456.45789531230002"));
 
         var rassDevice3 = new Device();
+        String DEVICE_ID_3 = "device3";
         rassDevice3.setId(DEVICE_ID_3);
         rassDevice3.addIdentifier().setSystem("http://samplesysyem").setValue("3");
         var location3 = new Reference();

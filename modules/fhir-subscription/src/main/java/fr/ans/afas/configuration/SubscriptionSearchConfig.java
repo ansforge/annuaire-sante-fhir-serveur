@@ -29,9 +29,7 @@ public class SubscriptionSearchConfig extends ServerSearchConfig {
     public static final String INDEX_SUBSCRIPTION_PAYLOAD = "t_payload";
 
     public SubscriptionSearchConfig() {
-        var fhirResourceSearchConfig = new FhirResourceSearchConfig();
-        fhirResourceSearchConfig.setName("Subscription");
-        fhirResourceSearchConfig.setProfile("Subscription");
+        var fhirResourceSearchConfig = FhirResourceSearchConfig.builder().name("Subscription").profile("http://hl7.org/fhir/StructureDefinition/Subscription").build();
         fhirResourceSearchConfig.setSearchParams(List.of(
                 SearchParamConfig.builder().name(Subscription.SP_STATUS).urlParameter(Subscription.SP_STATUS).resourcePaths(List.of(ResourcePathConfig.builder().path("status?.toCode()").build())).indexName(INDEX_SUBSCRIPTION_STATUS).searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
                 SearchParamConfig.builder().name(Subscription.SP_URL).urlParameter(Subscription.SP_URL).resourcePaths(List.of(ResourcePathConfig.builder().path("channel|endpoint").build())).indexName(INDEX_SUBSCRIPTION_ENDPOINT).searchType(StorageConstants.INDEX_TYPE_STRING).build(),

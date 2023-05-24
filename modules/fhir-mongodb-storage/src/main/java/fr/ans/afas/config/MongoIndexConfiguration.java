@@ -10,10 +10,10 @@ import fr.ans.afas.domain.StorageConstants;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import org.bson.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 
 /**
  * Service that create Mongodb index on startup
@@ -32,13 +32,13 @@ public class MongoIndexConfiguration {
     /**
      * The mongodb client
      */
-    @Autowired
+    @Inject
     MongoClient mongoClient;
 
     /**
      * The search configuration
      */
-    @Autowired
+    @Inject
     SearchConfig searchConfig;
 
     /**
@@ -72,6 +72,7 @@ public class MongoIndexConfiguration {
         } else if (config.getSearchType().equals(StorageConstants.INDEX_TYPE_REFERENCE)) {
             col.createIndex(new Document(config.getIndexName() + StorageConstants.REFERENCE_SUFFIX, 1));
             col.createIndex(new Document(config.getIndexName() + StorageConstants.TYPE_SUFFIX, 1));
+            col.createIndex(new Document(config.getIndexName() + StorageConstants.ID_SUFFIX, 1));
         }
     }
 

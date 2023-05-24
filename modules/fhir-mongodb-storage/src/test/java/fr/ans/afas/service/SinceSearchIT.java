@@ -12,12 +12,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.inject.Inject;
 import java.util.Date;
 import java.util.List;
 
@@ -34,14 +34,14 @@ import java.util.List;
 public class SinceSearchIT {
 
 
-    @Autowired
+    @Inject
     MongoDbFhirService mongoDbFhirService;
 
 
     /**
      * The expression factory
      */
-    @Autowired
+    @Inject
     ExpressionFactory<Bson> expressionFactory;
 
     /**
@@ -76,7 +76,7 @@ public class SinceSearchIT {
         this.mongoDbFhirService.store(List.of(d2), false);
 
         // search without since and with to control the difference:
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.setCount(2);
         var all = this.mongoDbFhirService.search(null, selectExpression);
         Assert.assertEquals(2, all.getPage().size());
@@ -98,7 +98,7 @@ public class SinceSearchIT {
 
         var dt = new Date();
 
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.setSince(dt);
         selectExpression.setCount(2);
         var all = this.mongoDbFhirService.search(null, selectExpression);
@@ -127,7 +127,7 @@ public class SinceSearchIT {
             this.mongoDbFhirService.store(List.of(d2), false);
         }
 
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.setSince(dt);
         selectExpression.setCount(2);
         var all = this.mongoDbFhirService.search(null, selectExpression);
@@ -154,10 +154,10 @@ public class SinceSearchIT {
             this.mongoDbFhirService.store(List.of(d2), false);
         }
 
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
-        var count = this.mongoDbFhirService.count("Device", selectExpression);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
+        var count = this.mongoDbFhirService.count(selectExpression);
         selectExpression.setSince(dt);
-        var countSince = this.mongoDbFhirService.count("Device", selectExpression);
+        var countSince = this.mongoDbFhirService.count(selectExpression);
         Assert.assertEquals(4, (long) count.getTotal());
         Assert.assertEquals(3, (long) countSince.getTotal());
 

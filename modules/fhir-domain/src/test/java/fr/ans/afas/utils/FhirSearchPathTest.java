@@ -40,16 +40,18 @@ public class FhirSearchPathTest {
     @Test
     public void testFhirSearchPathNullEntries() {
 
+        final var a = FhirSearchPath.builder();
         Assert.assertThrows(NullPointerException.class, () -> {
-            FhirSearchPath.builder().path(null);
+            a.path(null);
         });
-
-        var p2 = FhirSearchPath.builder().path("r");
+        final var b = FhirSearchPath.builder().path("r");
         Assert.assertThrows(NullPointerException.class, () -> {
-            p2.resource(null);
+            b.resource(null);
         });
-
-
+        final var c = FhirSearchPath.builder();
+        Assert.assertThrows(NullPointerException.class, () -> {
+            c.path(null);
+        });
         Assert.assertThrows(NullPointerException.class, () -> {
             new FhirSearchPath(null, null);
         });

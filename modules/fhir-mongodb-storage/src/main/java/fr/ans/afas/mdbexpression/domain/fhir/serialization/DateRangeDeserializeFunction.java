@@ -24,7 +24,7 @@ import java.util.Date;
  */
 public class DateRangeDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
+    public Expression<Bson> process(SearchConfig searchConfig, ExpressionFactory<Bson> expressionFactory, ExpressionSerializer<Bson> expressionDeserializer, String val) {
         var parts = val.split("\\$");
         var date = new Date(Long.parseLong(parts[0]));
         var resource = parts[1];

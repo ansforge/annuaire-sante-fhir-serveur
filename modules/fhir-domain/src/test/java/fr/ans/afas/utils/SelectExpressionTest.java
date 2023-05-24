@@ -9,7 +9,7 @@ import ca.uhn.fhir.rest.param.*;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
 import fr.ans.afas.fhirserver.search.expression.*;
-import fr.ans.afas.utils.data.*;
+import fr.ans.afas.fhirserver.search.expression.emptyimpl.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +39,7 @@ public class SelectExpressionTest {
     static FhirSearchPath pathReference = FhirSearchPath.builder().resource("FhirResource").path("reference_path").build();
     static FhirSearchPath pathUri = FhirSearchPath.builder().resource("FhirResource").path("uri_path").build();
     static Date testDate = new Date(1663849410512L);
-    ExpressionFactory expressionFactory = Mockito.mock(ExpressionFactory.class);
+    ExpressionFactory<?> expressionFactory = Mockito.mock(ExpressionFactory.class);
 
     @Before
     public void setup() {
@@ -60,7 +60,7 @@ public class SelectExpressionTest {
 
     @Test
     public void testFromStringParams() {
-        var se = new SelectExpression("FhirResource", expressionFactory);
+        var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
         var salp = new StringAndListParam();
@@ -70,19 +70,19 @@ public class SelectExpressionTest {
 
         se.fromFhirParams(List.of(pathString, pathString2), salp);
 
-        var oe = (OrExpression) ((AndExpression) se.getExpression()).getExpressions().get(0);
-        var oeSubOr = (OrExpression) ((OrExpression) ((AndExpression) se.getExpression()).getExpressions().get(0)).getExpressions().get(0);
+        var oe = (OrExpression<?>) ((AndExpression<?>) se.getExpression()).getExpressions().get(0);
+        var oeSubOr = (OrExpression<?>) ((OrExpression<?>) ((AndExpression<?>) se.getExpression()).getExpressions().get(0)).getExpressions().get(0);
         // we have to or expression:
         Assert.assertEquals(2, oe.getExpressions().size());
-        Assert.assertEquals("bla", ((StringExpression) oeSubOr.getExpressions().get(0)).getValue());
-        Assert.assertEquals(pathString, ((StringExpression) oeSubOr.getExpressions().get(0)).getFhirPath());
-        Assert.assertEquals(StringExpression.Operator.EXACT, ((StringExpression) oeSubOr.getExpressions().get(0)).getOperator());
+        Assert.assertEquals("bla", ((StringExpression<?>) oeSubOr.getExpressions().get(0)).getValue());
+        Assert.assertEquals(pathString, ((StringExpression<?>) oeSubOr.getExpressions().get(0)).getFhirPath());
+        Assert.assertEquals(StringExpression.Operator.EXACT, ((StringExpression<?>) oeSubOr.getExpressions().get(0)).getOperator());
     }
 
 
     @Test
     public void testFromTokenParams() {
-        var se = new SelectExpression("FhirResource", expressionFactory);
+        var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
         var salp = new TokenAndListParam();
@@ -92,17 +92,17 @@ public class SelectExpressionTest {
 
         se.fromFhirParams(pathToken, salp);
         // we have to or expression:
-        var oe = (OrExpression) ((AndExpression) se.getExpression()).getExpressions().get(0);
+        var oe = (OrExpression<?>) ((AndExpression<?>) se.getExpression()).getExpressions().get(0);
         Assert.assertEquals(1, oe.getExpressions().size());
-        Assert.assertEquals("bla", ((TokenExpression) oe.getExpressions().get(0)).getValue());
-        Assert.assertEquals(pathToken, ((TokenExpression) oe.getExpressions().get(0)).getFhirPath());
-        Assert.assertEquals("s", ((TokenExpression) oe.getExpressions().get(0)).getSystem());
+        Assert.assertEquals("bla", ((TokenExpression<?>) oe.getExpressions().get(0)).getValue());
+        Assert.assertEquals(pathToken, ((TokenExpression<?>) oe.getExpressions().get(0)).getFhirPath());
+        Assert.assertEquals("s", ((TokenExpression<?>) oe.getExpressions().get(0)).getSystem());
     }
 
 
     @Test
     public void testFromDateParams() {
-        var se = new SelectExpression("FhirResource", expressionFactory);
+        var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
         var drp = new DateRangeParam();
@@ -111,19 +111,19 @@ public class SelectExpressionTest {
 
         se.fromFhirParams(pathDate, drp);
         // we have to or expression:
-        var oe = (OrExpression) ((AndExpression) se.getExpression()).getExpressions().get(0);
+        var oe = (OrExpression<?>) ((AndExpression<?>) se.getExpression()).getExpressions().get(0);
         Assert.assertEquals(1, oe.getExpressions().size());
-        Assert.assertEquals(testDate, ((DateRangeExpression) oe.getExpressions().get(0)).getDate());
-        Assert.assertEquals(pathDate, ((DateRangeExpression) oe.getExpressions().get(0)).getFhirPath());
-        Assert.assertEquals(TemporalPrecisionEnum.DAY, ((DateRangeExpression) oe.getExpressions().get(0)).getPrecision());
-        Assert.assertEquals(ParamPrefixEnum.GREATERTHAN, ((DateRangeExpression) oe.getExpressions().get(0)).getPrefix());
+        Assert.assertEquals(testDate, ((DateRangeExpression<?>) oe.getExpressions().get(0)).getDate());
+        Assert.assertEquals(pathDate, ((DateRangeExpression<?>) oe.getExpressions().get(0)).getFhirPath());
+        Assert.assertEquals(TemporalPrecisionEnum.DAY, ((DateRangeExpression<?>) oe.getExpressions().get(0)).getPrecision());
+        Assert.assertEquals(ParamPrefixEnum.GREATERTHAN, ((DateRangeExpression<?>) oe.getExpressions().get(0)).getPrefix());
 
     }
 
 
     @Test
     public void testFromReferenceParams() {
-        var se = new SelectExpression("FhirResource", expressionFactory);
+        var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
         var salp = new ReferenceAndListParam();
@@ -133,7 +133,7 @@ public class SelectExpressionTest {
 
         se.fromFhirParams(pathReference, salp);
         // we have to or expression:
-        var oe = (OrExpression) ((AndExpression) se.getExpression()).getExpressions().get(0);
+        var oe = (OrExpression<?>) ((AndExpression<?>) se.getExpression()).getExpressions().get(0);
         Assert.assertEquals(1, oe.getExpressions().size());
         Assert.assertEquals("1", ((EmptyReferenceExpression) oe.getExpressions().get(0)).getId());
         Assert.assertEquals("FhirResource", ((EmptyReferenceExpression) oe.getExpressions().get(0)).getType());
@@ -143,7 +143,7 @@ public class SelectExpressionTest {
 
     @Test
     public void testFromUriParams() {
-        var se = new SelectExpression("FhirResource", expressionFactory);
+        var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
         var uriAndListParam = new UriAndListParam();
@@ -153,18 +153,18 @@ public class SelectExpressionTest {
 
         se.fromFhirParams(pathUri, uriAndListParam);
         // we have to or expression:
-        var oe = (OrExpression) ((AndExpression) se.getExpression()).getExpressions().get(0);
+        var oe = (OrExpression<?>) ((AndExpression<?>) se.getExpression()).getExpressions().get(0);
         Assert.assertEquals(1, oe.getExpressions().size());
-        Assert.assertEquals("http://url", ((StringExpression) oe.getExpressions().get(0)).getValue());
-        Assert.assertEquals(pathUri, ((StringExpression) oe.getExpressions().get(0)).getFhirPath());
-        Assert.assertEquals(StringExpression.Operator.EXACT, ((StringExpression) oe.getExpressions().get(0)).getOperator());
+        Assert.assertEquals("http://url", ((StringExpression<?>) oe.getExpressions().get(0)).getValue());
+        Assert.assertEquals(pathUri, ((StringExpression<?>) oe.getExpressions().get(0)).getFhirPath());
+        Assert.assertEquals(StringExpression.Operator.EXACT, ((StringExpression<?>) oe.getExpressions().get(0)).getOperator());
 
     }
 
 
     @Test
     public void testSetCount() {
-        var se = new SelectExpression("FhirResource", expressionFactory);
+        var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
         se.setCount(null);

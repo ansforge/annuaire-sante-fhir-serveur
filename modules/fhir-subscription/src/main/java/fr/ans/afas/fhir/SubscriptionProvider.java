@@ -49,7 +49,7 @@ public class SubscriptionProvider<T> extends AsBaseResourceProvider<T> implement
     /**
      * Manage next urls
      */
-    final NextUrlManager nextUrlManager;
+    final NextUrlManager<T> nextUrlManager;
 
     /**
      * Used to encrypt headers
@@ -62,7 +62,7 @@ public class SubscriptionProvider<T> extends AsBaseResourceProvider<T> implement
      *
      * @param fhirStoreService the service that store fhir resources
      */
-    public SubscriptionProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager nextUrlManager, String secretKey) {
+    public SubscriptionProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager<T> nextUrlManager, String secretKey) {
         super(fhirStoreService);
         this.fhirContext = fhirContext;
         this.expressionFactory = expressionFactory;
@@ -105,22 +105,22 @@ public class SubscriptionProvider<T> extends AsBaseResourceProvider<T> implement
     public IBundleProvider search(@Count Integer theCount,
                                   @Description(shortDefinition = "Recherche sur l'id de la ressource Subscription")
                                   @OptionalParam(name = IAnyResource.SP_RES_ID)
-                                          TokenAndListParam theId,
+                                  TokenAndListParam theId,
                                   @Description(shortDefinition = "Recherche sur le status de la subscription")
                                   @OptionalParam(name = Subscription.SP_STATUS)
-                                          TokenAndListParam theStatus,
+                                  TokenAndListParam theStatus,
                                   @Description(shortDefinition = "Recherche sur le critère de la subscription")
                                   @OptionalParam(name = Subscription.SP_CRITERIA)
-                                          StringAndListParam theCriteria,
+                                  StringAndListParam theCriteria,
                                   @Description(shortDefinition = "Recherche sur le url (payload) de la subscription")
                                   @OptionalParam(name = Subscription.SP_URL)
-                                          StringAndListParam theUrl,
+                                  StringAndListParam theUrl,
                                   @Description(shortDefinition = "Recherche sur le type de payload de la subscription")
                                   @OptionalParam(name = Subscription.SP_PAYLOAD)
-                                          TokenAndListParam thePayload,
+                                  TokenAndListParam thePayload,
                                   @Description(shortDefinition = "Recherche sur le type de la subscription")
                                   @OptionalParam(name = Subscription.SP_TYPE)
-                                          TokenAndListParam theType
+                                  TokenAndListParam theType
     ) {
         var selectExpression = new SelectExpression<>(FhirServerConstants.SUBSCRIPTION_FHIR_RESOURCE_NAME, expressionFactory);
         selectExpression.setCount(theCount);

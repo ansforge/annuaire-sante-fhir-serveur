@@ -10,7 +10,7 @@ package fr.ans.afas.fhirserver.service.exception;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class CantWriteFhirResource extends RuntimeException {
+public class CantWriteFhirResource extends RuntimeException implements PublicException {
     /**
      * Constructs a new exception with the error message
      *

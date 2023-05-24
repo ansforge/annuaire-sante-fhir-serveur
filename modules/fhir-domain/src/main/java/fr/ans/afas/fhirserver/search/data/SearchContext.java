@@ -8,6 +8,8 @@ package fr.ans.afas.fhirserver.search.data;
 import lombok.Builder;
 import lombok.Getter;
 
+import javax.annotation.Nullable;
+
 /**
  * Hold information on the search
  *
@@ -27,9 +29,15 @@ public class SearchContext {
      */
     String firstId;
 
+    /***
+     * The number of element found for this query
+     */
+    Long total;
+
     @Builder
-    public SearchContext(long revision, String firstId) {
+    public SearchContext(long revision, String firstId, @Nullable Long total) {
         this.revision = revision;
         this.firstId = firstId;
+        this.total = total;
     }
 }

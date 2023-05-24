@@ -4,13 +4,14 @@
 
 package fr.ans.afas.exception;
 
+import fr.ans.afas.fhirserver.service.exception.PublicException;
 import lombok.Getter;
 
 /**
  * Exception when a reference is not well formated
  */
 @Getter
-public class BadReferenceFormat extends Exception {
+public class BadReferenceFormat extends Exception implements PublicException {
 
     /**
      * The bad reference

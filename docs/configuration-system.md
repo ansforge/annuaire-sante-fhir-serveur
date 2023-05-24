@@ -44,11 +44,11 @@ validationMode : non utilisé pour le moment resources : définition de toutes l
 
 Les champs d'une ressource sont les suivants :
 
-| Field name   | Description                                               | Exemple                                                                                                                              |
-|--------------|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| name         | The name of the resource. Must be the Official Fhir name. | Organization, Device                                                                                                                 |
-| profile      | The FHIR profile of the resource                          | http://hl7.org/fhir/StructureDefinition/Organization, https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Organization        |
-| searchParams | Configuration of fhir search params                       | See the next section                                                                                                                 |
+| Field name   | Description                                               | Exemple                                                                                                                       |
+|--------------|-----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| name         | The name of the resource. Must be the Official Fhir name. | Organization, Device                                                                                                          |
+| profile      | The FHIR profile of the resource                          | http://hl7.org/fhir/StructureDefinition/Organization, https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Organization |
+| searchParams | Configuration of fhir search params                       | See the next section                                                                                                          |
 
 Exemple avec 2 profiles :
 
@@ -74,7 +74,7 @@ Les champs des paramètres de ressource sont :
 | urlParameter  | The name of the parameter in Fhir search                                                                                                                | name                                     |
 | searchType    | The type of the search parameter. Allowed values are date, string, token, reference, quantity, uri                                                      | string                                   |
 | description   | The description of the parameter                                                                                                                        | Name of the patient                      |
-| resourcePaths | The path of the field that match the resource in the Fhir object. Use a '&vert;' to chain properties. All paths must match a the same type of resource.  | - name&vert;family<br/>- name&vert;given |
+| resourcePaths | The path of the field that match the resource in the Fhir object. Use a '&vert;' to chain properties. All paths must match a the same type of resource. | - name&vert;family<br/>- name&vert;given |
 
 Exemple sur l'implémentation de référence "Patient (R4)" et quelques champs:
 

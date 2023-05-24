@@ -12,12 +12,12 @@ import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import org.hl7.fhir.r4.model.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.StringUtils;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * An automatic serializer that can serialize fhir objects with a {@link SearchConfig}
  * <p>
  * This serializer use the config path to find objects in the fhir resource. The path definition follow the Spel spring language
- * (https://docs.spring.io/spring-framework/docs/4.3.10.RELEASE/spring-framework-reference/html/expressions.html)
+ * (<a href="https://docs.spring.io/spring-framework/docs/4.3.10.RELEASE/spring-framework-reference/html/expressions.html">...</a>)
  *
  * @author Guillaume Poulériguen
  * @since 1.0.0
@@ -41,7 +41,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
 
     ExpressionParser expressionParser = new SpelExpressionParser();
 
-    @Autowired
+    @Inject
     public GenericSerializer(SearchConfig searchConfig, FhirContext fhirContext) {
         super(fhirContext);
         this.searchConfig = searchConfig;
@@ -66,7 +66,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
         for (var config : configs) {
             // we don't process internal indexes, they are already processed:
             if (!internalIndexes.contains(config.getName())) {
-                var extracts = new ArrayList<Object>();
+                var extracts = new ArrayList<>();
                 // serialize paths:
                 for (var path : config.getResourcePaths()) {
                     var stringPath = path.getPath();
@@ -132,9 +132,9 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
     /**
      * Extract the value for one level
      *
-     * @param values
-     * @param stringPath
-     * @return
+     * @param values     values
+     * @param stringPath paths to extract
+     * @return extracted values
      */
     protected Collection<Object> extractValuesInternal(Collection<Object> values, Deque<String> stringPath) {
         var expression = expressionParser.parseExpression(stringPath.getFirst());
@@ -148,7 +148,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
             }
             if (result instanceof Collection) {
                 // array
-                results.addAll((Collection) result);
+                results.addAll((Collection<?>) result);
             } else {
                 // single item
                 results.add(result);
@@ -165,7 +165,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
 
 
     @Override
-    public Class getClassFor() {
+    public Class<DomainResource> getClassFor() {
         return DomainResource.class;
     }
 

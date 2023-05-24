@@ -19,6 +19,13 @@ public final class IrisFhirUtils {
     private IrisFhirUtils() {
     }
 
+    /**
+     * Parse a fhir reference
+     *
+     * @param reference the reference to parse
+     * @return the parsed reference
+     * @throws BadReferenceFormat if the reference is not well formatted
+     */
     public static ParsedReference parseReference(String reference) throws BadReferenceFormat {
         Assert.hasLength(reference, "The reference must not be null");
         var parts = reference.split("/");

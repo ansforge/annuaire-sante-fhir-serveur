@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 
 public class SelectDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
+    public Expression<Bson> process(SearchConfig searchConfig, ExpressionFactory<Bson> expressionFactory, ExpressionSerializer<Bson> expressionDeserializer, String val) {
         var parts = val.split("\\$", -1);
         if (parts.length != 6) {
             throw new SerializationException("Error during the Select deserialization. 6 parameters wanted. " + parts.length + " found. Params: " + val);
@@ -29,7 +29,7 @@ public class SelectDeserializeFunction implements DeserializeFunction<Bson> {
         var expression = parts[3];
         var include = parts[4];
         var revinclude = parts[5];
-        var se = new SelectExpression<Bson>(resourceType, expressionFactory, (ContainerExpression<Bson>) expressionDeserializer.deserialize(expression));
+        var se = new SelectExpression<>(resourceType, expressionFactory, (ContainerExpression<Bson>) expressionDeserializer.deserialize(expression));
         se.setCount(Integer.parseInt(count));
         se.orderBy(order);
         se.getIncludes().addAll(deserializeInclude(searchConfig, include));

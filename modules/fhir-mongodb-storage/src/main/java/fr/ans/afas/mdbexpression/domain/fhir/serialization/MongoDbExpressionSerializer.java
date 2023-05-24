@@ -11,9 +11,9 @@ import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializ
 import fr.ans.afas.utils.ExpressionSerializationUtils;
 import fr.ans.afas.utils.PatternMatching;
 import org.bson.conversions.Bson;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
+import javax.inject.Inject;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +38,7 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
      */
     SearchConfig searchConfig;
 
-    @Autowired
+    @Inject
     public MongoDbExpressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
         this.expressionFactory = expressionFactory;
         this.searchConfig = searchConfig;
@@ -193,7 +193,7 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
     public Expression<Bson> deserialize(String val) {
         var typeAndValue = val.split("\\" + Expression.SERIALIZE_SEPARATOR, 2);
         var type = typeAndValue[0];
-        String value = null;
+        String value;
         if (typeAndValue.length > 1) {
             value = URLDecoder.decode(typeAndValue[1], StandardCharsets.UTF_8);
         } else {
@@ -202,7 +202,7 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
         final var valueFinal = value;
         var classFound = ExpressionSerializationUtils.getClassForCode(type);
         var deserializeChooser = PatternMatching
-                .<Class<? extends Expression>, Expression>
+                .<Class<? extends Expression<Bson>>, Expression<Bson>>
                         when(SelectExpression.class::equals, x -> new SelectDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
                 .orWhen(AndExpression.class::equals, x -> new AndDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
                 .orWhen(OrExpression.class::equals, x -> new OrDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
@@ -212,7 +212,7 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
                 .orWhen(ReferenceExpression.class::equals, x -> new ReferenceDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
                 .orWhen(StringExpression.class::equals, x -> new StringDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal));
 
-        return deserializeChooser.matches(classFound).orElseThrow();
+        return deserializeChooser.matches((Class<? extends Expression<Bson>>) classFound).orElseThrow();
     }
 
 

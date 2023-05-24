@@ -5,11 +5,12 @@
 package fr.ans.afas.mdbexpression.domain.fhir;
 
 import fr.ans.afas.fhirserver.search.config.BaseSearchConfigService;
+import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.ResourcePathConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
+import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 
@@ -50,19 +51,19 @@ public class TestSearchConfig extends BaseSearchConfigService {
      */
     public static final String FHIR_RESOURCE_DB_TOKEN_PATH = "t_token_path";
     /**
-     * The exemple db path for a string
+     * The example db path for a string
      */
     public static final String FHIR_RESOURCE_DB_STRING_PATH = "t_string_path";
     /**
-     * The exemple db path for a reference
+     * The example db path for a reference
      */
     public static final String FHIR_RESOURCE_DB_REFERENCE_PATH = "t_reference_path";
     /**
-     * The exemple db path for a quantity
+     * The example db path for a quantity
      */
     public static final String FHIR_RESOURCE_DB_QUANTITY_PATH = "t_quantity_path";
     /**
-     * The exemple db path for a date
+     * The example db path for a date
      */
     public static final String FHIR_RESOURCE_DB_DATE_PATH = "t_date_path";
 
@@ -71,7 +72,7 @@ public class TestSearchConfig extends BaseSearchConfigService {
      * Setup a test config
      */
     public TestSearchConfig() {
-        super(new HashMap<>());
+        super(new ServerSearchConfig());
         var listOrg = new ArrayList<SearchParamConfig>();
         listOrg.add(SearchParamConfig.builder()
                 .urlParameter(FHIR_RESOURCE_TOKEN_PATH)
@@ -113,6 +114,6 @@ public class TestSearchConfig extends BaseSearchConfigService {
                 .resourcePaths(List.of(ResourcePathConfig.builder().path("referencePath").build()))
                 .build());
 
-        configs.put(FHIR_RESOURCE_NAME, listOrg);
+        configs.put(FHIR_RESOURCE_NAME, FhirResourceSearchConfig.builder().name(FHIR_RESOURCE_NAME).profile("http").searchParams(listOrg).build());
     }
 }

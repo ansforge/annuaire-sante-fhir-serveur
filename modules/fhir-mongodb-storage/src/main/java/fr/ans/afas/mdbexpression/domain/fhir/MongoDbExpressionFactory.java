@@ -11,9 +11,9 @@ import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.*;
 import org.bson.conversions.Bson;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import javax.inject.Inject;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
 
@@ -32,7 +32,7 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
     SearchConfig searchConfig;
 
 
-    @Autowired
+    @Inject
     public MongoDbExpressionFactory(SearchConfig searchConfig) {
         this.searchConfig = searchConfig;
     }

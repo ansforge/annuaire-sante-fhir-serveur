@@ -1,5 +1,8 @@
 server:
   port: 8000
+  tomcat:
+    connection-timeout: 300000
+
 
 afas:
   fhir:
@@ -13,3 +16,13 @@ afas:
     dbname: ${DB_NAME:afassample}
 
   publicUrl: http://localhost:8000/fhir
+
+
+spring:
+  data:
+    mongodb:
+      database: some
+
+logging:
+  level:
+    root: INFO

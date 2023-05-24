@@ -41,7 +41,6 @@ import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.DomainResource;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -55,6 +54,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 
+import javax.inject.Inject;
 import java.util.List;
 
 
@@ -95,8 +95,8 @@ public class FullSpringAppWithMongo {
     }
 
     @Bean
-    DeviceProvider deviceProvider(FhirStoreService fhirStoreService, FhirContext fhirContext, ExpressionFactory expressionFactory, NextUrlManager nextUrlManager) {
-        return new DeviceProvider(fhirStoreService, fhirContext, expressionFactory, nextUrlManager);
+    <T> DeviceProvider<T> deviceProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager<T> nextUrlManager) {
+        return new DeviceProvider<>(fhirStoreService, fhirContext, expressionFactory, nextUrlManager);
     }
 
 
@@ -117,7 +117,7 @@ public class FullSpringAppWithMongo {
      * @return the expression factory
      */
     @Bean
-    @Autowired
+    @Inject
     public ExpressionFactory<Bson> expressionFactory(SearchConfig searchConfig) {
         return new MongoDbExpressionFactory(searchConfig);
     }
@@ -130,9 +130,9 @@ public class FullSpringAppWithMongo {
      */
     @ConditionalOnMissingBean
     @Bean
-    @Autowired
-    NextUrlManager nextUrlManager(MongoClient mongoClient, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter,
-                                  @Value("${spring.data.mongodb.database}") String dbName
+    @Inject
+    NextUrlManager<Bson> nextUrlManager(MongoClient mongoClient, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter,
+                                        @Value("${spring.data.mongodb.database}") String dbName
     ) {
         return new MongoDbNextUrlManager(mongoClient, maxNextUrlLength, expressionSerializer, serializeUrlEncrypter, dbName);
     }
@@ -154,14 +154,14 @@ public class FullSpringAppWithMongo {
      * @return the expression serializer
      */
     @Bean
-    @Autowired
+    @Inject
     ExpressionSerializer<Bson> expressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
         return new MongoDbExpressionSerializer(expressionFactory, searchConfig);
     }
 
 
     @Bean
-    @Autowired
+    @Inject
     FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer(FhirContext fhirContext) {
         return new FhirBaseResourceDeSerializer(fhirContext);
     }
@@ -172,7 +172,7 @@ public class FullSpringAppWithMongo {
      * @return the storage service
      */
     @Bean
-    @Autowired
+    @Inject
     FhirStoreService<Bson> fhirStoreService(
             List<FhirBaseResourceSerializer<DomainResource>> serializers,
             FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer,
@@ -181,9 +181,9 @@ public class FullSpringAppWithMongo {
             ApplicationContext context,
             FhirContext fhirContext,
             @Value("${afas.fhir.max-include-size:5000}")
-                    int maxIncludePageSize,
+            int maxIncludePageSize,
             @Value("${afas.mongodb.dbname}")
-                    String dbName) throws BadHookConfiguration {
+            String dbName) throws BadHookConfiguration {
         return new MongoDbFhirService(
                 serializers,
                 fhirBaseResourceDeSerializer,
@@ -213,7 +213,7 @@ public class FullSpringAppWithMongo {
      *
      * @return the serializer
      */
-    @Autowired
+    @Inject
     @Bean
     public GenericSerializer genericSerializer(SearchConfig searchConfig, FhirContext fhirContext) {
         return new GenericSerializer(searchConfig, fhirContext);
@@ -232,7 +232,7 @@ public class FullSpringAppWithMongo {
     }
 
     @Bean
-    @Autowired
+    @Inject
     public SearchConfig searchConfigService(List<ServerSearchConfig> searchConfigs) {
         return new CompositeSearchConfig(searchConfigs);
     }
@@ -247,13 +247,13 @@ public class FullSpringAppWithMongo {
 
 
     @Bean
-    @Autowired
-    DefaultSubscriptionOperationService defaultSubscriptionOperationService(FhirStoreService storeService, ExpressionFactory expressionFactory) {
+    @Inject
+    DefaultSubscriptionOperationService defaultSubscriptionOperationService(FhirStoreService<Bson> storeService, ExpressionFactory<Bson> expressionFactory) {
         return new DefaultSubscriptionOperationService(storeService, expressionFactory);
     }
 
     @Bean
-    @Autowired
+    @Inject
     GlobalProvider globalProvider(DefaultSubscriptionOperationService defaultSubscriptionOperationService) {
         return new GlobalProvider(defaultSubscriptionOperationService);
     }

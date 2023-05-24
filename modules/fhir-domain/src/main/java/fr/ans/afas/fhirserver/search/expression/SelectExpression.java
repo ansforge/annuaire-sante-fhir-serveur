@@ -7,6 +7,7 @@ package fr.ans.afas.fhirserver.search.expression;
 
 import ca.uhn.fhir.model.api.Include;
 import ca.uhn.fhir.rest.param.*;
+import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.data.TotalMode;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
@@ -213,6 +214,23 @@ public class SelectExpression<T> implements Expression<T> {
     }
 
 
+    /**
+     * Convert a Hapi parameter to a Select expression for multiple DateParam. The parameters will be applied with a logical OR.
+     *
+     * @param path       the path of the parameter
+     * @param dateParams parameters
+     */
+    public void orFromFhirParams(FhirSearchPath path, List<DateParam> dateParams) {
+        if (dateParams != null) {
+            var orExpression = expressionFactory.newOrExpression();
+            for (var param : dateParams) {
+                orExpression.or(expressionFactory.newDateRangeExpression(path, param.getValue(), param.getPrecision(), param.getPrefix()));
+            }
+            this.expression.addExpression(orExpression);
+        }
+    }
+
+
     public SelectExpression<T> fromFhirParams(FhirSearchPath path, UriAndListParam theSearchForProfile) {
         if (theSearchForProfile != null) {
             for (var orParams : theSearchForProfile.getValuesAsQueryTokens()) {
@@ -314,12 +332,12 @@ public class SelectExpression<T> implements Expression<T> {
         this.since = since;
     }
 
-    public String serialize(ExpressionSerializer expressionSerializer) {
+    public String serialize(ExpressionSerializer<T> expressionSerializer) {
         return expressionSerializer.serialize(this);
     }
 
     @Override
-    public Expression<T> deserialize(ExpressionSerializer expressionDeserializer) {
+    public Expression<T> deserialize(ExpressionSerializer<T> expressionDeserializer) {
         return expressionDeserializer.deserialize("");
     }
 
@@ -338,7 +356,7 @@ public class SelectExpression<T> implements Expression<T> {
      *
      * @param totalMode the mode
      */
-    public void setTotalMode(String totalMode) {
+    public void setTotalMode(String totalMode) throws BadSelectExpression {
         if (totalMode != null) {
             switch (totalMode) {
                 case "accurate":
@@ -349,7 +367,7 @@ public class SelectExpression<T> implements Expression<T> {
                     this.setTotalMode(TotalMode.NONE);
                     break;
                 default:
-                    throw new BadParametersException("Bad value for the _total parameter. Allowed values are : accurate, none, estimate");
+                    throw new BadSelectExpression("Bad value for the _total parameter. Allowed values are : accurate, none, estimate");
             }
         }
     }

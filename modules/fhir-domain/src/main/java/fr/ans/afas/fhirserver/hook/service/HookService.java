@@ -23,7 +23,7 @@ public class HookService {
      * A reference to all methods that subscribes to hooks.
      * The key of the hashmap is the class of the event, the value is the list of method to call
      */
-    Map<Class, List<EventHandler>> eventHandlers = new HashMap<>();
+    Map<Class<?>, List<EventHandler>> eventHandlers = new HashMap<>();
 
 
     public HookService(ApplicationContext applicationContext) throws BadHookConfiguration {
@@ -68,10 +68,9 @@ public class HookService {
     public void callHook(AfasEvent event) {
         if (this.eventHandlers.containsKey(event.getClass())) {
             for (var m : this.eventHandlers.get(event.getClass())) {
-                if (!m.getMethod().canAccess(m.instance)) {
-                    m.getMethod().setAccessible(true);
+                if (m.getMethod().canAccess(m.instance)) {
+                    ReflectionUtils.invokeMethod(m.getMethod(), m.getInstance(), event);
                 }
-                ReflectionUtils.invokeMethod(m.getMethod(), m.getInstance(), event);
             }
         }
     }

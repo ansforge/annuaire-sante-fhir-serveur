@@ -10,6 +10,13 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+
+/**
+ * Store a fhir parameter
+ *
+ * @author Guillaume Poulériguen
+ * @since 1.0.0
+ */
 @Getter
 @NoArgsConstructor
 public class ParsedParam {

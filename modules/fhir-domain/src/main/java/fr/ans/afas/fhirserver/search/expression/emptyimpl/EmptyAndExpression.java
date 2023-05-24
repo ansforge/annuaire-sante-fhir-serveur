@@ -1,11 +1,14 @@
-package fr.ans.afas.utils.data;
+/*
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
+ */
+package fr.ans.afas.fhirserver.search.expression.emptyimpl;
 
+import fr.ans.afas.fhirserver.search.expression.AndExpression;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
-import fr.ans.afas.fhirserver.search.expression.OrExpression;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 
-public class EmptyOrExpression extends OrExpression<String> {
+public class EmptyAndExpression extends AndExpression<String> {
     @Override
     public String interpreter(ExpressionContext expressionContext) {
         return "N/A";
@@ -18,6 +21,6 @@ public class EmptyOrExpression extends OrExpression<String> {
 
     @Override
     public Expression<String> deserialize(ExpressionSerializer<String> expressionDeserializer) {
-        return new EmptyOrExpression();
+        return new EmptyAndExpression();
     }
 }

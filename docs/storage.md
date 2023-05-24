@@ -41,18 +41,18 @@ sera retournée à l’utilisateur. Et d’autre part, il y aura les champs tech
 
 La nomenclature est la suivante :
 
-| Champs               | Description                                                                                                            |
-|----------------------|------------------------------------------------------------------------------------------------------------------------|
-| fhir                 | Entité FHIR                                                                                                            |
-| t_fid                | Identifiant complet de la ressource FHIR sous le format <Nom de ressource>/<identifiant>. Exemple : “Organization/1”   |
-| t_id                 | Identifiant de la ressource. Exemple “1”.                                                                              |
-| t_lastupdated        | Date de dernière mise à jour FHIR avec une précision à la milliseconde.                                                |
-| t_lastupdated-second | Date de dernière mise à jour FHIR avec une précision à la seconde (les ms sont tronquées)                              |
-| t_lastupdated-minute | Date de dernière mise à jour FHIR avec une précision en minute (les secondes sont tronquées)                           |
-| t_lastupdated-date   | Date de dernière mise à jour FHIR avec une précision en jour (les heures, minutes sont tronquées)                      |
-| t_lastupdated-month  | Date de dernière mise à jour FHIR avec une précision en mois (les heures sont tronquées)                               |                                                                                                 |
-| t_lastupdated-year   | Date de dernière mise à jour FHIR avec une précision en année (les mois sont tronquées)                                |                                                                                            |
-| t_*                     | Les champs techniques pour les champs spécifiques aux objets FHIR. Ces champs sont utilisés pour la recherche.         |                                                                                                                                                                                      |
+| Champs               | Description                                                                                                          |
+|----------------------|----------------------------------------------------------------------------------------------------------------------|
+| fhir                 | Entité FHIR                                                                                                          |
+| t_fid                | Identifiant complet de la ressource FHIR sous le format <Nom de ressource>/<identifiant>. Exemple : “Organization/1” |
+| t_id                 | Identifiant de la ressource. Exemple “1”.                                                                            |
+| t_lastupdated        | Date de dernière mise à jour FHIR avec une précision à la milliseconde.                                              |
+| t_lastupdated-second | Date de dernière mise à jour FHIR avec une précision à la seconde (les ms sont tronquées)                            |
+| t_lastupdated-minute | Date de dernière mise à jour FHIR avec une précision en minute (les secondes sont tronquées)                         |
+| t_lastupdated-date   | Date de dernière mise à jour FHIR avec une précision en jour (les heures, minutes sont tronquées)                    |
+| t_lastupdated-month  | Date de dernière mise à jour FHIR avec une précision en mois (les heures sont tronquées)                             |                                                                                                 |
+| t_lastupdated-year   | Date de dernière mise à jour FHIR avec une précision en année (les mois sont tronquées)                              |                                                                                            |
+| t_*                  | Les champs techniques pour les champs spécifiques aux objets FHIR. Ces champs sont utilisés pour la recherche.       |                                                                                                                                                                                      |
 
 Les recherches ne s’effectuent jamais sur les ressources FHIR brute. Dans chaque recherche, un champ technique est
 utilisé.
@@ -93,9 +93,9 @@ Le champ est traité comme un CodeableConcept
 
 ### Type String multi-lignes
 
-| Champs          | Description                                   |
-|-----------------|-----------------------------------------------|
-| t_<index-name>  | Un tableau contenant les chaines de caractère |
+| Champs         | Description                                   |
+|----------------|-----------------------------------------------|
+| t_<index-name> | Un tableau contenant les chaines de caractère |
 
 ### Type Reference
 

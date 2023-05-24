@@ -13,13 +13,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -39,10 +39,10 @@ import java.util.List;
 public class PersistenceTestIT {
 
 
-    @Autowired
+    @Inject
     SubscriptionManager subscriptionManager;
 
-    @Autowired
+    @Inject
     SubscriptionMessageRepository subscriptionMessageRepository;
 
 

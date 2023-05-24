@@ -6,11 +6,12 @@ package fr.ans.sample.sample;
 
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import org.hl7.fhir.r4.model.Device;
+import org.hl7.fhir.r4.model.DomainResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
-import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Insert sample data for the demo
@@ -32,12 +33,22 @@ public class InsertSampleData {
      */
     @PostConstruct
     public void insertSampleData() {
-        var d1 = new Device();
-        d1.setId("id-1");
-        d1.addDeviceName().setName("My device name " + System.currentTimeMillis());
-        d1.addIdentifier().setSystem("http://system.org/").setValue("ID-1");
-        d1.setLotNumber("lot1");
-        storeService.store(List.of(d1), true);
+        var l = new ArrayList<DomainResource>();
+        for (var i = 0; i < 0; i++) {
+            var d1 = new Device();
+            d1.setId("id-" + i);
+            d1.addDeviceName().setName("My device name " + System.currentTimeMillis());
+            d1.addIdentifier().setSystem("http://system.org/").setValue("ID-" + i);
+            d1.setLotNumber("lot" + i);
+            l.add(d1);
+            // flush each 1000:
+            if (i % 5000 == 0) {
+                storeService.store(l, true);
+                l.clear();
+            }
+        }
+
+
     }
 
 }

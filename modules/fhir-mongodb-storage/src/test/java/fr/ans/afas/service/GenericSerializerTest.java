@@ -7,8 +7,10 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import fr.ans.afas.domain.StorageConstants;
 import fr.ans.afas.fhirserver.search.config.BaseSearchConfigService;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.ResourcePathConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
+import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 import fr.ans.afas.rass.service.json.GenericSerializer;
 import org.bson.Document;
 import org.hl7.fhir.r4.model.Device;
@@ -48,22 +50,30 @@ public class GenericSerializerTest {
     }
 
     static SearchConfig fhirResourceConfig() {
-        var config = new HashMap<String, List<SearchParamConfig>>();
-        config.put("Device", List.of(
-                SearchParamConfig.builder().name(Device.SP_DEVICE_NAME).urlParameter(Device.SP_DEVICE_NAME).resourcePaths(List.of(ResourcePathConfig.builder().path("deviceName|name").build())).indexName(StorageConstants.INDEX_DEVICE_NAME).searchType(StorageConstants.INDEX_TYPE_STRING).build(),
-                SearchParamConfig.builder().name(Device.SP_IDENTIFIER).urlParameter(Device.SP_IDENTIFIER).resourcePaths(List.of(ResourcePathConfig.builder().path("identifier").build())).indexName(StorageConstants.INDEX_DEVICE_IDENTIFIER).searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
-                SearchParamConfig.builder().name("multi-path").urlParameter("multi-path").resourcePaths(
-                                List.of(
-                                        ResourcePathConfig.builder().path("deviceName|name").build(),
-                                        ResourcePathConfig.builder().path("lotNumber").build())
-                        )
-                        .indexName("t_multi-path-index").searchType(StorageConstants.INDEX_TYPE_STRING).build(),
-                SearchParamConfig.builder().name("extension-sample").urlParameter("extension-sample").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='someUrl']|value").build())).indexName("t_extension-sample").searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
-                SearchParamConfig.builder().name("extension-sample2").urlParameter("extension-sample2").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='someUrl2']|value").build())).indexName("t_extension-sample2").searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
-                SearchParamConfig.builder().name("extension-sample3").urlParameter("extension-sample3").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='withSub']|extension.?[#this.url=='sub']|value").build())).indexName("t_extension-sample3").searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
-                SearchParamConfig.builder().name("status").urlParameter("status").resourcePaths(List.of(ResourcePathConfig.builder().path("status?.toCode()").build())).indexName("t_status").searchType(StorageConstants.INDEX_TYPE_TOKEN).build()
-        ));
-        return new BaseSearchConfigService(config) {
+        var config = new HashMap<String, FhirResourceSearchConfig>();
+
+        config.put("Device", FhirResourceSearchConfig.builder()
+                .name("Device")
+                .profile("http://hl7.org/fhir/StructureDefinition/Device")
+                .searchParams(List.of(
+                        SearchParamConfig.builder().name(Device.SP_DEVICE_NAME).urlParameter(Device.SP_DEVICE_NAME).resourcePaths(List.of(ResourcePathConfig.builder().path("deviceName|name").build())).indexName(StorageConstants.INDEX_DEVICE_NAME).searchType(StorageConstants.INDEX_TYPE_STRING).build(),
+                        SearchParamConfig.builder().name(Device.SP_IDENTIFIER).urlParameter(Device.SP_IDENTIFIER).resourcePaths(List.of(ResourcePathConfig.builder().path("identifier").build())).indexName(StorageConstants.INDEX_DEVICE_IDENTIFIER).searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
+                        SearchParamConfig.builder().name("multi-path").urlParameter("multi-path").resourcePaths(
+                                        List.of(
+                                                ResourcePathConfig.builder().path("deviceName|name").build(),
+                                                ResourcePathConfig.builder().path("lotNumber").build())
+                                )
+                                .indexName("t_multi-path-index").searchType(StorageConstants.INDEX_TYPE_STRING).build(),
+                        SearchParamConfig.builder().name("extension-sample").urlParameter("extension-sample").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='someUrl']|value").build())).indexName("t_extension-sample").searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
+                        SearchParamConfig.builder().name("extension-sample2").urlParameter("extension-sample2").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='someUrl2']|value").build())).indexName("t_extension-sample2").searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
+                        SearchParamConfig.builder().name("extension-sample3").urlParameter("extension-sample3").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='withSub']|extension.?[#this.url=='sub']|value").build())).indexName("t_extension-sample3").searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
+                        SearchParamConfig.builder().name("status").urlParameter("status").resourcePaths(List.of(ResourcePathConfig.builder().path("status?.toCode()").build())).indexName("t_status").searchType(StorageConstants.INDEX_TYPE_TOKEN).build()
+                ))
+                .build());
+
+        return new BaseSearchConfigService(ServerSearchConfig.builder()
+                .resources(config.values())
+                .build()) {
         };
     }
 

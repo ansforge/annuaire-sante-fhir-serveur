@@ -12,10 +12,13 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 
 /**
  * Utility class to use a mocked IRIS Da api. This test launch a nginx server with some FHIR bundles.
- * It is not an FHIR server. It is simply an http server, some urls of which are similar to an FHIR server.
+ * It is not an FHIR server. It is simply a http server, some urls of which are similar to an FHIR server.
  * The resources returned will always be the same regardless of the parameters.
  * <p>
  * Ex: When you call http://instance/Organization, you will always get the same file.
@@ -32,18 +35,18 @@ public class WithMockedFhirTest {
     /**
      * A Nginx container with static files to simulate IRIS DA
      */
-    public static GenericContainer<?> mockedFhirContainer;
+    public static final AtomicReference<GenericContainer<?>> mockedFhirContainer = new AtomicReference<>();
     /**
      * true if test data are init
      */
-    protected static boolean setup;
+    protected static final AtomicBoolean setup = new AtomicBoolean(false);
 
     /**
      * Clean test context
      */
     public static void clean() {
-        if (mockedFhirContainer != null) {
-            mockedFhirContainer.stop();
+        if (mockedFhirContainer.get() != null) {
+            mockedFhirContainer.get().stop();
         }
     }
 
@@ -52,8 +55,8 @@ public class WithMockedFhirTest {
      */
     @Before
     public void init() {
-        if (!setup) {
-            setup = true;
+        if (!setup.get()) {
+            setup.set(true);
         }
     }
 
@@ -67,20 +70,25 @@ public class WithMockedFhirTest {
 
 
             var dockerRegistryUrl = configurableApplicationContext.getEnvironment().getProperty("docker.registry.url.nginx");
-            try (var mockedFhirContainer = new GenericContainer<>(DockerImageName.parse(dockerRegistryUrl != null ? dockerRegistryUrl : "nginx:1.21.4"))) {
-                mockedFhirContainer.withClasspathResourceMapping("docker/nginx-mock-fhir.conf",
+            try (var localMockedFhirContainer = new GenericContainer<>(DockerImageName.parse(dockerRegistryUrl != null ? dockerRegistryUrl : "nginx:1.21.4"))) {
+                localMockedFhirContainer.withClasspathResourceMapping("docker/nginx-mock-fhir.conf",
                                 "/etc/nginx/nginx.conf",
                                 BindMode.READ_ONLY)
                         .withClasspathResourceMapping("docker/mocked-da",
                                 "/usr/share/nginx/html/",
                                 BindMode.READ_ONLY)
-                        .withExposedPorts(80);
+                        .withExposedPorts(80)
+                        .setCommand("nginx", "-g", "daemon off;")
+
+                ;
+
 
                 // if you encounter some problems with docker, disable RYUK with this env var:  TESTCONTAINERS_RYUK_DISABLED=true
-                setup = false;
-                mockedFhirContainer.start();
+                setup.set(false);
+                localMockedFhirContainer.start();
+                mockedFhirContainer.set(localMockedFhirContainer);
                 TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
-                        configurableApplicationContext, "afas.fhir-import-data.daApiUrl=http://localhost:" + mockedFhirContainer.getMappedPort(80));
+                        configurableApplicationContext, "afas.fhir-import-data.daApiUrl=http://localhost:" + localMockedFhirContainer.getMappedPort(80));
             }
         }
     }

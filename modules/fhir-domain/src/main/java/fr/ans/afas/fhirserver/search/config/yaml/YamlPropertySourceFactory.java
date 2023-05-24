@@ -11,7 +11,6 @@ import org.springframework.core.io.support.EncodedResource;
 import org.springframework.core.io.support.PropertySourceFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.Properties;
 
 /**
@@ -26,7 +25,6 @@ public class YamlPropertySourceFactory implements PropertySourceFactory {
      * Create the property source from the yaml resource
      *
      * @return the new PropertySource (never null)
-     * @throws IOException
      */
     @Override
     public PropertySource<?> createPropertySource(@Nullable String name, EncodedResource encodedResource) {

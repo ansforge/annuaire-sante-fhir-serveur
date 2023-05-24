@@ -9,8 +9,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 
 /**
  * A fhir search result.
@@ -20,7 +24,7 @@ import java.util.List;
  */
 @Getter
 @Builder
-public class FhirPage {
+public class FhirPage implements Iterable<IBaseResource> {
     /**
      * Content of the fhir page
      */
@@ -33,7 +37,23 @@ public class FhirPage {
     SearchContext context;
 
     /**
-     * If true, there is more elemnts in next pages
+     * If true, there is more elements in next pages
      */
     boolean hasNext;
+
+    @NotNull
+    @Override
+    public Iterator<IBaseResource> iterator() {
+        return page.iterator();
+    }
+
+    @Override
+    public void forEach(Consumer<? super IBaseResource> action) {
+        this.page.forEach(action);
+    }
+
+    @Override
+    public Spliterator<IBaseResource> spliterator() {
+        return this.page.spliterator();
+    }
 }

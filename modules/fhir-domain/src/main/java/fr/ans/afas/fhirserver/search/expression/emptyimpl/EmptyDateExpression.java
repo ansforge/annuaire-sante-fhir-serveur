@@ -1,4 +1,7 @@
-package fr.ans.afas.utils.data;
+/*
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
+ */
+package fr.ans.afas.fhirserver.search.expression.emptyimpl;
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.param.ParamPrefixEnum;

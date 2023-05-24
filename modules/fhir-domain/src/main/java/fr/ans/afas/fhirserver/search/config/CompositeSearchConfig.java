@@ -1,8 +1,11 @@
+/*
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
+ */
+
 package fr.ans.afas.fhirserver.search.config;
 
 import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 
-import java.util.HashMap;
 import java.util.List;
 
 
@@ -19,11 +22,11 @@ public class CompositeSearchConfig extends BaseSearchConfigService {
      * @param searchConfigs search config to merge
      */
     public CompositeSearchConfig(List<ServerSearchConfig> searchConfigs) {
-        super(new HashMap<>());
+        super(searchConfigs.get(0));
         // merge all search configs
         for (var searchConfig : searchConfigs) {
             for (var resourceSearchConfig : searchConfig.getResources()) {
-                this.configs.put(resourceSearchConfig.getName(), resourceSearchConfig.getSearchParams());
+                this.configs.put(resourceSearchConfig.getName(), resourceSearchConfig);
             }
         }
 

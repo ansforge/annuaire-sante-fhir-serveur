@@ -15,6 +15,7 @@ import fr.ans.afas.fhir.GlobalProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
+import javax.inject.Inject;
 import javax.servlet.annotation.WebServlet;
 import java.util.List;
 
@@ -37,7 +38,7 @@ public class FhirServlet extends ca.uhn.fhir.rest.server.RestfulServer {
      * @param maxPageSize     the max page size
      * @param defaultPageSize the default page size
      */
-    @Autowired
+    @Inject
     public FhirServlet(FhirContext ctx,
                        List<IResourceProvider> providers,
                        IPagingProvider pagingProvider,

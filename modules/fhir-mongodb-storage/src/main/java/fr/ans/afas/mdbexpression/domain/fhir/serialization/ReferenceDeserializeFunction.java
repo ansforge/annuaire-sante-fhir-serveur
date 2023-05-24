@@ -21,7 +21,7 @@ import org.bson.conversions.Bson;
  */
 public class ReferenceDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
+    public Expression<Bson> process(SearchConfig searchConfig, ExpressionFactory<Bson> expressionFactory, ExpressionSerializer<Bson> expressionDeserializer, String val) {
         var parts = val.split("\\$");
         if (parts.length != 4) {
             throw new SerializationException("Error during the Reference deserialization. 4 parameters wanted. " + parts.length + " found. Params:" + val);

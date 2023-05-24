@@ -11,6 +11,7 @@ import fr.ans.afas.fhirserver.provider.AsBaseResourceProvider;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.DomainResource;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -97,6 +98,11 @@ public class TransactionalResourceProvider<T> extends AsBaseResourceProvider<T> 
         }
 
         // build the response:
+        return buildResponse(toCreateOutcomes, toUpdateOutcomes, toDeleteOutcomes);
+    }
+
+    @NotNull
+    private Bundle buildResponse(ArrayList<MethodOutcome> toCreateOutcomes, ArrayList<MethodOutcome> toUpdateOutcomes, ArrayList<MethodOutcome> toDeleteOutcomes) {
         var retVal = new Bundle();
         for (var toCreateOutcome : toCreateOutcomes) {
             Bundle.BundleEntryResponseComponent resp;
@@ -126,7 +132,6 @@ public class TransactionalResourceProvider<T> extends AsBaseResourceProvider<T> 
         }
 
         retVal.setTotal(toCreateOutcomes.size() + toUpdateOutcomes.size());
-
         return retVal;
     }
 

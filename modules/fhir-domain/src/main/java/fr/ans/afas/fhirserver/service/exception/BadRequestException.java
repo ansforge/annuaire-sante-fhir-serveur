@@ -10,7 +10,7 @@ package fr.ans.afas.fhirserver.service.exception;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class BadRequestException extends RuntimeException {
+public class BadRequestException extends RuntimeException implements PublicException {
 
     /**
      * Construct the request exception

@@ -6,11 +6,11 @@ package fr.ans.afas.config;
 
 import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.rass.service.MongoDbFhirService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import javax.inject.Inject;
 import java.util.Date;
 
 /**
@@ -27,14 +27,14 @@ public class CleanRevisionDataConfiguration {
     /**
      * The storage service
      */
-    @Autowired
+    @Inject
     MongoDbFhirService mongoDbFhirService;
 
     /**
      * The url manager
      */
-    @Autowired
-    NextUrlManager nextUrlManager;
+    @Inject
+    NextUrlManager<?> nextUrlManager;
 
 
     @Value("${afas.fhir.max-revision-duration}")

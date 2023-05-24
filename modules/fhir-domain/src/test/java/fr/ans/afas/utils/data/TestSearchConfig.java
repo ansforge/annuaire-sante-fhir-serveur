@@ -6,11 +6,12 @@ package fr.ans.afas.utils.data;
 
 
 import fr.ans.afas.fhirserver.search.config.BaseSearchConfigService;
+import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.ResourcePathConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
+import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 
@@ -72,7 +73,7 @@ public class TestSearchConfig extends BaseSearchConfigService {
      * Setup a test config
      */
     public TestSearchConfig() {
-        super(new HashMap<>());
+        super(ServerSearchConfig.builder().build());
         var list = new ArrayList<SearchParamConfig>();
         list.add(SearchParamConfig.builder()
                 .urlParameter(FHIR_RESOURCE_TOKEN_PATH)
@@ -114,6 +115,6 @@ public class TestSearchConfig extends BaseSearchConfigService {
                 .resourcePaths(List.of(ResourcePathConfig.builder().path("referencePath").build()))
                 .build());
 
-        configs.put(FHIR_RESOURCE_NAME, list);
+        configs.put(FHIR_RESOURCE_NAME, FhirResourceSearchConfig.builder().name(FHIR_RESOURCE_NAME).searchParams(list).build());
     }
 }

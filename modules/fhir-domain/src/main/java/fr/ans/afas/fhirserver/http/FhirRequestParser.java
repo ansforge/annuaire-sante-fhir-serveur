@@ -17,7 +17,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
 
+
+/**
+ * Parse fhir requests urls
+ *
+ * @author Guillaume Poulériguen
+ * @since 1.0.0
+ */
 public class FhirRequestParser {
 
 
@@ -31,11 +39,12 @@ public class FhirRequestParser {
         return URLDecoder.decode(string, StandardCharsets.UTF_8);
     }
 
+
     public static <T> SelectExpression<T> parseSelectExpression(String url, ExpressionFactory<T> expressionFactory, SearchConfig searchConfig) throws BadSelectExpression {
         var index = url.indexOf('?');
 
-        String resourceType = null;
-        List<ParsedParam> parsedParams = null;
+        String resourceType;
+        List<ParsedParam> parsedParams;
         // we have a query
         if (index >= 0) {
             parsedParams = parseParameters(url.substring(index + 1));
@@ -46,7 +55,7 @@ public class FhirRequestParser {
         }
 
 
-        var selectExpression = new SelectExpression<T>(resourceType, expressionFactory);
+        var selectExpression = new SelectExpression<>(resourceType, expressionFactory);
         for (var parsedParam : parsedParams) {
 
             if (parsedParam.paramName.startsWith("_") && !parsedParam.paramName.equals("_id")) {
@@ -55,14 +64,21 @@ public class FhirRequestParser {
             }
 
             var path = FhirSearchPath.builder().resource(resourceType).path(parsedParam.paramName).build();
-            String finalResourceType = resourceType;
-            var sc = searchConfig.getSearchConfigByPath(path).orElseThrow(() -> new BadSelectExpression("Parameter " + parsedParam.paramName + " not found for resource " + finalResourceType));
+            var sc = searchConfig.getSearchConfigByPath(path).orElseThrow(() -> new BadSelectExpression("Parameter " + parsedParam.paramName + " not found for resource " + resourceType));
 
 
-            if (sc.getSearchType().equals("string")) {
-                parseString(selectExpression, parsedParam, path);
-            } else if (sc.getSearchType().equals("token")) {
-                parseToken(selectExpression, parsedParam, path);
+            switch (sc.getSearchType()) {
+                case "string":
+                    parseString(selectExpression, parsedParam, path);
+                    break;
+                case "token":
+                    parseToken(selectExpression, parsedParam, path);
+                    break;
+                case "date":
+                    parseDate(selectExpression, parsedParam, path);
+                    break;
+                default:
+                    throw new BadSelectExpression("Search type not supported");
             }
 
         }
@@ -105,8 +121,50 @@ public class FhirRequestParser {
         selectExpression.fromFhirParams(path, tokenParam);
     }
 
+
+    private static <T> void parseDate(SelectExpression<T> selectExpression, ParsedParam parsedParam, FhirSearchPath path) {
+        var paramList = parsedParam.getParamValues().stream().map(dp -> {
+            var p = new DateParam();
+            p.setValueAsString(dp);
+            return p;
+        }).collect(Collectors.toList());
+        selectExpression.orFromFhirParams(path, paramList);
+    }
+
+    /**
+     * Parse a value that have prefix (date, quantity)
+     *
+     * @param value the value to parse
+     * @return the parsed value
+     */
+    public static PrefixAndValue extractPrefix(String value) {
+        var prefixAndValue = new PrefixAndValue();
+        if (value.length() > 2) {
+            var prefix = value.substring(0, 2);
+            if (prefix.matches("[a-z]*")) {
+                prefixAndValue.setPrefix(ParamPrefixEnum.forValue(prefix));
+                prefixAndValue.setValue(value.substring(2));
+            } else {
+                prefixAndValue.setValue(value);
+            }
+        } else {
+            prefixAndValue.setValue(value);
+        }
+        return prefixAndValue;
+    }
+
+
+    /**
+     * Parse parameters from a query string
+     *
+     * @param queryString the query string to parse
+     * @return list of parsed parameters
+     */
     public static List<ParsedParam> parseParameters(String queryString) {
         var params = new ArrayList<ParsedParam>();
+        if (queryString == null) {
+            queryString = "";
+        }
         var tokenizer = new StringTokenizer(queryString, "&");
         while (tokenizer.hasMoreTokens()) {
 

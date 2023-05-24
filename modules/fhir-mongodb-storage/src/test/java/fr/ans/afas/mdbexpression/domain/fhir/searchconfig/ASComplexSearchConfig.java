@@ -25,9 +25,7 @@ import java.util.List;
 public class ASComplexSearchConfig extends ServerSearchConfig {
 
     public ASComplexSearchConfig() {
-        var organizationSearchConfig = new FhirResourceSearchConfig();
-        organizationSearchConfig.setName("Organization");
-        organizationSearchConfig.setProfile("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Organization");
+        var organizationSearchConfig = FhirResourceSearchConfig.builder().name("Organization").profile("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Organization").build();
         var params = new ArrayList<SearchParamConfig>();
         params.add(SearchParamConfig.builder().name(IAnyResource.SP_RES_ID).urlParameter(IAnyResource.SP_RES_ID).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_T_ID).resourcePaths(List.of(ResourcePathConfig.builder().path("id").build())).build());
         params.add(SearchParamConfig.builder().name(Organization.SP_ACTIVE).urlParameter(Organization.SP_ACTIVE).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_ORGANIZATION_ACTIVE).resourcePaths(List.of(ResourcePathConfig.builder().path("active").build())).build());
@@ -59,9 +57,7 @@ public class ASComplexSearchConfig extends ServerSearchConfig {
         this.getResources().add(organizationSearchConfig);
 
 
-        var deviceSearchConfig = new FhirResourceSearchConfig();
-        deviceSearchConfig.setName("Device");
-        deviceSearchConfig.setProfile("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Device");
+        var deviceSearchConfig = FhirResourceSearchConfig.builder().name("Device").profile("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Device").build();
 
         var deviceParams = new ArrayList<SearchParamConfig>();
         deviceParams.add(SearchParamConfig.builder().name(IAnyResource.SP_RES_ID).urlParameter(IAnyResource.SP_RES_ID).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_T_ID).resourcePaths(List.of(ResourcePathConfig.builder().path("id").build())).build());

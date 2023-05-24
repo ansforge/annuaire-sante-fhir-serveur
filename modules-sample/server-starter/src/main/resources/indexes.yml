@@ -3,6 +3,13 @@ fhir:
     - name: Device
       profile: http://hl7.org/fhir/StructureDefinition/Device
       searchParams:
+        - name: _id
+          urlParameter: _id
+          searchType: token
+          description: The device id
+          resourcePaths:
+            - path: id
+          indexName: t_id
         - name: identifier
           urlParameter: identifier
           searchType: token
@@ -24,4 +31,15 @@ fhir:
           resourcePaths:
             - path: deviceName|name
           indexName: t_name
-
+    - name: PractitionerRole
+      profile: http://hl7.org/fhir/StructureDefinition/PractitionerRole
+      searchParams:
+    - name: Practitioner
+      profile: http://hl7.org/fhir/StructureDefinition/Practitioner
+      searchParams:
+    - name: Patient
+      profile: http://hl7.org/fhir/StructureDefinition/Patient
+      searchParams:
+    - name: Organization
+      profile: http://hl7.org/fhir/StructureDefinition/Organizationx
+      searchParams:

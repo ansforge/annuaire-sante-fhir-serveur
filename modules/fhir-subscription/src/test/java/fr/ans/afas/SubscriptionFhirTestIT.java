@@ -28,15 +28,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import javax.inject.Inject;
 import java.util.Date;
 import java.util.List;
 
@@ -51,7 +50,7 @@ import java.util.List;
 @SpringBootTest(classes = FullSpringAppWithMongo.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
 @ActiveProfiles("full")
-public class SubscriptionFhirTestIT {
+public class SubscriptionFhirTestIT<T> {
 
     /**
      * The Fhir context
@@ -67,10 +66,7 @@ public class SubscriptionFhirTestIT {
      * The Fhir client
      */
     protected static IGenericClient client;
-    /**
-     * Date formater to use dates in tests
-     */
-    final DateFormat dateFormatForTests = new SimpleDateFormat("yyyy-MM-dd-HH:mm");
+
     /**
      * The port of the server used in tests
      */
@@ -79,22 +75,22 @@ public class SubscriptionFhirTestIT {
     /**
      * Service to access fhir data
      */
-    @Autowired
-    FhirStoreService<?> fhirStoreService;
+    @Inject
+    FhirStoreService<T> fhirStoreService;
     /**
      * The Select Expression Factory
      */
-    @Autowired
-    ExpressionFactory<?> expressionFactory;
+    @Inject
+    ExpressionFactory<T> expressionFactory;
     /**
      * The Select Expression Factory
      */
-    @Autowired
+    @Inject
     SubscriptionMessageRepository subscriptionMessageRepository;
     /**
      * The subscription manager
      */
-    @Autowired
+    @Inject
     DefaultSubscriptionOperationService defaultSubscriptionOperationService;
 
     /**
@@ -102,8 +98,7 @@ public class SubscriptionFhirTestIT {
      */
     @Value("${afas.fhir.write-mode-secure-key:}")
     String writeModeSecureKey;
-    private SubscriptionCron subscriptionCron;
-    private SubscriptionProvider subscriptionProvider;
+    private SubscriptionCron<T> subscriptionCron;
     @Autowired
     @Qualifier("subscriptionManagerMocked")
     private SubscriptionManager subscriptionManager;
@@ -116,20 +111,19 @@ public class SubscriptionFhirTestIT {
     /**
      * Scheduled CRON service to handle FHIR Subscription
      */
-    @Autowired
+    @Inject
     @Bean
-    SubscriptionCron subscriptionCron(ExpressionFactory<?> expressionFactory, FhirStoreService<?> fhirStoreService, SearchConfig searchConfig) {
-        this.subscriptionCron = new SubscriptionCron(expressionFactory, fhirStoreService, searchConfig, this.subscriptionManager, 1);
+    SubscriptionCron<T> subscriptionCron(ExpressionFactory<T> expressionFactory, FhirStoreService<T> fhirStoreService, SearchConfig searchConfig) {
+        this.subscriptionCron = new SubscriptionCron<>(expressionFactory, fhirStoreService, searchConfig, this.subscriptionManager, 1);
         return this.subscriptionCron;
     }
 
 
-    @Autowired
+    @Inject
     @Bean
-    SubscriptionProvider subscriptionProvider(ExpressionFactory<?> expressionFactory, FhirStoreService<?> fhirStoreService, FhirContext fhirContext, NextUrlManager nextUrlManager,
-                                              @Value("afas.fhir.next-url-encryption-key") String secretKey) {
-        this.subscriptionProvider = new SubscriptionProvider(fhirStoreService, fhirContext, expressionFactory, nextUrlManager, secretKey);
-        return this.subscriptionProvider;
+    SubscriptionProvider<T> subscriptionProvider(ExpressionFactory<T> expressionFactory, FhirStoreService<T> fhirStoreService, FhirContext fhirContext, NextUrlManager<T> nextUrlManager,
+                                                 @Value("afas.fhir.next-url-encryption-key") String secretKey) {
+        return new SubscriptionProvider<>(fhirStoreService, fhirContext, expressionFactory, nextUrlManager, secretKey);
     }
 
     @After
@@ -157,7 +151,7 @@ public class SubscriptionFhirTestIT {
     }
 
     @Test
-    public void testSingleSubscription() throws InterruptedException {
+    public void testSingleSubscription() {
         // update device 1
         this.updateDevice(DEVICE_ID_1, "Changed name");
 
@@ -200,7 +194,7 @@ public class SubscriptionFhirTestIT {
     }
 
     @Test
-    public void testMultipleSubscriptionsOnDifferentDevices() throws InterruptedException {
+    public void testMultipleSubscriptionsOnDifferentDevices() {
 
         Mockito.reset(this.subscriptionManager);
         // search subscription messages
@@ -297,7 +291,7 @@ public class SubscriptionFhirTestIT {
         var subscription2 = this.buildSubscription(SUBSCRIPTION_ID_2, DEVICE_ID_1);
         this.fhirStoreService.store(List.of(subscription, subscription2), true);
 
-        var pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
+        var pageResult = this.fhirStoreService.search(null, new SelectExpression<>("Subscription", expressionFactory));
 
         Assert.assertEquals(2, pageResult.getPage().size());
 
@@ -308,7 +302,7 @@ public class SubscriptionFhirTestIT {
 
         this.defaultSubscriptionOperationService.deactivateAllSubscription();
 
-        pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
+        pageResult = this.fhirStoreService.search(null, new SelectExpression<>("Subscription", expressionFactory));
 
         Assert.assertEquals(2, pageResult.getPage().size());
 
@@ -327,7 +321,7 @@ public class SubscriptionFhirTestIT {
 
         this.defaultSubscriptionOperationService.deactivateAllSubscription();
 
-        var pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
+        var pageResult = this.fhirStoreService.search(null, new SelectExpression<>("Subscription", expressionFactory));
 
         Assert.assertEquals(2, pageResult.getPage().size());
 
@@ -338,7 +332,7 @@ public class SubscriptionFhirTestIT {
 
         this.defaultSubscriptionOperationService.activateAllSubscription();
 
-        pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
+        pageResult = this.fhirStoreService.search(null, new SelectExpression<>("Subscription", expressionFactory));
 
         Assert.assertEquals(2, pageResult.getPage().size());
 
@@ -359,13 +353,13 @@ public class SubscriptionFhirTestIT {
 
         this.defaultSubscriptionOperationService.deactivateAllSubscription();
 
-        var pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
+        var pageResult = this.fhirStoreService.search(null, new SelectExpression<>("Subscription", expressionFactory));
 
         Assert.assertEquals(2, pageResult.getPage().size());
 
         this.defaultSubscriptionOperationService.activateAllSubscription();
 
-        pageResult = this.fhirStoreService.search(null, new SelectExpression("Subscription", expressionFactory));
+        pageResult = this.fhirStoreService.search(null, new SelectExpression<>("Subscription", expressionFactory));
 
         Assert.assertEquals(2, pageResult.getPage().size());
 
@@ -450,7 +444,6 @@ public class SubscriptionFhirTestIT {
         subscription.setCriteria("Device?_id=" + deviceId);
         var sc = this.buildChannel("application/fhir+json", "http://localhost:8090/hooks");
         subscription.setChannel(sc);
-
         return subscription;
     }
 

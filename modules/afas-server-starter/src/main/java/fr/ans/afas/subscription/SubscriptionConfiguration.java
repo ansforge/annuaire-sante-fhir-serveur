@@ -9,7 +9,6 @@ import fr.ans.afas.configuration.SpringConfiguration;
 import fr.ans.afas.configuration.SubscriptionSearchConfig;
 import fr.ans.afas.service.SignatureService;
 import fr.ans.afas.service.impl.HMacSha256SignatureService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -33,7 +32,6 @@ public class SubscriptionConfiguration {
 
 
     @Bean
-    @Autowired
     SignatureService signatureService(@Value("${afas.fhir.subscription.hmacKey}") String key) {
         return new HMacSha256SignatureService(key);
     }

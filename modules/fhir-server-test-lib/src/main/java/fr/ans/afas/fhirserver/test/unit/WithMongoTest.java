@@ -2,6 +2,7 @@
  * (c) Copyright 1998-2023, ANS. All rights reserved.
  */
 
+
 package fr.ans.afas.fhirserver.test.unit;
 
 
@@ -13,6 +14,8 @@ import org.springframework.test.context.support.TestPropertySourceUtils;
 import org.springframework.util.StringUtils;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Utility class to use mongodb in tests. Use docker to launch a MongoDb instance.
@@ -30,7 +33,7 @@ public final class WithMongoTest {
     /**
      * The mongodb container
      */
-    static MongoDBContainer mongoDBContainer;
+    static AtomicReference<MongoDBContainer> mongoDBContainer = new AtomicReference<>();
 
     private WithMongoTest() {
     }
@@ -40,8 +43,8 @@ public final class WithMongoTest {
      * Clean test context
      */
     public static void clean() {
-        if (mongoDBContainer != null) {
-            mongoDBContainer.stop();
+        if (mongoDBContainer.get() != null) {
+            mongoDBContainer.get().stop();
         }
     }
 
@@ -56,9 +59,9 @@ public final class WithMongoTest {
             // if you encounter some problems with docker, disable RYUK with this env var:  TESTCONTAINERS_RYUK_DISABLED=true
             try {
                 var dockerRegistryUrl = configurableApplicationContext.getEnvironment().getProperty("docker.registry.url.mongodb");
-                mongoDBContainer = new MongoDBContainer(DockerImageName.parse(dockerRegistryUrl != null ? dockerRegistryUrl : "mongo:5.0.0").asCompatibleSubstituteFor("mongo"));
-                mongoDBContainer.start();
-                TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext, "afas.mongodb.uri=mongodb://localhost:" + mongoDBContainer.getMappedPort(27017));
+                mongoDBContainer.set(new MongoDBContainer(DockerImageName.parse(dockerRegistryUrl != null ? dockerRegistryUrl : "mongo:5.0.0").asCompatibleSubstituteFor("mongo")));
+                mongoDBContainer.get().start();
+                TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext, "afas.mongodb.uri=mongodb://localhost:" + mongoDBContainer.get().getMappedPort(27017));
 
             } catch (Exception e) {
                 // no docker

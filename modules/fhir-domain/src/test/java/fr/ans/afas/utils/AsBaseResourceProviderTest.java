@@ -57,14 +57,13 @@ public class AsBaseResourceProviderTest {
         Assert.assertEquals(OperationOutcome.IssueType.INVALID, issue.getCode());
 
         p.setUpdateOk(false);
-        var id = new IdType();
-        Assert.assertThrows(UnprocessableEntityException.class, () -> {
-            p.update(id, d1);
-        });
+        var idType = new IdType();
+        Assert.assertThrows(UnprocessableEntityException.class, () ->
+                p.update(idType, d1)
+        );
 
 
     }
-
 
     @Test
     public void deleteTest() {
@@ -89,7 +88,7 @@ public class AsBaseResourceProviderTest {
      */
     @Setter
     public static class SomeAsBaseResourceProvider extends AsBaseResourceProvider<String> {
-        static FhirStoreService service = Mockito.mock(FhirStoreService.class);
+        static FhirStoreService<String> service = Mockito.mock(FhirStoreService.class);
         boolean deleteOk = true;
         boolean updateOk = true;
 

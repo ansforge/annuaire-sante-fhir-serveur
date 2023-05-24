@@ -5,15 +5,14 @@
 package fr.ans.afas.fhirserver.search.config;
 
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
+import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
+import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
- * Base classe for a search config service.
+ * Base class for a search config service.
  * Implements {@link SearchConfig} methods based on a config passed into the constructor
  *
  * @author Guillaume Poulériguen
@@ -25,15 +24,21 @@ public abstract class BaseSearchConfigService implements SearchConfig {
     /**
      * The configuration of the service
      */
-    protected final Map<String, List<SearchParamConfig>> configs;
+    protected final Map<String, FhirResourceSearchConfig> configs;
+
+    protected final ServerSearchConfig serverSearchConfig;
 
     /**
      * Construct the search config
      *
-     * @param configs the configuration as a map. The key of the map is the Fhir resource name.
+     * @param serverSearchConfig the configuration
      */
-    protected BaseSearchConfigService(Map<String, List<SearchParamConfig>> configs) {
-        this.configs = configs;
+    protected BaseSearchConfigService(ServerSearchConfig serverSearchConfig) {
+        this.serverSearchConfig = serverSearchConfig;
+        this.configs = new HashMap<>();
+        for (var r : serverSearchConfig.getResources()) {
+            this.configs.put(r.getName(), r);
+        }
     }
 
     /**
@@ -44,7 +49,7 @@ public abstract class BaseSearchConfigService implements SearchConfig {
      */
     @Override
     public List<SearchParamConfig> getAllByFhirResource(String fhirResource) {
-        return configs.get(fhirResource);
+        return configs.get(fhirResource).getSearchParams();
     }
 
 
@@ -94,6 +99,7 @@ public abstract class BaseSearchConfigService implements SearchConfig {
             return Optional.empty();
         }
         return configs.get(resourceType)
+                .getSearchParams()
                 .stream()
                 .filter(conf -> conf.getUrlParameter().equals(paramName))
                 .findAny();
@@ -104,5 +110,9 @@ public abstract class BaseSearchConfigService implements SearchConfig {
         return configs.keySet();
     }
 
-
+    @Override
+    public ServerSearchConfig getServerSearchConfig() {
+        this.serverSearchConfig.setResources(configs.values());
+        return this.serverSearchConfig;
+    }
 }

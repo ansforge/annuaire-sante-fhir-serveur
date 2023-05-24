@@ -17,7 +17,8 @@ import fr.ans.afas.fhirserver.service.exception.BadLinkException;
 import fr.ans.afas.fhirserver.service.exception.BadRequestException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.inject.Inject;
 
 
 /**
@@ -31,32 +32,32 @@ public class AfasPagingProvider<T> implements IPagingProvider {
     /**
      * The expression factory
      */
-    @Autowired
+    @Inject
     ExpressionFactory<T> expressionFactory;
 
     /**
      * The store service
      */
-    @Autowired
+    @Inject
     FhirStoreService<T> fhirStoreService;
 
     /**
      * The expression serializer
      */
-    @Autowired
+    @Inject
     ExpressionSerializer<T> expressionSerializer;
 
     /**
      * The url encrypter
      */
-    @Autowired
+    @Inject
     SerializeUrlEncrypter serializeUrlEncrypter;
 
     /**
      * A service that store paging
      */
-    @Autowired
-    NextUrlManager nextUrlManager;
+    @Inject
+    NextUrlManager<T> nextUrlManager;
 
     @Override
     public int getDefaultPageSize() {

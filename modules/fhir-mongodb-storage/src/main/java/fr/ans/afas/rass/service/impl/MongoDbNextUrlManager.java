@@ -26,7 +26,7 @@ import static com.mongodb.client.model.Filters.eq;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class MongoDbNextUrlManager implements NextUrlManager {
+public class MongoDbNextUrlManager implements NextUrlManager<Bson> {
 
 
     public static final String MONGO_COLLECTION_NAME = "NextPages";
@@ -73,7 +73,7 @@ public class MongoDbNextUrlManager implements NextUrlManager {
     }
 
     @Override
-    public Optional<PagingData> find(String id) throws BadLinkException {
+    public Optional<PagingData<Bson>> find(String id) throws BadLinkException {
 
         String theSearchId = null;
 
@@ -121,7 +121,7 @@ public class MongoDbNextUrlManager implements NextUrlManager {
     }
 
     @Override
-    public String store(PagingData pagingData) {
+    public String store(PagingData<Bson> pagingData) {
         var serialized = pagingData.getPageSize() +
                 "_" +
                 (pagingData.getSize().getTotal() != null ? pagingData.getSize().getTotal().longValue() : "-1") +

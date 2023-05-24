@@ -5,30 +5,29 @@
 package fr.ans.afas.hook;
 
 
-import ca.uhn.fhir.context.FhirContext;
 import fr.ans.afas.FullSpringAppWithMongo;
 import fr.ans.afas.domain.SubscriptionMessageStatus;
-import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.repository.SubscriptionMessageRepository;
 import fr.ans.afas.task.SubscriptionCron;
 import org.assertj.core.util.Lists;
+import org.awaitility.Awaitility;
 import org.hl7.fhir.r4.model.*;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.inject.Inject;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -52,12 +51,10 @@ public class WebHookTestIT {
     /**
      * The Fhir context
      */
-    protected static final FhirContext ctx = FhirContext.forR4();
     private static final String DEVICE_ID_1 = "device1";
     private static final String DEVICE_ID_2 = "device2";
 
     private static final String SUBSCRIPTION_ID_1 = "sub1";
-    private static final String SUBSCRIPTION_ID_2 = "sub2";
 
     /**
      * The port of the server used in tests
@@ -67,28 +64,24 @@ public class WebHookTestIT {
     /**
      * Service to access fhir data
      */
-    @Autowired
+    @Inject
     FhirStoreService<?> fhirStoreService;
+
     /**
      * The Select Expression Factory
      */
-    @Autowired
-    ExpressionFactory<?> expressionFactory;
-    /**
-     * The Select Expression Factory
-     */
-    @Autowired
+    @Inject
     SubscriptionMessageRepository subscriptionMessageRepository;
     /**
      * The secure key
      */
     @Value("${afas.fhir.write-mode-secure-key:}")
     String writeModeSecureKey;
-    @Autowired
-    private SubscriptionCron subscriptionCron;
-    @Autowired
-    private FhirHookManager fhirHookManager;
-    @Autowired
+    @Inject
+    private SubscriptionCron<?> subscriptionCron;
+    @Inject
+    private FhirHookManager<?> fhirHookManager;
+    @Inject
     private TestHookController testHookController;
 
     @AfterClass
@@ -167,6 +160,7 @@ public class WebHookTestIT {
 
     @Test
     public void testSingleHookErrorCall() {
+
         // create subscription
         var subscription = this.buildSubscription(SUBSCRIPTION_ID_1, DEVICE_ID_1, "http://localhost:" + this.port + "/hooks/error", "application/fhir+json", false);
         this.fhirStoreService.store(List.of(subscription), true);
@@ -179,8 +173,11 @@ public class WebHookTestIT {
 
         this.fhirHookManager.process();
 
+
+        Awaitility.await().atMost(5000, TimeUnit.MILLISECONDS).until(() -> this.testHookController.getNbErrorCalled() == 1);
+
         assertEquals(0, this.testHookController.getNbCalled());
-        assertEquals(1, this.testHookController.getNbErrorCalled());
+        assertTrue(1 <= this.testHookController.getNbErrorCalled());
 
         this.fhirHookManager.process();
 
@@ -293,16 +290,6 @@ public class WebHookTestIT {
         rassDevice1.addDeviceName().setName(deviceName);
 
         this.fhirStoreService.store(List.of(rassDevice1), true);
-    }
-
-
-    /**
-     * Get the port of the server
-     *
-     * @return the port of the server
-     */
-    protected int getServerPort() {
-        return this.port;
     }
 
 

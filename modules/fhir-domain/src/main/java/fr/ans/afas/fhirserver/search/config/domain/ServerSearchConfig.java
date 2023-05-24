@@ -4,11 +4,12 @@
 
 package fr.ans.afas.fhirserver.search.config.domain;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
 /**
  * The search config of the server
@@ -20,5 +21,17 @@ import java.util.List;
 @Setter
 public class ServerSearchConfig {
     private String validationMode;
-    private List<FhirResourceSearchConfig> resources = new ArrayList<>();
+    private String implementationGuideUrl;
+    private String copyright;
+    private Collection<FhirResourceSearchConfig> resources;
+
+    public ServerSearchConfig() {
+        this.resources = new ArrayList<>();
+    }
+
+    @Builder
+    public ServerSearchConfig(String validationMode, Collection<FhirResourceSearchConfig> resources) {
+        this.validationMode = validationMode;
+        this.resources = resources == null ? new ArrayList<>() : resources;
+    }
 }

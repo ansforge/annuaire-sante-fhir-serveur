@@ -22,8 +22,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 /**
  * Test the serialization of {@link Organization} for MongoDB
@@ -121,7 +123,7 @@ public class RassOrganizationSerializationTest {
 
         // test all indexes fields:
         Assert.assertEquals(ORGANIZATION_1_ID, jsonContext.read("$." + StorageConstants.INDEX_T_ID));
-        Assert.assertEquals(ORGANIZATION_1_LAST_UPDATED.getTime(), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED)).longValue());
+        Assert.assertEquals(ORGANIZATION_1_LAST_UPDATED.getTime() + TimeZone.getTimeZone(ZoneId.systemDefault()).getRawOffset(), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED)).longValue());
         Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.SECOND), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_SECOND)).longValue());
         Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.MINUTE), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_MINUTE)).longValue());
         Assert.assertEquals(FhirDateUtils.getTimeInPrecision(ORGANIZATION_1_LAST_UPDATED, TemporalPrecisionEnum.DAY), ((Long) jsonContext.read("$." + StorageConstants.INDEX_T_LASTUPDATED_DATE)).longValue());

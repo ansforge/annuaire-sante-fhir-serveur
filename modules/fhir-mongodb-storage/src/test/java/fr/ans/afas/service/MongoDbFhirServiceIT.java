@@ -26,12 +26,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.inject.Inject;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -47,18 +47,18 @@ import java.util.List;
 public class MongoDbFhirServiceIT {
 
 
-    @Autowired
+    @Inject
     MongoDbFhirService mongoDbFhirService;
 
 
     /**
      * The expression factory
      */
-    @Autowired
+    @Inject
     ExpressionFactory<Bson> expressionFactory;
 
 
-    @Autowired
+    @Inject
     SearchConfig searchConfig;
 
     /**
@@ -101,13 +101,13 @@ public class MongoDbFhirServiceIT {
         this.mongoDbFhirService.store(List.of(org1), false);
 
         //
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.getIncludes().add(new MongoDbIncludeExpression(searchConfig, "Device", "organization"));
         selectExpression.setCount(2);
         var all = this.mongoDbFhirService.search(null, selectExpression);
         Assert.assertEquals(2, all.getPage().size());
 
-        var selectExpressionRev = new SelectExpression<Bson>("Organization", expressionFactory);
+        var selectExpressionRev = new SelectExpression<>("Organization", expressionFactory);
         selectExpressionRev.getRevincludes().add(new MongoDbIncludeExpression(searchConfig, "Device", "organization"));
         selectExpressionRev.setCount(2);
         var allRev = this.mongoDbFhirService.search(null, selectExpressionRev);
@@ -134,7 +134,7 @@ public class MongoDbFhirServiceIT {
             this.mongoDbFhirService.store(List.of(d2), true);
         }
 
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.getExpression().addExpression(new MongoDbDateRangeExpression(searchConfig, FhirSearchPath.builder().path("_lastUpdated").resource("Device").build(), new Date(), TemporalPrecisionEnum.YEAR, ParamPrefixEnum.GREATERTHAN_OR_EQUALS));
         selectExpression.setCount(2);
         var all = this.mongoDbFhirService.search(null, selectExpression);
@@ -157,7 +157,7 @@ public class MongoDbFhirServiceIT {
             this.mongoDbFhirService.store(List.of(d2), true);
         }
 
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.setCount(2);
         var all = this.mongoDbFhirService.search(null, selectExpression);
         Assert.assertEquals(2, all.getPage().size());
@@ -183,7 +183,7 @@ public class MongoDbFhirServiceIT {
      */
     @Test(expected = BadRequestException.class)
     public void testSearchNotAllowed() {
-        var selectExpression = new SelectExpression<Bson>("Patient", expressionFactory);
+        var selectExpression = new SelectExpression<>("Patient", expressionFactory);
         selectExpression.setCount(2);
         this.mongoDbFhirService.search(null, selectExpression);
     }
@@ -203,7 +203,7 @@ public class MongoDbFhirServiceIT {
         this.mongoDbFhirService.store(List.of(device1), false);
 
 
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.getRevincludes().add(new MongoDbIncludeExpression(searchConfig, "Patient", "not-important"));
         selectExpression.setCount(2);
         this.mongoDbFhirService.search(null, selectExpression);
@@ -215,7 +215,7 @@ public class MongoDbFhirServiceIT {
      */
     @Test(expected = BadConfigurationException.class)
     public void testSearchOnBadParameter() {
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.getExpression().addExpression(new MongoDbStringExpression(searchConfig, FhirSearchPath.builder().resource("Device").path("no-exist").build(), "a", StringExpression.Operator.EXACT));
         this.mongoDbFhirService.search(null, selectExpression);
     }

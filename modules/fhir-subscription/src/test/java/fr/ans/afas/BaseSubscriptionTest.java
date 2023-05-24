@@ -6,9 +6,9 @@ import ca.uhn.fhir.rest.client.interceptor.LoggingInterceptor;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import org.hl7.fhir.r4.model.StringType;
 import org.hl7.fhir.r4.model.Subscription;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
+import javax.inject.Inject;
 import java.util.List;
 
 public abstract class BaseSubscriptionTest {
@@ -26,7 +26,7 @@ public abstract class BaseSubscriptionTest {
     /**
      * Service to access fhir data
      */
-    @Autowired
+    @Inject
     FhirStoreService<?> fhirStoreService;
     /**
      * The secure key

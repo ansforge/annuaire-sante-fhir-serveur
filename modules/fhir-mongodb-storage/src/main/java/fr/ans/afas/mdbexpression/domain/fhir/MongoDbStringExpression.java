@@ -52,7 +52,7 @@ public class MongoDbStringExpression extends StringExpression<Bson> {
             throw new BadConfigurationException("Search not supported on path: " + fhirPath);
         }
 
-        Bson ret = null;
+        Bson ret;
         switch (operator) {
             case EXACT:
                 ret = Filters.eq(config.get().getIndexName(), value);
@@ -61,6 +61,7 @@ public class MongoDbStringExpression extends StringExpression<Bson> {
                 ret = Filters.regex(config.get().getIndexName(), "^" + Pattern.quote(value), "i");
                 break;
             case CONTAINS:
+            default:
                 ret = Filters.regex(config.get().getIndexName(), Pattern.quote(value), "i");
                 break;
         }

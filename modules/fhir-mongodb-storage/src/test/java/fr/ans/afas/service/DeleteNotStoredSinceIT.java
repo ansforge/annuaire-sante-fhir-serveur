@@ -1,7 +1,6 @@
 package fr.ans.afas.service;
 
 import com.mongodb.client.MongoClient;
-import fr.ans.afas.config.CleanRevisionDataConfiguration;
 import fr.ans.afas.fhirserver.service.exception.TooManyElementToDeleteException;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.rass.service.MongoDbFhirService;
@@ -9,13 +8,13 @@ import org.hl7.fhir.r4.model.Device;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.inject.Inject;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -42,21 +41,15 @@ public class DeleteNotStoredSinceIT {
     String dbName;
 
     /**
-     * The configuration that schedule deletion of old revisions
-     */
-    @Autowired
-    CleanRevisionDataConfiguration cleanRevisionDataConfiguration;
-
-    /**
      * Service to access fhir data
      */
-    @Autowired
+    @Inject
     MongoDbFhirService mongoDbFhirService;
 
     /**
      * The mongodb client
      */
-    @Autowired
+    @Inject
     MongoClient mongoClient;
 
     @Before
@@ -69,7 +62,7 @@ public class DeleteNotStoredSinceIT {
      * Test the deletion of old elements
      */
     @Test
-    public void testDeleteOldElements() throws InterruptedException, TooManyElementToDeleteException {
+    public void testDeleteOldElements() throws TooManyElementToDeleteException {
 
         var t1 = System.currentTimeMillis();
 
@@ -170,7 +163,7 @@ public class DeleteNotStoredSinceIT {
      * Test an error when we try de delete too much elements
      */
     @Test(expected = TooManyElementToDeleteException.class)
-    public void testDeleteError() throws InterruptedException, TooManyElementToDeleteException {
+    public void testDeleteError() throws TooManyElementToDeleteException {
 
 
         var d1 = new Device();

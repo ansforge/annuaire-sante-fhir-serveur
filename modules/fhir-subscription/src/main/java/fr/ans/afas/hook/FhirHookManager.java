@@ -54,9 +54,9 @@ public class FhirHookManager<T> {
      */
     @Scheduled(fixedDelayString = "${fhir.hook.process.delay:20000}")
     public void process() {
-        int page = 0;
+        var page = 0;
         Page<SubscriptionMessage> messagePage;
-        int count = 0;
+        var count = 0;
 
         do {
             messagePage = this.subscriptionMessageRepository
@@ -157,7 +157,7 @@ public class FhirHookManager<T> {
     private long getNextTryDate(long amountToWait, long nbTry) {
         var nextDate = new Date().getTime();
 
-        for (int i = 0; i <= nbTry; i++) {
+        for (var i = 0; i <= nbTry; i++) {
             nextDate += i * (amountToWait * 1000);
         }
 

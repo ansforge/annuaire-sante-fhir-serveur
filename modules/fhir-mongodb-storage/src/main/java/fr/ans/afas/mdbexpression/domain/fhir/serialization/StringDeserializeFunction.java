@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class StringDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
+    public Expression<Bson> process(SearchConfig searchConfig, ExpressionFactory<Bson> expressionFactory, ExpressionSerializer<Bson> expressionDeserializer, String val) {
         var parts = val.split("\\$");
         var operator = StringExpression.Operator.values()[Integer.parseInt(parts[0])];
         var valueData = URLDecoder.decode(parts[1], StandardCharsets.UTF_8);

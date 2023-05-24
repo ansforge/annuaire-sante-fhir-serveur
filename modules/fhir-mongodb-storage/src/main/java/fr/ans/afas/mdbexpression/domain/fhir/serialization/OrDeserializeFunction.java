@@ -20,7 +20,7 @@ import org.springframework.util.StringUtils;
  */
 public class OrDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
+    public Expression<Bson> process(SearchConfig searchConfig, ExpressionFactory<Bson> expressionFactory, ExpressionSerializer<Bson> expressionDeserializer, String val) {
         var mongoDbOrExpression = new MongoDbOrExpression();
         if (StringUtils.hasLength(val)) {
             var parts = val.split("\\" + Expression.SERIALIZE_SEPARATOR);

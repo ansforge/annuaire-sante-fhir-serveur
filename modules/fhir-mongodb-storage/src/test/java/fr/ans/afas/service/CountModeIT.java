@@ -16,12 +16,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.inject.Inject;
 import java.util.List;
 
 /**
@@ -37,14 +37,14 @@ import java.util.List;
 public class CountModeIT {
 
 
-    @Autowired
+    @Inject
     MongoDbFhirService mongoDbFhirService;
 
 
     /**
      * The expression factory
      */
-    @Autowired
+    @Inject
     ExpressionFactory<Bson> expressionFactory;
 
     /**
@@ -71,13 +71,13 @@ public class CountModeIT {
         d2.setId("ID2");
         this.mongoDbFhirService.store(List.of(d, d2), true);
 
-        var selectExpression = new SelectExpression<Bson>("Device", expressionFactory);
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.setTotalMode(TotalMode.NONE);
-        var countResult = this.mongoDbFhirService.count("Device", selectExpression);
+        var countResult = this.mongoDbFhirService.count(selectExpression);
         Assert.assertNull(countResult.getTotal());
 
         selectExpression.setTotalMode(TotalMode.ALWAYS);
-        countResult = this.mongoDbFhirService.count("Device", selectExpression);
+        countResult = this.mongoDbFhirService.count(selectExpression);
         Assert.assertNotNull(countResult.getTotal());
 
 

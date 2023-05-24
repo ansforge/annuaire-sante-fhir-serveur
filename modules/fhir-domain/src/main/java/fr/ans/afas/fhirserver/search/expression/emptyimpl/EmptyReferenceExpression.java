@@ -1,11 +1,26 @@
-package fr.ans.afas.utils.data;
+/*
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
+ */
+package fr.ans.afas.fhirserver.search.expression.emptyimpl;
 
-import fr.ans.afas.fhirserver.search.expression.AndExpression;
+import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
+import fr.ans.afas.fhirserver.search.expression.ReferenceExpression;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 
-public class EmptyAndExpression extends AndExpression<String> {
+public class EmptyReferenceExpression extends ReferenceExpression<String> {
+    /**
+     * Constructor
+     *
+     * @param fhirPath The fhir path where to find
+     * @param type     The fhir type
+     * @param id       The id
+     */
+    public EmptyReferenceExpression(FhirSearchPath fhirPath, String type, String id) {
+        super(fhirPath, type, id);
+    }
+
     @Override
     public String interpreter(ExpressionContext expressionContext) {
         return "N/A";

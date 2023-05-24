@@ -27,6 +27,9 @@ import java.util.Set;
 
 /**
  * A simple Device provider with standard fhir parameters.
+ *
+ * @author Guillaume Poulériguen
+ * @since 1.0.0
  */
 public class DeviceProvider<T> extends AsBaseResourceProvider<T> implements IResourceProvider {
 
@@ -43,10 +46,10 @@ public class DeviceProvider<T> extends AsBaseResourceProvider<T> implements IRes
     /**
      * Manager for next urls (paging)
      */
-    final NextUrlManager nextUrlManager;
+    final NextUrlManager<T> nextUrlManager;
 
 
-    public DeviceProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager nextUrlManager) {
+    public DeviceProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager<T> nextUrlManager) {
         super(fhirStoreService);
         this.fhirContext = fhirContext;
         this.expressionFactory = expressionFactory;
@@ -56,17 +59,17 @@ public class DeviceProvider<T> extends AsBaseResourceProvider<T> implements IRes
     @Search()
     public IBundleProvider search(@Count Integer theCount,
                                   @OptionalParam(name = Device.SP_IDENTIFIER)
-                                          TokenAndListParam theIdentifier,
+                                  TokenAndListParam theIdentifier,
                                   @OptionalParam(name = Device.SP_DEVICE_NAME)
-                                          StringAndListParam theName,
+                                  StringAndListParam theName,
                                   @OptionalParam(name = Device.SP_ORGANIZATION)
-                                          ReferenceAndListParam theOwner,
+                                  ReferenceAndListParam theOwner,
                                   @IncludeParam(reverse = true)
-                                          Set<Include> theRevIncludes,
+                                  Set<Include> theRevIncludes,
                                   @IncludeParam(allow = {
                                           "Device:organization", "*"
                                   })
-                                          Set<Include> theIncludes
+                                  Set<Include> theIncludes
     ) {//
         var selectExpression = new SelectExpression<>(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME, expressionFactory);
         selectExpression.setCount(theCount);

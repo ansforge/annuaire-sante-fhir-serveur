@@ -21,7 +21,7 @@ import org.bson.conversions.Bson;
  */
 public class QuantityDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression process(SearchConfig searchConfig, ExpressionFactory expressionFactory, ExpressionSerializer expressionDeserializer, String val) {
+    public Expression<Bson> process(SearchConfig searchConfig, ExpressionFactory<Bson> expressionFactory, ExpressionSerializer<Bson> expressionDeserializer, String val) {
         var parts = val.split("\\$");
         var operator = QuantityExpression.Operator.values()[Integer.parseInt(parts[0])];
         var doubleValue = Double.parseDouble(parts[1]);

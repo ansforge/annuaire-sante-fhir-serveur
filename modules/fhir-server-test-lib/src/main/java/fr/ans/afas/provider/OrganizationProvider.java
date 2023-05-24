@@ -23,6 +23,9 @@ import org.hl7.fhir.r4.model.Organization;
 
 /**
  * A simple Organization provider with standard fhir parameters.
+ *
+ * @author Guillaume Poulériguen
+ * @since 1.0.0
  */
 public class OrganizationProvider<T> extends AsBaseResourceProvider<T> implements IResourceProvider {
 
@@ -40,10 +43,10 @@ public class OrganizationProvider<T> extends AsBaseResourceProvider<T> implement
     /**
      * Manager for next urls (paging)
      */
-    final NextUrlManager nextUrlManager;
+    final NextUrlManager<T> nextUrlManager;
 
 
-    public OrganizationProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager nextUrlManager) {
+    public OrganizationProvider(FhirStoreService<T> fhirStoreService, FhirContext fhirContext, ExpressionFactory<T> expressionFactory, NextUrlManager<T> nextUrlManager) {
         super(fhirStoreService);
         this.fhirContext = fhirContext;
         this.expressionFactory = expressionFactory;
@@ -53,9 +56,9 @@ public class OrganizationProvider<T> extends AsBaseResourceProvider<T> implement
     @Search()
     public IBundleProvider search(@Count Integer theCount,
                                   @OptionalParam(name = Organization.SP_IDENTIFIER)
-                                          TokenAndListParam theIdentifier,
+                                  TokenAndListParam theIdentifier,
                                   @OptionalParam(name = Organization.SP_NAME)
-                                          StringAndListParam theName) {//
+                                  StringAndListParam theName) {//
         var selectExpression = new SelectExpression<>(FhirServerConstants.ORGANIZATION_FHIR_RESOURCE_NAME, expressionFactory);
         selectExpression.setCount(theCount);
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.ORGANIZATION_FHIR_RESOURCE_NAME).path(Organization.SP_IDENTIFIER).build(), theIdentifier);
