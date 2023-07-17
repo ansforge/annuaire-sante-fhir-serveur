@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * The Hapi Fhir bundle provider implementation.
@@ -171,7 +172,7 @@ public class AfasBundleProvider<T> implements IBundleProvider {
     @NotNull
     @Override
     public List<IBaseResource> getResources(int i, int to) {
-        return page.getPage();
+        return page.getPage().stream().collect(Collectors.toList());
     }
 
     /**

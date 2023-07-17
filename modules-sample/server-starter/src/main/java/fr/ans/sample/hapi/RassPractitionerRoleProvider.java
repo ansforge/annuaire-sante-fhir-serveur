@@ -13,6 +13,7 @@ import ca.uhn.fhir.rest.api.server.IBundleProvider;
 import ca.uhn.fhir.rest.param.ReferenceAndListParam;
 import ca.uhn.fhir.rest.param.TokenAndListParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhir.AfasBundleProvider;
 import fr.ans.afas.fhirserver.provider.AsBaseResourceProvider;
@@ -105,36 +106,36 @@ public class RassPractitionerRoleProvider<T> extends AsBaseResourceProvider<T> i
             @Count Integer theCount,
             @Description(shortDefinition = "l'id de la ressource")
             @OptionalParam(name = IAnyResource.SP_RES_ID)
-            TokenAndListParam theId,
+                    TokenAndListParam theId,
             @Description(shortDefinition = "Any identifier for the practitioner role")
             @OptionalParam(name = Practitioner.SP_IDENTIFIER)
-            TokenAndListParam theIdentifier,
+                    TokenAndListParam theIdentifier,
 
             @Description(shortDefinition = "Recherche les ressources PractitionerRole actives")
             @OptionalParam(name = PractitionerRole.SP_ACTIVE)
-            TokenAndListParam theActive,
+                    TokenAndListParam theActive,
             @Description(shortDefinition = "Recherche sur le savoir-faire ou le Type de savoir-faire")
             @OptionalParam(name = PractitionerRole.SP_SPECIALTY)
-            TokenAndListParam theSpecialty,
+                    TokenAndListParam theSpecialty,
             @Description(shortDefinition = "Recherche sur la profession/ la catégorie professionnelle/ la fonction/ le genre d'activité/ le mode d'exercice ou la section tableau des pharmaciens")
             @OptionalParam(name = PractitionerRole.SP_ROLE)
-            TokenAndListParam theRole,
+                    TokenAndListParam theRole,
 
             @Description(shortDefinition = "Recherche les exercices professionnels et les situation d'exercice rattachés aux professionnels de santé sélectionnés")
             @OptionalParam(name = PractitionerRole.SP_PRACTITIONER)
-            ReferenceAndListParam thePractitioner,
+                    ReferenceAndListParam thePractitioner,
             @Description(shortDefinition = "Recherche les exercices professionnels et les situation d'exercice rattachés à la structure sélectionnée")
             @OptionalParam(name = PractitionerRole.SP_ORGANIZATION)
-            ReferenceAndListParam theOrganization,
+                    ReferenceAndListParam theOrganization,
             @IncludeParam(allow = {
                     "PractitionerRole:organization", "PractitionerRole:practitioner", "PractitionerRole:partof", "*"
             })
-            Set<Include> theIncludes,
+                    Set<Include> theIncludes,
             @OptionalParam(name = "_total") String theTotal,
             @Since InstantType theSince
 
 
-    ) throws BadSelectExpression {
+    ) throws BadSelectExpression, BadDataFormatException {
         var selectExpression = new SelectExpression<>("PractitionerRole", expressionFactory);
         selectExpression.setCount(theCount);
         selectExpression.setTotalMode(theTotal);
@@ -177,7 +178,7 @@ public class RassPractitionerRoleProvider<T> extends AsBaseResourceProvider<T> i
      */
     @Create
     public MethodOutcome create(@ResourceParam PractitionerRole practitionerRole) {
-        return (MethodOutcome) super.create(List.of(practitionerRole)).get(0);
+        return super.create(List.of(practitionerRole)).get(0);
     }
 
     /**

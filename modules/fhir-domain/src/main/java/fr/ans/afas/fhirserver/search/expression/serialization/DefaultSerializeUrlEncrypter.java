@@ -14,18 +14,16 @@ import org.springframework.util.Assert;
 public class DefaultSerializeUrlEncrypter implements SerializeUrlEncrypter {
 
     /**
-     * The encryption secret key
-     */
-    private final String secretKey;
-    /**
      * The AES encrypter
      */
     private final AesEncrypter aesEncrypter;
 
     public DefaultSerializeUrlEncrypter(String secretKey) {
         Assert.notNull(secretKey, "The secret key must not be null.");
-        this.secretKey = secretKey;
-        this.aesEncrypter = new AesEncrypter(this.secretKey);
+        /*
+          The encryption secret key
+         */
+        this.aesEncrypter = new AesEncrypter(secretKey);
     }
 
     @Override
@@ -35,8 +33,7 @@ public class DefaultSerializeUrlEncrypter implements SerializeUrlEncrypter {
 
     @Override
     public String decrypt(String val) {
-        var original = val;
-        return aesEncrypter.decrypt(original);
+        return aesEncrypter.decrypt(val);
     }
 
 }

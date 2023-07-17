@@ -46,7 +46,7 @@ public class FhirSearchPath {
     public String toString() {
         return "FhirSearchPath{" +
                 "resource='" + resource + '\'' +
-                ", path='" + path + '\'' +
+                ",path='" + path + '\'' +
                 '}';
     }
 

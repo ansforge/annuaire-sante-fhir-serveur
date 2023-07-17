@@ -4,17 +4,21 @@
 
 package fr.ans.afas.fhirserver.http;
 
+import ca.uhn.fhir.model.api.Include;
 import ca.uhn.fhir.rest.param.*;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.util.StringUtils;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
@@ -28,6 +32,8 @@ import java.util.stream.Collectors;
  */
 public class FhirRequestParser {
 
+    static final String[] SPECIAL_PARAMS = new String[]{"_count", "_pretty", "_format", "_include", "_revinclude"};
+
 
     private FhirRequestParser() {
     }
@@ -40,7 +46,7 @@ public class FhirRequestParser {
     }
 
 
-    public static <T> SelectExpression<T> parseSelectExpression(String url, ExpressionFactory<T> expressionFactory, SearchConfig searchConfig) throws BadSelectExpression {
+    public static <T> SelectExpression<T> parseSelectExpression(String url, ExpressionFactory<T> expressionFactory, SearchConfig searchConfig) throws BadSelectExpression, BadDataFormatException {
         var index = url.indexOf('?');
 
         String resourceType;
@@ -58,34 +64,51 @@ public class FhirRequestParser {
         var selectExpression = new SelectExpression<>(resourceType, expressionFactory);
         for (var parsedParam : parsedParams) {
 
-            if (parsedParam.paramName.startsWith("_") && !parsedParam.paramName.equals("_id")) {
-                handleSpecialParams(selectExpression, parsedParam);
-                continue;
+            if (ArrayUtils.indexOf(SPECIAL_PARAMS, parsedParam.getParamName()) >= 0) {
+                switch (parsedParam.getParamName()) {
+                    case "_count":
+                        handleCountParam(selectExpression, parsedParam);
+                        break;
+                    case "_include":
+                        handleIncludeParam(searchConfig, selectExpression, parsedParam);
+                        break;
+                    case "_revinclude":
+                        handleRevIncludeParam(selectExpression, parsedParam);
+                        break;
+                    case "_pretty":
+                    case "_format":
+                    default:
+                        break;
+
+                }
+
+            } else {
+                // classic params
+                var path = FhirSearchPath.builder().resource(resourceType).path(parsedParam.paramName).build();
+                var sc = searchConfig.getSearchConfigByPath(path).orElseThrow(() -> new BadSelectExpression("Parameter " + parsedParam.paramName + " not found for resource " + resourceType));
+                switch (sc.getSearchType()) {
+
+                    case "string":
+                        parseString(selectExpression, parsedParam, path);
+                        break;
+                    case "token":
+                        parseToken(selectExpression, parsedParam, path);
+                        break;
+                    case "date":
+                        parseDate(selectExpression, parsedParam, path);
+                        break;
+                    case "reference":
+                        parseReference(selectExpression, parsedParam, path);
+                        break;
+                    default:
+                        throw new BadSelectExpression("Search type not supported");
+                }
             }
-
-            var path = FhirSearchPath.builder().resource(resourceType).path(parsedParam.paramName).build();
-            var sc = searchConfig.getSearchConfigByPath(path).orElseThrow(() -> new BadSelectExpression("Parameter " + parsedParam.paramName + " not found for resource " + resourceType));
-
-
-            switch (sc.getSearchType()) {
-                case "string":
-                    parseString(selectExpression, parsedParam, path);
-                    break;
-                case "token":
-                    parseToken(selectExpression, parsedParam, path);
-                    break;
-                case "date":
-                    parseDate(selectExpression, parsedParam, path);
-                    break;
-                default:
-                    throw new BadSelectExpression("Search type not supported");
-            }
-
         }
         return selectExpression;
     }
 
-    private static <T> void parseString(SelectExpression<T> selectExpression, ParsedParam parsedParam, FhirSearchPath path) {
+    private static <T> void parseString(SelectExpression<T> selectExpression, ParsedParam parsedParam, FhirSearchPath path) throws BadDataFormatException {
         var stringParam = new StringAndListParam();
         var stringOrListParam = new StringOrListParam();
         for (var oneVal : parsedParam.getParamValues()) {
@@ -99,7 +122,7 @@ public class FhirRequestParser {
         selectExpression.fromFhirParams(path, stringParam);
     }
 
-    private static <T> void parseToken(SelectExpression<T> selectExpression, ParsedParam parsedParam, FhirSearchPath path) {
+    private static <T> void parseToken(SelectExpression<T> selectExpression, ParsedParam parsedParam, FhirSearchPath path) throws BadDataFormatException {
         var tokenParam = new TokenAndListParam();
         var tokenOrListParam = new TokenOrListParam();
         for (var oneVal : parsedParam.getParamValues()) {
@@ -121,6 +144,18 @@ public class FhirRequestParser {
         selectExpression.fromFhirParams(path, tokenParam);
     }
 
+    private static <T> void parseReference(SelectExpression<T> selectExpression, ParsedParam parsedParam, FhirSearchPath path) throws BadDataFormatException {
+        var referenceAndListParam = new ReferenceAndListParam();
+        var referenceOrListParam = new ReferenceOrListParam();
+        for (var oneVal : parsedParam.getParamValues()) {
+            var referenceParam = new ReferenceParam();
+            referenceParam.setValue(oneVal);
+            referenceOrListParam.addOr(referenceParam);
+        }
+        referenceAndListParam.addAnd(referenceOrListParam);
+        selectExpression.fromFhirParams(path, referenceAndListParam);
+    }
+
 
     private static <T> void parseDate(SelectExpression<T> selectExpression, ParsedParam parsedParam, FhirSearchPath path) {
         var paramList = parsedParam.getParamValues().stream().map(dp -> {
@@ -129,28 +164,6 @@ public class FhirRequestParser {
             return p;
         }).collect(Collectors.toList());
         selectExpression.orFromFhirParams(path, paramList);
-    }
-
-    /**
-     * Parse a value that have prefix (date, quantity)
-     *
-     * @param value the value to parse
-     * @return the parsed value
-     */
-    public static PrefixAndValue extractPrefix(String value) {
-        var prefixAndValue = new PrefixAndValue();
-        if (value.length() > 2) {
-            var prefix = value.substring(0, 2);
-            if (prefix.matches("[a-z]*")) {
-                prefixAndValue.setPrefix(ParamPrefixEnum.forValue(prefix));
-                prefixAndValue.setValue(value.substring(2));
-            } else {
-                prefixAndValue.setValue(value);
-            }
-        } else {
-            prefixAndValue.setValue(value);
-        }
-        return prefixAndValue;
     }
 
 
@@ -196,14 +209,16 @@ public class FhirRequestParser {
             }
 
 
-            // handle values:
-            var tokenizerValues = new StringTokenizer(paramValue, ",");
             var parsedParamValues = new ArrayList<String>();
-            while (tokenizerValues.hasMoreTokens()) {
-                var next = tokenizerValues.nextToken();
-                parsedParamValues.add(next);
-            }
 
+            // handle values:
+            if(paramValue!=null) {
+                var tokenizerValues = new StringTokenizer(paramValue, ",");
+                while (tokenizerValues.hasMoreTokens()) {
+                    var next = tokenizerValues.nextToken();
+                    parsedParamValues.add(next);
+                }
+            }
 
             params.add(ParsedParam.builder()
                     .paramName(parsedParamName)
@@ -216,18 +231,39 @@ public class FhirRequestParser {
         return params;
     }
 
-    public static void handleSpecialParams(SelectExpression<?> selectExpression, ParsedParam parsedParam) throws BadSelectExpression {
-        var paramName = parsedParam.getParamName();
+    public static void handleCountParam(SelectExpression<?> selectExpression, ParsedParam parsedParam) throws BadSelectExpression {
+        try {
+            if (!parsedParam.getParamValues().isEmpty()) {
+                var count = Integer.parseInt(parsedParam.getParamValues().get(0));
+                selectExpression.setCount(count);
+            }
+        } catch (Exception e) {
+            throw new BadSelectExpression("The count parameter must be in the FHIR format with an integer value : \"_count=30\"");
+        }
+    }
 
-        if ("_count".equals(paramName)) {
-            try {
-                if (!parsedParam.getParamValues().isEmpty()) {
-                    var count = Integer.parseInt(parsedParam.getParamValues().get(0));
-                    selectExpression.setCount(count);
-                }
-            } catch (Exception e) {
-                throw new BadSelectExpression("The count parameter must be in the FHIR format with an integer value : \"_count=30\"");
+
+    public static void handleIncludeParam(SearchConfig searchConfig, SelectExpression<?> selectExpression, ParsedParam parsedParam) throws BadDataFormatException {
+        var includes = new HashSet<Include>();
+        for (var val : parsedParam.getParamValues()) {
+            if ("*".equals(val)) {
+                // add all references:
+                var resource = selectExpression.getFhirResource();
+                searchConfig.getAllByFhirResource(resource).stream().filter(p -> "reference".equals(p.getSearchType())).forEach(p ->
+                        includes.add(new Include(resource + ":" + p.getUrlParameter()))
+                );
+            } else {
+                includes.add(new Include(val));
             }
         }
+        selectExpression.fromFhirParams(includes);
+    }
+
+    public static void handleRevIncludeParam(SelectExpression<?> selectExpression, ParsedParam parsedParam) throws BadDataFormatException {
+        var includes = new HashSet<Include>();
+        for (var val : parsedParam.getParamValues()) {
+            includes.add(new Include(val));
+        }
+        selectExpression.fromFhirParamsRevInclude(includes);
     }
 }

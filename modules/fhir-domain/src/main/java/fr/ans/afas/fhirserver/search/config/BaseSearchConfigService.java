@@ -6,6 +6,7 @@ package fr.ans.afas.fhirserver.search.config;
 
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
+import fr.ans.afas.fhirserver.search.config.domain.JoinPath;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 
@@ -54,25 +55,6 @@ public abstract class BaseSearchConfigService implements SearchConfig {
 
 
     /**
-     * Get a mapping configuration with a full path
-     *
-     * @param fhirResourcePath the fill path "Resource.path" of the resource to find
-     * @return the configuration (empty if not found)
-
-     @Override public Optional<SearchParamConfig> getSearchConfigByFullPath(String fhirResourcePath) {
-     var toFindParts = fhirResourcePath.split("\\.");
-     if (toFindParts.length < 2) {
-     throw new BadConfigurationException("The fhir resource path must contains the Fhir Resource and a property path. A valid example is Organization.name. Given: " + fhirResourcePath);
-     }
-     var fhirResource = toFindParts[0];
-     if (!configs.containsKey(fhirResource)) {
-     return Optional.empty();
-     }
-     // we have to compare ignore case because fhir talk in small case for params and camelcase for properties:
-     return configs.get(fhirResource).stream().filter(conf -> conf.getFhirParamExpression().equalsIgnoreCase(fhirResourcePath)).findAny();
-     }     */
-
-    /**
      * Get a mapping configuration with a FhirSearchPath
      *
      * @param path the path
@@ -98,11 +80,34 @@ public abstract class BaseSearchConfigService implements SearchConfig {
         if (!configs.containsKey(resourceType)) {
             return Optional.empty();
         }
-        return configs.get(resourceType)
-                .getSearchParams()
-                .stream()
-                .filter(conf -> conf.getUrlParameter().equals(paramName))
-                .findAny();
+
+        if (paramName.startsWith("links")) {
+            var parts = paramName.split("\\.");
+            if (parts.length != 3) {
+                return Optional.empty();
+            }
+
+            return configs.get(parts[1])
+                    .getSearchParams()
+                    .stream()
+                    .filter(conf -> conf.getUrlParameter().equals(parts[2]))
+                    .map(p -> {
+                        var r = new SearchParamConfig();
+                        r.setName(r.getName());
+                        r.setIndexName(parts[0] + "." + parts[1] + "." + p.getIndexName());
+                        r.setResourcePaths(p.getResourcePaths());
+                        r.setUrlParameter(p.getUrlParameter());
+                        return r;
+                    })
+                    .findAny();
+
+        } else {
+            return configs.get(resourceType)
+                    .getSearchParams()
+                    .stream()
+                    .filter(conf -> conf.getUrlParameter().equals(paramName))
+                    .findAny();
+        }
     }
 
     @Override
@@ -115,4 +120,15 @@ public abstract class BaseSearchConfigService implements SearchConfig {
         this.serverSearchConfig.setResources(configs.values());
         return this.serverSearchConfig;
     }
+
+    @Override
+    public List<JoinPath> getJoinsByFhirResource(String fhirResource) {
+        if (!configs.containsKey(fhirResource)) {
+            return List.of();
+        }
+        return configs.get(fhirResource)
+                .getJoins();
+    }
+
+
 }

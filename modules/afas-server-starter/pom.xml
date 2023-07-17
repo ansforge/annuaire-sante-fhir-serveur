@@ -8,11 +8,11 @@
     <parent>
         <artifactId>annuaire-sante-fhir-serveur</artifactId>
         <groupId>fr.ans</groupId>
-        <version>1.23.0-SNAPSHOT</version>
+        <version>1.23.14</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>afas-server-starter</artifactId>
-    <version>1.23.0-SNAPSHOT</version>
+    <version>1.23.14</version>
     <name>afas-server-starter</name>
     <description>
         AFAS Spring boot starter
@@ -52,6 +52,12 @@
         <dependency>
             <groupId>fr.ans</groupId>
             <artifactId>fhir-server-test-lib</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>fr.ans</groupId>
+            <artifactId>afas-fhir-servlet</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

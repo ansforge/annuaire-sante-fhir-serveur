@@ -93,43 +93,32 @@ public class MongoDbDateRangeExpression extends DateRangeExpression<Bson> {
             throw new BadConfigurationException("Search not supported on path: " + fhirPath);
         }
 
-        Bson ret = null;
         switch (this.getPrefix()) {
             case GREATERTHAN:
             case STARTS_AFTER:
-                ret = Filters.gt(config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
-                break;
+                return Filters.gt(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
             case EQUAL:
-                ret = Filters.eq(config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
-                break;
+                return Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
             case GREATERTHAN_OR_EQUALS:
-                ret = Filters.gte(config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
-                break;
+                return Filters.gte(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
             case LESSTHAN:
             case ENDS_BEFORE:
-                ret = Filters.lt(config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
-                break;
+                return Filters.lt(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
             case LESSTHAN_OR_EQUALS:
-                ret = Filters.lte(config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
-                break;
+                return Filters.lte(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
             case NOT_EQUAL:
-                ret = Filters.ne(config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
-                break;
+                return Filters.ne(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
             case APPROXIMATE:
                 // Approximate don't support precision:
                 long baseTime = this.date.getTime();
                 long max = (long) (baseTime * APPROX_FACTOR);
                 long min = (long) (baseTime / APPROX_FACTOR);
-                var minFilter = Filters.gt(config.get().getIndexName(), min);
-                var maxFilter = Filters.lt(config.get().getIndexName(), max);
-                ret = Filters.and(minFilter, maxFilter);
-                break;
+                var minFilter = Filters.gt(expressionContext.getPrefix() + config.get().getIndexName(), min);
+                var maxFilter = Filters.lt(expressionContext.getPrefix() + config.get().getIndexName(), max);
+                return Filters.and(minFilter, maxFilter);
             default:
                 throw new BadConfigurationException("Prefix not supported: " + this.getPrefix());
         }
-
-
-        return ret;
     }
 
 
@@ -169,12 +158,12 @@ public class MongoDbDateRangeExpression extends DateRangeExpression<Bson> {
 
 
     @Override
-    public String serialize(ExpressionSerializer expressionSerializer) {
+    public String serialize(ExpressionSerializer<Bson> expressionSerializer) {
         return expressionSerializer.serialize(this);
     }
 
     @Override
-    public Expression<Bson> deserialize(ExpressionSerializer expressionDeserializer) {
+    public Expression<Bson> deserialize(ExpressionSerializer<Bson> expressionDeserializer) {
         return null;
     }
 

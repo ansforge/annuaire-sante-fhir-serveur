@@ -20,8 +20,10 @@ import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
 import fr.ans.afas.mdbexpression.domain.fhir.searchconfig.ASComplexSearchConfig;
 import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
+import fr.ans.afas.rass.service.DatabaseService;
 import fr.ans.afas.rass.service.MongoDbFhirService;
 import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
+import fr.ans.afas.rass.service.impl.SimpleDatabaseService;
 import fr.ans.afas.rass.service.json.FhirBaseResourceDeSerializer;
 import fr.ans.afas.rass.service.json.GenericSerializer;
 import org.bson.conversions.Bson;
@@ -79,7 +81,7 @@ public class TestFhirApplication {
                                           SearchConfig searchConfig,
                                           ApplicationContext context,
                                           @Value("${afas.fhir.max-include-size:5000}") int maxIncludePageSize,
-                                          @Value("${afas.mongodb.dbname}") String dbName
+                                          DatabaseService databaseService
     ) throws BadHookConfiguration {
         return new MongoDbFhirService(List.of(new GenericSerializer(searchConfig, fhirContext)),
                 new FhirBaseResourceDeSerializer(fhirContext),
@@ -88,8 +90,17 @@ public class TestFhirApplication {
                 fhirContext,
                 new HookService(context),
                 maxIncludePageSize,
-                dbName
+                databaseService
         );
+    }
+
+
+    /**
+     * The name of the mongodb database
+     */
+    @Bean
+    DatabaseService databaseService(@Value("${afas.mongodb.dbname}") String name) {
+        return new SimpleDatabaseService(name);
     }
 
     /**

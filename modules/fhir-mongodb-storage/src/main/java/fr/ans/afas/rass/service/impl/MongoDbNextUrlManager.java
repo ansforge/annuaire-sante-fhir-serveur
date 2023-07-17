@@ -23,6 +23,8 @@ import java.util.Optional;
 import static com.mongodb.client.model.Filters.eq;
 
 /**
+ * Manage next urls. Store and retrieve them from the database (or the url)
+ *
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
@@ -43,17 +45,15 @@ public class MongoDbNextUrlManager implements NextUrlManager<Bson> {
     protected final String dbName;
 
     protected final MongoClient mongoClient;
-
-    protected int maxNextUrlLength;
-
     /**
      * The expression serializer
      */
-    ExpressionSerializer<Bson> expressionSerializer;
+    final ExpressionSerializer<Bson> expressionSerializer;
     /**
      * The url encrypter
      */
-    SerializeUrlEncrypter serializeUrlEncrypter;
+    final SerializeUrlEncrypter serializeUrlEncrypter;
+    protected int maxNextUrlLength;
 
 
     /**
@@ -75,7 +75,7 @@ public class MongoDbNextUrlManager implements NextUrlManager<Bson> {
     @Override
     public Optional<PagingData<Bson>> find(String id) throws BadLinkException {
 
-        String theSearchId = null;
+        String theSearchId;
 
         var typeId = id.substring(0, 1);
         var realId = id.substring(1);

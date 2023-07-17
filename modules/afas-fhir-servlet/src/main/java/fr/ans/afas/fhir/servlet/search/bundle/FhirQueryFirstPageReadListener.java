@@ -14,7 +14,7 @@ import fr.ans.afas.fhirserver.service.NextUrlManager;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import java.util.stream.Collectors;
 
 
 /**
@@ -23,25 +23,27 @@ import java.io.IOException;
  */
 public class FhirQueryFirstPageReadListener<T> extends FhirQueryReadListener<T> {
 
+    final String fhirPath;
+    final String serverUrl;
     private final HttpServletResponse res;
-    String fhirPath;
-    String serverUrl;
 
     public FhirQueryFirstPageReadListener(FhirStoreService<T> fhirStoreService, ExpressionFactory<T> expressionFactory, SearchConfig searchConfig, NextUrlManager<T> nextUrlManager, ServletInputStream in, HttpServletResponse r, AsyncContext c, String fhirPath, String serverUrl) {
-        super(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, in, c);
+        super(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, c, in);
         res = r;
         this.fhirPath = fhirPath;
         this.serverUrl = serverUrl;
     }
 
 
-    public void onAllDataRead() throws IOException {
+    public void onAllDataRead() {
         try {
-            var query = FhirRequestParser.parseSelectExpression(fhirPath, this.expressionFactory, this.searchConfig);
+            String fPath = this.queue.isEmpty() ? fhirPath : String.format("%s?%s", fhirPath, this.queue.stream().map(param -> param)
+                    .collect(Collectors.joining("&")));
+            var query = FhirRequestParser.parseSelectExpression(fPath, this.expressionFactory, this.searchConfig);
 
             // now all data are read, set up a WriteListener to write
             var output = res.getOutputStream();
-            var writeListener = new FhirBundleFirstPageWriteListener<>(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, output, ac, query, serverUrl);
+            var writeListener = new FhirBundleFirstPageWriteListener<>(fhirStoreService, nextUrlManager, output, ac, query, serverUrl);
 
             output.setWriteListener(writeListener);
 

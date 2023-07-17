@@ -31,10 +31,11 @@ public class ConfigYamlTest {
      */
     @Test
     public void testConfigOnly() {
-        var patientConfig = yamlSearchConfig.getResources().iterator().next();
+        var configs = yamlSearchConfig.getResources().iterator();
+        var patientConfig = configs.next();
         Assert.assertEquals("Patient", patientConfig.getName());
         Assert.assertEquals("http://hl7.org/fhir/StructureDefinition/Patient", patientConfig.getProfile());
-        var orgP1 = patientConfig.getSearchParams().get(0);
+        var orgP1 = patientConfig.getSearchParams().get(1);
         Assert.assertEquals("active", orgP1.getName());
         Assert.assertEquals("active", orgP1.getUrlParameter());
         Assert.assertEquals("token", orgP1.getSearchType());
@@ -43,7 +44,15 @@ public class ConfigYamlTest {
         Assert.assertEquals(1, orgP1.getResourcePaths().size());
         var rp = orgP1.getResourcePaths();
         Assert.assertEquals("active", rp.get(0).getPath());
-        Assert.assertEquals("address.city", patientConfig.getSearchParams().get(1).getResourcePaths().get(1).getPath());
+        Assert.assertEquals("address.city", patientConfig.getSearchParams().get(2).getResourcePaths().get(1).getPath());
+
+        var organizationConfig = configs.next();
+        Assert.assertEquals("Organization", organizationConfig.getName());
+        Assert.assertEquals(1, organizationConfig.getJoins().size());
+        Assert.assertEquals("Patient", organizationConfig.getJoins().get(0).getResource());
+        Assert.assertEquals("managingOrganization", organizationConfig.getJoins().get(0).getPath());
+
+
     }
 
 }

@@ -6,6 +6,7 @@ package fr.ans.afas.utils;
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.param.ParamPrefixEnum;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhirserver.http.FhirRequestParser;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
@@ -38,10 +39,10 @@ import java.util.GregorianCalendar;
 @SpringBootTest
 public class FhirRequestParserTest {
 
-    FhirSearchPath pathString = FhirSearchPath.builder().resource("FhirResource").path("string_path").build();
+    final FhirSearchPath pathString = FhirSearchPath.builder().resource("FhirResource").path("string_path").build();
 
-    ExpressionFactory<?> expressionFactory = Mockito.mock(ExpressionFactory.class);
-    SearchConfig searchConfig = new TestSearchConfig();
+    final ExpressionFactory<?> expressionFactory = Mockito.mock(ExpressionFactory.class);
+    final SearchConfig searchConfig = new TestSearchConfig();
 
 
     @Before
@@ -57,7 +58,7 @@ public class FhirRequestParserTest {
     }
 
     @Test
-    public void testSelectExpressionParsing() throws BadSelectExpression {
+    public void testSelectExpressionParsing() throws BadSelectExpression, BadDataFormatException {
 
 
         var expression = FhirRequestParser.parseSelectExpression("FhirResource?_count=49&string_path:exact=bla,bla&string_path:exact=blo", expressionFactory, searchConfig);
@@ -104,7 +105,7 @@ public class FhirRequestParserTest {
 
 
     @Test
-    public void testDateParsing() throws BadSelectExpression {
+    public void testDateParsing() throws BadSelectExpression, BadDataFormatException {
         var expression = FhirRequestParser.parseSelectExpression("FhirResource?_count=49&date_path=eq2013,eq2023&date_path=gt2013-05-01", expressionFactory, searchConfig);
         var rootExpression = (AndExpression<?>) expression.getExpression();
         Assert.assertEquals(2, rootExpression.getExpressions().size());
@@ -137,7 +138,7 @@ public class FhirRequestParserTest {
 
 
     @Test
-    public void testUrlDecodeEmpty() throws BadSelectExpression {
+    public void testUrlDecodeEmpty() throws BadSelectExpression, BadDataFormatException {
         // when the string is null:
         Assert.assertNull(FhirRequestParser.urlDecode(null));
         // when the string have no parameters:
@@ -146,9 +147,8 @@ public class FhirRequestParserTest {
     }
 
     @Test(expected = BadSelectExpression.class)
-    public void testUnsupportedSearch() throws BadSelectExpression {
-        FhirRequestParser.parseSelectExpression("FhirResource?_count=49&reference_path=Patient/00001", expressionFactory, searchConfig);
-
+    public void testUnsupportedSearch() throws BadSelectExpression, BadDataFormatException {
+        FhirRequestParser.parseSelectExpression("FhirResource?_count=49&not_exist_path=Patient/00001", expressionFactory, searchConfig);
     }
 
 }

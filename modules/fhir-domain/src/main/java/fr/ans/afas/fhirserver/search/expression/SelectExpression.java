@@ -7,19 +7,18 @@ package fr.ans.afas.fhirserver.search.expression;
 
 import ca.uhn.fhir.model.api.Include;
 import ca.uhn.fhir.rest.param.*;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.data.TotalMode;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
+import fr.ans.afas.validation.DataValidationUtils;
 import lombok.Getter;
 import org.springframework.util.Assert;
 
 import javax.validation.constraints.NotNull;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A FHIR select expression. Contains all information used to query the database.
@@ -41,10 +40,6 @@ public class SelectExpression<T> implements Expression<T> {
      */
     private static final int MAX_SELECT_COUNT = 5000;
     /**
-     * The expression
-     */
-    final ContainerExpression<T> expression;
-    /**
      * The fhir resource of the select
      */
     final String fhirResource;
@@ -61,21 +56,18 @@ public class SelectExpression<T> implements Expression<T> {
      */
     final Set<IncludeExpression<T>> revincludes = new HashSet<>();
     /**
-     * The sort field
+     * The expression
      */
-    String order;
-
+    private final ContainerExpression<T> expression;
+    private final List<HasCondition<T>> hasConditions = new ArrayList<>();
     /**
      * Item per pages
      */
     Integer count = DEFAULT_PAGE_SIZE;
-
-
     /**
      * Mode of the count calculation
      */
     TotalMode totalMode = TotalMode.BEST_EFFORT;
-
     /**
      * The "_since" parameter to limit the request on object that have a modification date after this value.
      * If null, the parameter is not used
@@ -115,11 +107,12 @@ public class SelectExpression<T> implements Expression<T> {
      * @param stringAndListParam the parameter to convert
      * @return the converted select expression
      */
-    public SelectExpression<T> fromFhirParams(FhirSearchPath path, StringAndListParam stringAndListParam) {
+    public SelectExpression<T> fromFhirParams(FhirSearchPath path, StringAndListParam stringAndListParam) throws BadDataFormatException {
         if (stringAndListParam != null) {
             for (var orParams : stringAndListParam.getValuesAsQueryTokens()) {
                 OrExpression<T> orExpression = expressionFactory.newOrExpression();
                 for (var param : orParams.getValuesAsQueryTokens()) {
+                    DataValidationUtils.validateTokenParameter(param.getValue());
                     orExpression.or(expressionFactory.newStringExpression(path, param.getValue(), resolveOperator(param)));
                 }
                 this.expression.addExpression(orExpression);
@@ -135,13 +128,14 @@ public class SelectExpression<T> implements Expression<T> {
      * @param stringAndListParam the parameter to convert
      * @return the converted select expression
      */
-    public SelectExpression<T> fromFhirParams(List<FhirSearchPath> paths, StringAndListParam stringAndListParam) {
+    public SelectExpression<T> fromFhirParams(List<FhirSearchPath> paths, StringAndListParam stringAndListParam) throws BadDataFormatException {
         if (stringAndListParam != null) {
             var orExpression = expressionFactory.newOrExpression();
             for (var path : paths) {
                 for (var orParams : stringAndListParam.getValuesAsQueryTokens()) {
                     var orExpressionInternal = expressionFactory.newOrExpression();
                     for (var param : orParams.getValuesAsQueryTokens()) {
+                        DataValidationUtils.validateTokenParameter(param.getValue());
                         orExpressionInternal.or(expressionFactory.newStringExpression(path, param.getValue(), resolveOperator(param)));
                     }
                     orExpression.addExpression(orExpressionInternal);
@@ -159,14 +153,35 @@ public class SelectExpression<T> implements Expression<T> {
      * @param tokenAndListParam the parameter to convert
      * @return the converted select expression
      */
-    public SelectExpression<T> fromFhirParams(FhirSearchPath path, TokenAndListParam tokenAndListParam) {
+    public SelectExpression<T> fromFhirParams(FhirSearchPath path, TokenAndListParam tokenAndListParam) throws BadDataFormatException {
         if (tokenAndListParam != null) {
             for (var orParams : tokenAndListParam.getValuesAsQueryTokens()) {
                 var orExpression = expressionFactory.newOrExpression();
                 for (var param : orParams.getValuesAsQueryTokens()) {
+                    DataValidationUtils.validateTokenParameter(param.getSystem());
+                    DataValidationUtils.validateTokenParameter(param.getValue());
                     orExpression.or(expressionFactory.newTokenExpression(path, param.getSystem(), param.getValue()));
                 }
                 this.expression.addExpression(orExpression);
+            }
+        }
+        return this;
+    }
+
+    public SelectExpression<T> fromFhirParams(HasAndListParam hasParams) {
+        if (hasParams != null) {
+            for (var orParams : hasParams.getValuesAsQueryTokens()) {
+                if (!orParams.getValuesAsQueryTokens().isEmpty()) {
+                    var firstHasParam = orParams.getValuesAsQueryTokens().get(0);
+                    var paramPath = FhirSearchPath.builder().resource(firstHasParam.getTargetResourceType()).path(firstHasParam.getParameterName()).build();
+                    var linkPath = FhirSearchPath.builder().resource(firstHasParam.getTargetResourceType()).path(firstHasParam.getReferenceFieldName()).build();
+                    var values = new ArrayList<String>();
+                    for (var hasParam : orParams.getValuesAsQueryTokens()) {
+                        values.add(hasParam.getParameterValue());
+                    }
+                    var hasCondition = expressionFactory.newHasExpression(linkPath, paramPath, values);
+                    this.addHasCondition(hasCondition);
+                }
             }
         }
         return this;
@@ -179,11 +194,12 @@ public class SelectExpression<T> implements Expression<T> {
      * @param theEndpoint the parameter to convert
      * @return the converted select expression
      */
-    public SelectExpression<T> fromFhirParams(FhirSearchPath path, ReferenceAndListParam theEndpoint) {
+    public SelectExpression<T> fromFhirParams(FhirSearchPath path, ReferenceAndListParam theEndpoint) throws BadDataFormatException {
         if (theEndpoint != null) {
             for (var orParams : theEndpoint.getValuesAsQueryTokens()) {
                 var orExpression = expressionFactory.newOrExpression();
                 for (var param : orParams.getValuesAsQueryTokens()) {
+                    DataValidationUtils.validateTokenParameter(param.getValue());
                     orExpression.or(expressionFactory.newReferenceExpression(path, param.getValue()));
                 }
                 this.expression.addExpression(orExpression);
@@ -191,7 +207,6 @@ public class SelectExpression<T> implements Expression<T> {
         }
         return this;
     }
-
 
     /**
      * Convert a Hapi parameter to a Select expression for DateRangeParam
@@ -213,7 +228,6 @@ public class SelectExpression<T> implements Expression<T> {
         return this;
     }
 
-
     /**
      * Convert a Hapi parameter to a Select expression for multiple DateParam. The parameters will be applied with a logical OR.
      *
@@ -230,12 +244,12 @@ public class SelectExpression<T> implements Expression<T> {
         }
     }
 
-
-    public SelectExpression<T> fromFhirParams(FhirSearchPath path, UriAndListParam theSearchForProfile) {
+    public SelectExpression<T> fromFhirParams(FhirSearchPath path, UriAndListParam theSearchForProfile) throws BadDataFormatException {
         if (theSearchForProfile != null) {
             for (var orParams : theSearchForProfile.getValuesAsQueryTokens()) {
                 OrExpression<T> orExpression = expressionFactory.newOrExpression();
                 for (var param : orParams.getValuesAsQueryTokens()) {
+                    DataValidationUtils.validateTokenParameter(param.getValue());
                     orExpression.or(expressionFactory.newStringExpression(path, param.getValue(), StringExpression.Operator.EXACT));
                 }
                 this.expression.addExpression(orExpression);
@@ -244,34 +258,23 @@ public class SelectExpression<T> implements Expression<T> {
         return this;
     }
 
-
-    public SelectExpression<T> fromFhirParams(Set<Include> theInclude) {
+    public SelectExpression<T> fromFhirParams(Set<Include> theInclude) throws BadDataFormatException {
         if (theInclude != null) {
             for (var include : theInclude) {
+                DataValidationUtils.validateIncludeParameter(include.getParamType(), include.getParamName());
                 this.includes.add(expressionFactory.newIncludeExpression(include.getParamType(), include.getParamName()));
             }
         }
         return this;
     }
 
-    public SelectExpression<T> fromFhirParamsRevInclude(Set<Include> theInclude) {
+    public SelectExpression<T> fromFhirParamsRevInclude(Set<Include> theInclude) throws BadDataFormatException {
         if (theInclude != null) {
             for (var include : theInclude) {
+                DataValidationUtils.validateIncludeParameter(include.getParamType(), include.getParamName());
                 this.revincludes.add(expressionFactory.newIncludeExpression(include.getParamType(), include.getParamName()));
             }
         }
-        return this;
-    }
-
-
-    /**
-     * Set the order by of the expression
-     *
-     * @param order the order field
-     * @return the current expression
-     */
-    public SelectExpression<T> orderBy(String order) {
-        this.order = order;
         return this;
     }
 
@@ -320,7 +323,6 @@ public class SelectExpression<T> implements Expression<T> {
             this.count = count;
         }
     }
-
 
     /**
      * Set the "_since" parameter to limit the request on object that have a modification date after this value.
@@ -372,5 +374,22 @@ public class SelectExpression<T> implements Expression<T> {
         }
     }
 
+    @Override
+    public String toString() {
+        return "Select " +
+                this.fhirResource +
+                this.expression +
+                "\tCount:" +
+                this.count;
+    }
+
+    public void addHasCondition(HasCondition<T> expression) {
+        this.hasConditions.add(expression);
+    }
+
+    public void setHasConditions(List<HasCondition<T>> expression) {
+        this.hasConditions.clear();
+        this.hasConditions.addAll(expression);
+    }
 
 }

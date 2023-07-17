@@ -51,4 +51,20 @@ public abstract class AndExpression<T> implements ContainerExpression<T> {
     public List<Expression<T>> getExpressions() {
         return expressions;
     }
+
+
+    @Override
+    public String toString() {
+        var sb = new StringBuilder();
+        var i = 0;
+        sb.append("(");
+        for (var e : this.expressions) {
+            if (i++ > 0) {
+                sb.append(" AND ");
+            }
+            sb.append(e);
+        }
+        sb.append(")");
+        return sb.toString();
+    }
 }

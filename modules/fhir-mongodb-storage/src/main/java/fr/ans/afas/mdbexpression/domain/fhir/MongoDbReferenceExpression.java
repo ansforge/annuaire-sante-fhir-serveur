@@ -60,20 +60,20 @@ public class MongoDbReferenceExpression extends ReferenceExpression<Bson> {
             throw new BadConfigurationException("Search not supported on path: " + fhirPath);
         }
         if (StringUtils.hasLength(this.type)) {
-            return Filters.eq(config.get().getIndexName() + REFERENCE_DB_SUFFIX, this.type + "/" + this.id);
+            return Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + REFERENCE_DB_SUFFIX, this.type + "/" + this.id);
         } else {
-            return Filters.eq(config.get().getIndexName() + ID_DB_SUFFIX, this.id);
+            return Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + ID_DB_SUFFIX, this.id);
         }
     }
 
 
     @Override
-    public String serialize(ExpressionSerializer expressionSerializer) {
+    public String serialize(ExpressionSerializer<Bson> expressionSerializer) {
         return expressionSerializer.serialize(this);
     }
 
     @Override
-    public Expression<Bson> deserialize(ExpressionSerializer expressionDeserializer) {
+    public Expression<Bson> deserialize(ExpressionSerializer<Bson> expressionDeserializer) {
         return null;
     }
 

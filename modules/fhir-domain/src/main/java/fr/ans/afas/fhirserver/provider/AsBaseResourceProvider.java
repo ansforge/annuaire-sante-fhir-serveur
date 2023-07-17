@@ -41,7 +41,7 @@ public abstract class AsBaseResourceProvider<T> {
     /**
      * The service that store fhir resources
      */
-    protected FhirStoreService<T> fhirStoreService;
+    protected final FhirStoreService<T> fhirStoreService;
 
     /**
      * Construct the base provider
@@ -65,7 +65,7 @@ public abstract class AsBaseResourceProvider<T> {
         }
 
         var methodOutcomes = new ArrayList<MethodOutcome>();
-        var ids = this.fhirStoreService.store(resources, true);
+        var ids = this.fhirStoreService.store(resources, true, false);
         for (var id : ids) {
             var retVal = new MethodOutcome();
             retVal.setId(new IdType(id.getResourceType(), id.getIdPart(), id.getVersionIdPart()));
@@ -93,7 +93,7 @@ public abstract class AsBaseResourceProvider<T> {
             return outcome;
         }
 
-        var ids = this.fhirStoreService.store(Set.of(resource), true);
+        var ids = this.fhirStoreService.store(Set.of(resource), true, false);
         if (!ids.isEmpty()) {
             outcome.setId(new IdType(resource.getResourceType().toString(), ids.get(0).getIdPart(), ids.get(0).getVersionIdPart()));
             outcome.setCreated(true);

@@ -12,13 +12,11 @@ import org.hl7.fhir.r4.model.codesystems.SubscriptionStatus;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.text.ParseException;
 
 /**
  * Test the fhir server for the resource: {@link org.hl7.fhir.r4.model.Subscription}
@@ -55,7 +53,7 @@ public class FhirTestIT extends BaseSubscriptionTest {
      * Setup test context
      */
     @Before
-    public void init() throws ParseException {
+    public void init() {
         setupClient();
         insertSampleData();
     }

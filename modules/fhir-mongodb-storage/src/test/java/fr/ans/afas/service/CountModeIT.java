@@ -80,6 +80,10 @@ public class CountModeIT {
         countResult = this.mongoDbFhirService.count(selectExpression);
         Assert.assertNotNull(countResult.getTotal());
 
+        selectExpression.setTotalMode(TotalMode.BEST_EFFORT);
+        countResult = this.mongoDbFhirService.count(selectExpression);
+        Assert.assertNotNull(countResult.getTotal());
+
 
     }
 

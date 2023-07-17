@@ -4,10 +4,7 @@
 
 package fr.ans.afas.fhirserver.search.config.domain;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -22,19 +19,24 @@ import java.util.List;
 @NoArgsConstructor
 public class SearchParamConfig {
     private String name;
+    @NonNull
     private String urlParameter;
     private String searchType;
     private String description;
     private List<ResourcePathConfig> resourcePaths;
     private String indexName;
+    private boolean index = true;
+    private boolean indexInSubRequest = false;
 
     @Builder
-    public SearchParamConfig(String name, String urlParameter, String searchType, String description, List<ResourcePathConfig> resourcePaths, String indexName) {
+    public SearchParamConfig(String name, @NonNull String urlParameter, String searchType, String description, List<ResourcePathConfig> resourcePaths, String indexName, Boolean index, Boolean indexInSubRequest) {
         this.name = name;
         this.urlParameter = urlParameter;
         this.searchType = searchType;
         this.description = description;
         this.resourcePaths = resourcePaths;
         this.indexName = indexName;
+        this.index = index != null ? index : true;
+        this.indexInSubRequest = indexInSubRequest != null ? indexInSubRequest : false;
     }
 }

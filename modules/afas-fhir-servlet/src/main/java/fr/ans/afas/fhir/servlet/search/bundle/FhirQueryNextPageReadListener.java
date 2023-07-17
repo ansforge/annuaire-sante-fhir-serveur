@@ -25,20 +25,22 @@ import java.io.IOException;
  */
 public class FhirQueryNextPageReadListener<T> extends FhirQueryReadListener<T> {
 
-    final String serverUrl;
-    String pageId;
+    private final String serverUrl;
+    private final String pageId;
 
-    private HttpServletResponse res = null;
+    private final HttpServletResponse res;
 
     public FhirQueryNextPageReadListener(FhirStoreService<T> fhirStoreService,
                                          ExpressionFactory<T> expressionFactory,
-                                         SearchConfig searchConfig, NextUrlManager<T> nextUrlManager, ServletInputStream in, HttpServletResponse r, AsyncContext c, String pageId, String serverUrl) {
-        super(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, in, c);
+                                         SearchConfig searchConfig,
+                                         NextUrlManager<T> nextUrlManager,
+                                         ServletInputStream in,
+                                         HttpServletResponse r,
+                                         AsyncContext c,
+                                         String pageId,
+                                         String serverUrl) {
+        super(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, c, in);
         res = r;
-        this.fhirStoreService = fhirStoreService;
-        this.expressionFactory = expressionFactory;
-        this.searchConfig = searchConfig;
-        this.nextUrlManager = nextUrlManager;
         this.pageId = pageId;
         this.serverUrl = serverUrl;
 
@@ -62,7 +64,7 @@ public class FhirQueryNextPageReadListener<T> extends FhirQueryReadListener<T> {
                             .getSelectExpression()).build();
             // now all data are read, set up a WriteListener to write
             var output = res.getOutputStream();
-            var writeListener = new FhirBundleNextPageWriteListener<T>(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, output, ac, pagingData, this.serverUrl);
+            var writeListener = new FhirBundleNextPageWriteListener<>(fhirStoreService, nextUrlManager, output, ac, pagingData, this.serverUrl);
             output.setWriteListener(writeListener);
 
         } catch (BadLinkException e) {

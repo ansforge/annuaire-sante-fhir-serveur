@@ -11,6 +11,7 @@ import fr.ans.afas.config.MongoIndexConfiguration;
 import fr.ans.afas.configuration.HapiConfiguration;
 import fr.ans.afas.configuration.SpringConfiguration;
 import fr.ans.afas.configuration.SubscriptionSearchConfig;
+import fr.ans.afas.domain.ResourceAndSubResources;
 import fr.ans.afas.fhir.GlobalProvider;
 import fr.ans.afas.fhirserver.hook.exception.BadHookConfiguration;
 import fr.ans.afas.fhirserver.hook.service.HookService;
@@ -27,8 +28,10 @@ import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
 import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
 import fr.ans.afas.provider.ASComplexSearchConfig;
 import fr.ans.afas.provider.DeviceProvider;
+import fr.ans.afas.rass.service.DatabaseService;
 import fr.ans.afas.rass.service.MongoDbFhirService;
 import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
+import fr.ans.afas.rass.service.impl.SimpleDatabaseService;
 import fr.ans.afas.rass.service.json.FhirBaseResourceDeSerializer;
 import fr.ans.afas.rass.service.json.FhirBaseResourceSerializer;
 import fr.ans.afas.rass.service.json.GenericSerializer;
@@ -38,7 +41,6 @@ import fr.ans.afas.service.impl.DefaultSubscriptionManager;
 import fr.ans.afas.service.impl.DefaultSubscriptionOperationService;
 import fr.ans.afas.service.impl.HMacSha256SignatureService;
 import org.bson.conversions.Bson;
-import org.hl7.fhir.r4.model.DomainResource;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Value;
@@ -174,16 +176,15 @@ public class FullSpringAppWithMongo {
     @Bean
     @Inject
     FhirStoreService<Bson> fhirStoreService(
-            List<FhirBaseResourceSerializer<DomainResource>> serializers,
+            List<FhirBaseResourceSerializer<ResourceAndSubResources>> serializers,
             FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer,
             MongoClient mongoClient,
             SearchConfig searchConfig,
             ApplicationContext context,
             FhirContext fhirContext,
             @Value("${afas.fhir.max-include-size:5000}")
-            int maxIncludePageSize,
-            @Value("${afas.mongodb.dbname}")
-            String dbName) throws BadHookConfiguration {
+                    int maxIncludePageSize,
+            DatabaseService databaseService) throws BadHookConfiguration {
         return new MongoDbFhirService(
                 serializers,
                 fhirBaseResourceDeSerializer,
@@ -192,8 +193,13 @@ public class FullSpringAppWithMongo {
                 fhirContext,
                 new HookService(context),
                 maxIncludePageSize,
-                dbName
+                databaseService
         );
+    }
+
+    @Bean
+    DatabaseService databaseService(@Value("${afas.mongodb.dbname}") String name) {
+        return new SimpleDatabaseService(name);
     }
 
 

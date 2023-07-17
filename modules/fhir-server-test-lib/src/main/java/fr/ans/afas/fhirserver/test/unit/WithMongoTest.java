@@ -26,14 +26,13 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class WithMongoTest {
 
     /**
+     * The mongodb container
+     */
+    static final AtomicReference<MongoDBContainer> mongoDBContainer = new AtomicReference<>();
+    /**
      * Logger
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(WithMongoTest.class);
-
-    /**
-     * The mongodb container
-     */
-    static AtomicReference<MongoDBContainer> mongoDBContainer = new AtomicReference<>();
 
     private WithMongoTest() {
     }
@@ -56,27 +55,38 @@ public final class WithMongoTest {
         @Override
         public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
 
-            // if you encounter some problems with docker, disable RYUK with this env var:  TESTCONTAINERS_RYUK_DISABLED=true
-            try {
-                var dockerRegistryUrl = configurableApplicationContext.getEnvironment().getProperty("docker.registry.url.mongodb");
-                mongoDBContainer.set(new MongoDBContainer(DockerImageName.parse(dockerRegistryUrl != null ? dockerRegistryUrl : "mongo:5.0.0").asCompatibleSubstituteFor("mongo")));
-                mongoDBContainer.get().start();
-                TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext, "afas.mongodb.uri=mongodb://localhost:" + mongoDBContainer.get().getMappedPort(27017));
+            boolean mongoDockerEnabled = Boolean.parseBoolean(configurableApplicationContext.getEnvironment().getProperty("afas.mongodb.docker.enabled"));
 
-            } catch (Exception e) {
-                // no docker
-                LOGGER.warn("No docker env found. Please run a local mongodb on port 27017.", e);
-                var connectionString = configurableApplicationContext.getEnvironment().getProperty("test-mongodb-connection-string");
-                if (!StringUtils.hasLength(connectionString)) {
-                    connectionString = "mongodb://localhost:27017";
+            if (mongoDockerEnabled) {
+                // if you encounter some problems with docker, disable RYUK with this env var:  TESTCONTAINERS_RYUK_DISABLED=true
+                try {
+                    var dockerRegistryUrl = configurableApplicationContext.getEnvironment().getProperty("docker.registry.url.mongodb");
+                    mongoDBContainer.set(new MongoDBContainer(DockerImageName.parse(dockerRegistryUrl != null ? dockerRegistryUrl : "mongo:5.0.0").asCompatibleSubstituteFor("mongo")));
+                    mongoDBContainer.get().start();
+                    TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext, "afas.mongodb.uri=mongodb://localhost:" + mongoDBContainer.get().getMappedPort(27017));
+
+                } catch (Exception e) {
+                    // no docker
+                    LOGGER.warn("No docker env found. Please run a local mongodb on port 27017.", e);
+                    createLocalhostMongoInstance(configurableApplicationContext);
+
                 }
-                TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
-                        configurableApplicationContext, "afas.mongodb.uri=" + connectionString);
-
+            } else {
+                createLocalhostMongoInstance(configurableApplicationContext);
             }
 
         }
 
+        private void createLocalhostMongoInstance(ConfigurableApplicationContext configurableApplicationContext) {
+            var connectionString = configurableApplicationContext.getEnvironment().getProperty("test-mongodb-connection-string");
+            if (!StringUtils.hasLength(connectionString)) {
+                connectionString = "mongodb://localhost:27017";
+            }
+            TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
+                    configurableApplicationContext, "afas.mongodb.uri=" + connectionString);
+        }
+
     }
+
 
 }

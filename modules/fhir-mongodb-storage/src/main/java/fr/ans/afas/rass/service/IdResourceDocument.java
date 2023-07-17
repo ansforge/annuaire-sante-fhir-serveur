@@ -4,11 +4,11 @@
 
 package fr.ans.afas.rass.service;
 
+import fr.ans.afas.domain.ResourceAndSubResources;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.bson.Document;
-import org.hl7.fhir.instance.model.api.IBaseResource;
 
 /**
  * Contains an id, a fhir resource (hapi) and the document (mongo) of the fhir resource
@@ -29,7 +29,7 @@ class IdResourceDocument {
     /**
      * The resource
      */
-    IBaseResource resource;
+    ResourceAndSubResources resource;
     /**
      * The mongodb document to insert
      */

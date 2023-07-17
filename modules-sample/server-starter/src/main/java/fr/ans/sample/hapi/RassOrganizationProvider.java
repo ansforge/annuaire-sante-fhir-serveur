@@ -13,6 +13,7 @@ import ca.uhn.fhir.rest.param.ReferenceAndListParam;
 import ca.uhn.fhir.rest.param.StringAndListParam;
 import ca.uhn.fhir.rest.param.TokenAndListParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhir.AfasBundleProvider;
 import fr.ans.afas.fhirserver.provider.AsBaseResourceProvider;
@@ -109,52 +110,54 @@ public class RassOrganizationProvider<T> extends AsBaseResourceProvider<T> imple
      * @param theType              the type
      * @return a bundle with a list of organization
      */
+    // The number of parameters is due to the Hapi framework
+    @SuppressWarnings("java:S107")
     @Search()
     public IBundleProvider search(
             @Count Integer theCount,
             @Description(shortDefinition = "Recherche sur l'id de la ressource Organization")
             @OptionalParam(name = IAnyResource.SP_RES_ID)
-            TokenAndListParam theId,
+                    TokenAndListParam theId,
             @Description(shortDefinition = "Recherche que les ressources Organizations actives")
             @OptionalParam(name = Organization.SP_ACTIVE)
-            TokenAndListParam theActive,
+                    TokenAndListParam theActive,
             @Description(shortDefinition = "Recherche sur (une partie) de l'adresse de la structure.")
             @OptionalParam(name = Organization.SP_ADDRESS)
-            StringAndListParam theAddress,
+                    StringAndListParam theAddress,
             @Description(shortDefinition = "Recherche sur la commune spécifiée dans une adresse")
             @OptionalParam(name = Organization.SP_ADDRESS_CITY)
-            StringAndListParam theAddressCity,
+                    StringAndListParam theAddressCity,
             @Description(shortDefinition = "Recherche sur le pays spécifié dans une adresse")
             @OptionalParam(name = Organization.SP_ADDRESS_COUNTRY)
-            StringAndListParam theAddressCountry,
+                    StringAndListParam theAddressCountry,
             @Description(shortDefinition = "Recherche sur le code postal spécifié dans une adresse")
             @OptionalParam(name = Organization.SP_ADDRESS_POSTALCODE)
-            StringAndListParam theAddressPostalcode,
+                    StringAndListParam theAddressPostalcode,
             @Description(shortDefinition = "A state specified in an address")
             @OptionalParam(name = Organization.SP_ADDRESS_STATE)
-            StringAndListParam theAddressState,
+                    StringAndListParam theAddressState,
             @Description(shortDefinition = "Recherche sur un code use spécifié dans adresse")
             @OptionalParam(name = Organization.SP_ADDRESS_USE)
-            TokenAndListParam theAddressUse,
+                    TokenAndListParam theAddressUse,
             @Description(shortDefinition = "Technical endpoints providing access to services operated for the organization")
             @OptionalParam(name = Organization.SP_ENDPOINT)
-            ReferenceAndListParam theEndpoint,
+                    ReferenceAndListParam theEndpoint,
             @Description(shortDefinition = "Recherche sur tous les identifiants des structures")
             @OptionalParam(name = Organization.SP_IDENTIFIER)
-            TokenAndListParam theIdentifier,
+                    TokenAndListParam theIdentifier,
             @Description(shortDefinition = "Recherche sur la raison sociale des structures")
             @OptionalParam(name = Organization.SP_NAME)
-            StringAndListParam theName,
+                    StringAndListParam theName,
             @Description(shortDefinition = "Recherche tous les établissements géographiques rattachés à une même entité juridique")
             @OptionalParam(name = Organization.SP_PARTOF)
-            ReferenceAndListParam thePartof,
+                    ReferenceAndListParam thePartof,
             @Description(shortDefinition = "Recherche sur le type de structure/ code APE/ catégorie juridique/ secteur d'activité/ catégorie d'établissement ou le code SPH de la structure")
             @OptionalParam(name = Organization.SP_TYPE)
-            TokenAndListParam theType,
+                    TokenAndListParam theType,
             @OptionalParam(name = "_total") String theTotal,
             @Since InstantType theSince
 
-    ) throws BadSelectExpression {
+    ) throws BadSelectExpression, BadDataFormatException {
         var selectExpression = new SelectExpression<>("Organization", expressionFactory);
         selectExpression.setCount(theCount);
         selectExpression.setTotalMode(theTotal);
@@ -209,7 +212,7 @@ public class RassOrganizationProvider<T> extends AsBaseResourceProvider<T> imple
      */
     @Create
     public MethodOutcome create(@ResourceParam Organization organization) {
-        return (MethodOutcome) super.create(List.of(organization)).get(0);
+        return super.create(List.of(organization)).get(0);
     }
 
     /**

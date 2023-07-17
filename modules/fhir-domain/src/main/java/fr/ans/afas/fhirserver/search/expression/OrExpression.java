@@ -37,5 +37,19 @@ public abstract class OrExpression<T> implements ContainerExpression<T> {
         return this.or(expression);
     }
 
+    @Override
+    public String toString() {
+        var sb = new StringBuilder();
+        var i = 0;
+        sb.append("(");
+        for (var e : this.expressions) {
+            if (i++ > 0) {
+                sb.append(" OR ");
+            }
+            sb.append(e);
+        }
+        sb.append(")");
+        return sb.toString();
+    }
 
 }

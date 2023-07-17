@@ -77,7 +77,7 @@ public class FhirHookManager<T> {
             handleWebHookCallbacks(requests);
 
             this.subscriptionMessageRepository.saveAll(requests.keySet().stream().map(WebHookData::getMessage).collect(Collectors.toList()));
-            this.fhirStoreService.store(requests.keySet().stream().map(WebHookData::getSubscription).collect(Collectors.toList()), true);
+            this.fhirStoreService.store(requests.keySet().stream().map(WebHookData::getSubscription).collect(Collectors.toList()), true, false);
             page++;
             count += messagePage.getNumberOfElements();
             // handle only the first 1000 of messages

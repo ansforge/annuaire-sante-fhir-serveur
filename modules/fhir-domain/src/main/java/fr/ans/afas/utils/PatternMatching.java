@@ -11,7 +11,7 @@ import java.util.function.Predicate;
 
 /**
  * Implementation of pattern matching (not available before java17).
- * From http://www.arolla.fr/blog/2014/10/pattern-matching-en-java-8/
+ * From <a href="http://www.arolla.fr/blog/2014/10/pattern-matching-en-java-8/">...</a>
  *
  * @param <T>
  * @param <R>

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import fr.ans.afas.domain.StorageConstants;
 import fr.ans.afas.exception.BadReferenceFormat;
+import fr.ans.afas.mdbexpression.domain.fhir.MongoDbStringExpression;
 import fr.ans.afas.utils.FhirDateUtils;
 import fr.ans.afas.utils.IrisFhirUtils;
 import fr.ans.afas.utils.data.ParsedReference;
@@ -77,16 +78,19 @@ public abstract class FhirBaseResourceSerializer<T> extends JsonSerializer<T> {
     /**
      * Write the fhir object inside the "fhir" property
      *
-     * @param value    the fhir object
-     * @param gen      the json generator
-     * @param provider the serializer
+     * @param value       the fhir object
+     * @param gen         the json generator
+     * @param provider    the serializer
+     * @param onlyIndexes if true, will not save the base resource
      * @throws IOException if an error occur during the storage of the element
      */
-    protected void writeFhirResource(DomainResource value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-
+    protected void writeFhirResource(DomainResource value, JsonGenerator gen, SerializerProvider provider, boolean onlyIndexes) throws IOException {
         var fhirResourceAsString = fhirContext.newJsonParser().encodeResourceToString(value);
-        gen.writeFieldName("fhir");
-        gen.writeRawValue(fhirResourceAsString);
+
+        if (!onlyIndexes) {
+            gen.writeFieldName("fhir");
+            gen.writeRawValue(fhirResourceAsString);
+        }
 
         // revision related fields:
         var clone = fhirContext.newJsonParser().parseResource(fhirResourceAsString);
@@ -131,6 +135,12 @@ public abstract class FhirBaseResourceSerializer<T> extends JsonSerializer<T> {
             gen.writeFieldName(property);
             var array = v.stream().map(PrimitiveType::getValue).toArray(String[]::new);
             gen.writeArray(array, 0, array.length);
+
+            // insensitive search:
+            gen.writeFieldName(property + MongoDbStringExpression.INSENSITIVE_SUFFIX);
+            var arrayI = v.stream().map(PrimitiveType::getValue).filter(Objects::nonNull).map(String::toLowerCase).toArray(String[]::new);
+            gen.writeArray(arrayI, 0, arrayI.length);
+
         }
     }
 
@@ -201,6 +211,24 @@ public abstract class FhirBaseResourceSerializer<T> extends JsonSerializer<T> {
         }
     }
 
+    /**
+     * Write a fhir CodeType. We index code (as value).
+     * <p>
+     * CodeType is the same as CodeableConcept except that system and system with code aren't used, because system field doesn't exist
+     *
+     * @param gen       the json generator
+     * @param codeTypes the codes types
+     * @param prefix    the base name of the json property
+     * @throws IOException
+     */
+    protected void writeCodeTypes(JsonGenerator gen, Collection<CodeType> codeTypes, String prefix) throws IOException {
+        if (!codeTypes.isEmpty()) {
+            gen.writeFieldName(prefix + StorageConstants.VALUE_SUFFIX);
+            var array = codeTypes.stream().map(CodeType::getCode).toArray(String[]::new);
+            gen.writeArray(array, 0, array.length);
+        }
+    }
+
 
     /**
      * Write multiple references
@@ -250,15 +278,21 @@ public abstract class FhirBaseResourceSerializer<T> extends JsonSerializer<T> {
      */
     protected void writeHumanNames(JsonGenerator gen, Collection<HumanName> humanNames, String prefix) throws IOException {
         if (!humanNames.isEmpty()) {
-            var array = humanNames.stream().map(HumanName::getPrefix).flatMap(p -> p.stream().map(PrimitiveType::getValue)).toArray(String[]::new);
-            if (array.length > 0) {
-                gen.writeFieldName(prefix + StorageConstants.HUMAN_NAME_PREFIX_SUFFIX);
-                gen.writeArray(array, 0, array.length);
+            var array = humanNames.stream().map(HumanName::getPrefix).flatMap(List::stream).collect(Collectors.toList());
+            if (!array.isEmpty()) {
+                writeMultiString(gen, array, prefix + StorageConstants.HUMAN_NAME_PREFIX_SUFFIX);
             }
-            var arraySuffix = humanNames.stream().map(HumanName::getSuffix).flatMap(p -> p.stream().map(PrimitiveType::getValue)).toArray(String[]::new);
-            if (array.length > 0) {
-                gen.writeFieldName(prefix + StorageConstants.HUMAN_NAME_SUFFIX_SUFFIX);
-                gen.writeArray(arraySuffix, 0, arraySuffix.length);
+            array = humanNames.stream().map(HumanName::getSuffix).flatMap(List::stream).collect(Collectors.toList());
+            if (!array.isEmpty()) {
+                writeMultiString(gen, array, prefix + StorageConstants.HUMAN_NAME_SUFFIX_SUFFIX);
+            }
+            array = humanNames.stream().map(HumanName::getFamilyElement).collect(Collectors.toList());
+            if (!array.isEmpty()) {
+                writeMultiString(gen, array, prefix + StorageConstants.HUMAN_NAME_FAMILY_SUFFIX);
+            }
+            array = humanNames.stream().map(HumanName::getGiven).flatMap(List::stream).collect(Collectors.toList());
+            if (!array.isEmpty()) {
+                writeMultiString(gen, array, prefix + StorageConstants.HUMAN_NAME_GIVEN_SUFFIX);
             }
         }
     }

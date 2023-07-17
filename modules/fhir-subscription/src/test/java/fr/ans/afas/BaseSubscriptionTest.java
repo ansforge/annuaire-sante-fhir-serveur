@@ -6,6 +6,7 @@ import ca.uhn.fhir.rest.client.interceptor.LoggingInterceptor;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import org.hl7.fhir.r4.model.StringType;
 import org.hl7.fhir.r4.model.Subscription;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 
 import javax.inject.Inject;
@@ -46,6 +47,18 @@ public abstract class BaseSubscriptionTest {
 
 
     protected void insertSampleData() {
+        List<Subscription> samples = createSamples();
+
+        this.fhirStoreService.store(samples, false);
+    }
+
+    /**
+     * Create some subscriptions
+     *
+     * @return sample subscriptions
+     */
+    @NotNull
+    protected List<Subscription> createSamples() {
         var s1 = new Subscription();
         s1.setId("S1");
         s1.setCriteria("Device?_format=json");
@@ -61,8 +74,7 @@ public abstract class BaseSubscriptionTest {
         s3.setCriteria("Device?name:contains=Some");
         s3.setChannel(buildChannel("application/fhir+json", "http:localhost:3000/hook", List.of()));
         s3.setStatus(Subscription.SubscriptionStatus.ERROR);
-
-        this.fhirStoreService.store(List.of(s1, s2, s3), false);
+        return List.of(s1, s2, s3);
     }
 
 

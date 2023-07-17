@@ -4,6 +4,8 @@
 
 package fr.ans.afas.fhirserver.search.expression;
 
+import java.util.List;
+
 /**
  * An {@link Expression} that can contains other expressions
  *
@@ -19,6 +21,12 @@ public interface ContainerExpression<T> extends Expression<T> {
      * @return the current expression.
      */
     ContainerExpression<T> addExpression(Expression<T> expression);
+
+    /***
+     * Get the list of expressions
+     * @return
+     */
+    List<Expression<T>> getExpressions();
 
 
 }

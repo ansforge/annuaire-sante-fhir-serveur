@@ -6,6 +6,7 @@ package fr.ans.afas.utils;
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.param.*;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
 import fr.ans.afas.fhirserver.search.expression.*;
@@ -32,14 +33,16 @@ import java.util.List;
 public class SelectExpressionTest {
 
 
-    static FhirSearchPath pathString = FhirSearchPath.builder().resource("FhirResource").path("string_path").build();
-    static FhirSearchPath pathString2 = FhirSearchPath.builder().resource("FhirResource").path("string_path2").build();
-    static FhirSearchPath pathToken = FhirSearchPath.builder().resource("FhirResource").path("token_path").build();
-    static FhirSearchPath pathDate = FhirSearchPath.builder().resource("FhirResource").path("date_path").build();
-    static FhirSearchPath pathReference = FhirSearchPath.builder().resource("FhirResource").path("reference_path").build();
-    static FhirSearchPath pathUri = FhirSearchPath.builder().resource("FhirResource").path("uri_path").build();
-    static Date testDate = new Date(1663849410512L);
-    ExpressionFactory<?> expressionFactory = Mockito.mock(ExpressionFactory.class);
+    static final FhirSearchPath pathString = FhirSearchPath.builder().resource("FhirResource").path("string_path").build();
+    static final FhirSearchPath pathString2 = FhirSearchPath.builder().resource("FhirResource").path("string_path2").build();
+    static final FhirSearchPath pathToken = FhirSearchPath.builder().resource("FhirResource").path("token_path").build();
+    static final FhirSearchPath pathDate = FhirSearchPath.builder().resource("FhirResource").path("date_path").build();
+    static final FhirSearchPath pathReference = FhirSearchPath.builder().resource("FhirResource").path("reference_path").build();
+    static final FhirSearchPath pathUri = FhirSearchPath.builder().resource("FhirResource").path("uri_path").build();
+    static final FhirSearchPath pathHasParam = FhirSearchPath.builder().resource("FhirResourceSub").path("sub_path").build();
+    static final FhirSearchPath pathHasLink = FhirSearchPath.builder().resource("FhirResourceSub").path("sub_link").build();
+    static final Date testDate = new Date(1663849410512L);
+    final ExpressionFactory<?> expressionFactory = Mockito.mock(ExpressionFactory.class);
 
     @Before
     public void setup() {
@@ -55,11 +58,16 @@ public class SelectExpressionTest {
         Mockito.when(expressionFactory.newDateRangeExpression(Mockito.any(), Mockito.any(), Mockito.isA(TemporalPrecisionEnum.class), Mockito.isA(ParamPrefixEnum.class))).then((a) -> new EmptyDateExpression(pathDate, testDate, TemporalPrecisionEnum.DAY, ParamPrefixEnum.GREATERTHAN));
         Mockito.when(expressionFactory.newReferenceExpression(pathReference, "FhirResource/1")).then((a) -> new EmptyReferenceExpression(pathReference, "FhirResource", "1"));
         Mockito.when(expressionFactory.newStringExpression(pathUri, "http://url", StringExpression.Operator.EXACT)).then((a) -> new EmptyStringExpression(pathUri, "http://url", StringExpression.Operator.EXACT));
+        Mockito.when(expressionFactory.newHasExpression(pathHasLink, pathHasParam, List.of("v1"))).then((a) -> {
+            var hc = new HasCondition(pathHasLink);
+            hc.addExpression(new EmptyStringExpression(pathHasParam, "v1", StringExpression.Operator.CONTAINS));
+            return hc;
+        });
 
     }
 
     @Test
-    public void testFromStringParams() {
+    public void testFromStringParams() throws BadDataFormatException {
         var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
@@ -81,7 +89,7 @@ public class SelectExpressionTest {
 
 
     @Test
-    public void testFromTokenParams() {
+    public void testFromTokenParams() throws BadDataFormatException {
         var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
@@ -122,7 +130,7 @@ public class SelectExpressionTest {
 
 
     @Test
-    public void testFromReferenceParams() {
+    public void testFromReferenceParams() throws BadDataFormatException {
         var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
@@ -142,7 +150,43 @@ public class SelectExpressionTest {
     }
 
     @Test
-    public void testFromUriParams() {
+    public void testFromHasParams() {
+
+        // simple has:
+        var se = new SelectExpression<>("FhirResource", expressionFactory);
+
+        var hasAndListParam = new HasAndListParam();
+        var hasOrListParam = new HasOrListParam();
+        hasOrListParam.add(new HasParam("FhirResourceSub", "sub_link", "sub_path", "v1"));
+        hasAndListParam.addAnd(hasOrListParam);
+
+        se.fromFhirParams(hasAndListParam);
+        var oe = se.getHasConditions();
+        Assert.assertEquals(1, oe.size());
+        Assert.assertEquals("FhirResourceSub", oe.get(0).getFhirPath().getResource());
+        Assert.assertEquals("sub_link", oe.get(0).getFhirPath().getPath());
+        Assert.assertEquals(StringExpression.Operator.CONTAINS, ((EmptyStringExpression) oe.get(0).getExpressions().get(0)).getOperator());
+        Assert.assertEquals("v1", ((EmptyStringExpression) oe.get(0).getExpressions().get(0)).getValue());
+        Assert.assertEquals("sub_path", ((EmptyStringExpression) oe.get(0).getExpressions().get(0)).getFhirPath().getPath());
+        Assert.assertEquals("FhirResourceSub", ((EmptyStringExpression) oe.get(0).getExpressions().get(0)).getFhirPath().getResource());
+
+        // multiple has (Logical AND):
+        se = new SelectExpression<>("FhirResource", expressionFactory);
+        var hasAndListParam2 = new HasAndListParam();
+        var hasOrListParam2 = new HasOrListParam();
+        hasOrListParam2.add(new HasParam("FhirResourceSub", "sub_link", "sub_path", "v1"));
+
+        hasAndListParam2.addAnd(hasOrListParam);
+        hasAndListParam2.addAnd(hasOrListParam2);
+        se.fromFhirParams(hasAndListParam2);
+
+        var andResult = se.getHasConditions();
+        Assert.assertEquals(2, andResult.size());
+
+    }
+
+    @Test
+    public void testFromUriParams() throws BadDataFormatException {
         var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
@@ -175,9 +219,7 @@ public class SelectExpressionTest {
         se.setCount(null);
         Assert.assertEquals(1, (int) se.getCount());
 
-        Assert.assertThrows(BadParametersException.class, () -> {
-            se.setCount(Integer.MAX_VALUE);
-        });
+        Assert.assertThrows(BadParametersException.class, () -> se.setCount(Integer.MAX_VALUE));
 
     }
 

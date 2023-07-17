@@ -20,10 +20,6 @@ import javax.validation.constraints.NotNull;
 public abstract class QuantityExpression<T> implements ElementExpression<T> {
 
     /**
-     * The path where to apply the filter
-     */
-    protected final FhirSearchPath fhirPath;
-    /**
      * The value of the expression
      */
     protected final Number value;
@@ -31,6 +27,10 @@ public abstract class QuantityExpression<T> implements ElementExpression<T> {
      * An operator (equals, greater than...)
      */
     protected final Operator operator;
+    /**
+     * The path where to apply the filter
+     */
+    protected FhirSearchPath fhirPath;
 
     /**
      * Construct a Quantity expression
@@ -43,6 +43,20 @@ public abstract class QuantityExpression<T> implements ElementExpression<T> {
         this.fhirPath = fhirPath;
         this.value = value;
         this.operator = operator;
+    }
+
+    @Override
+    public String toString() {
+        return "QuantityExpression{" +
+                "fhirPath=" + fhirPath +
+                ",value=" + value +
+                ",operator=" + operator +
+                '}';
+    }
+
+    @Override
+    public void setFhirPath(FhirSearchPath path) {
+        this.fhirPath = path;
     }
 
     /**

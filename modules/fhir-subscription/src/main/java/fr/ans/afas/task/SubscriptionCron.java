@@ -6,6 +6,7 @@ package fr.ans.afas.task;
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.param.ParamPrefixEnum;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhirserver.http.FhirRequestParser;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
@@ -79,20 +80,20 @@ public class SubscriptionCron<T> {
                 if (Subscription.SubscriptionStatus.ACTIVE.equals(subscription.getStatus())) {
                     try {
                         this.handleSubscription(subscription);
-                    } catch (BadSelectExpression | BadRequestException badSelectExpression) {
+                    } catch (BadSelectExpression | BadRequestException | BadDataFormatException badSelectExpression) {
                         logger.error("Error parsing the criteria for the subscription {}", subscription.getId());
                         subscription.setStatus(Subscription.SubscriptionStatus.ERROR);
                         subscription.setError("Error parsing the criteria for the subscription");
                     }
                 }
             }
-            this.fhirStoreService.store(subscriptions.getPage().stream().map(DomainResource.class::cast).collect(Collectors.toList()), false);
+            this.fhirStoreService.store(subscriptions.getPage().stream().map(DomainResource.class::cast).collect(Collectors.toList()), false, false);
 
             subscriptionContext = subscriptions.getContext();
         } while (subscriptionResultSize == pageSize);
     }
 
-    private void handleSubscription(Subscription subscription) throws BadSelectExpression {
+    private void handleSubscription(Subscription subscription) throws BadSelectExpression, BadDataFormatException {
         var dt = (DateTimeType) getCreateLastDateCheckExtension(subscription).getValue();
         var toDate = new Date();
         var query = FhirRequestParser.parseSelectExpression(subscription.getCriteria(), this.expressionFactory, this.searchConfig);
@@ -123,7 +124,7 @@ public class SubscriptionCron<T> {
 
             for (var r : resourceToNotify.getPage()) {
                 logger.info("Subscription notification on {}:{} {}", r.getIdElement().getResourceType(), r.getIdElement().getIdPart(), subscriptionManager);
-                subscriptionManager.sendMessage(subscription.getId(), (DomainResource) r);
+                subscriptionManager.sendMessage(subscription.getId(), r);
             }
 
             resourceContext = resourceToNotify.getContext();

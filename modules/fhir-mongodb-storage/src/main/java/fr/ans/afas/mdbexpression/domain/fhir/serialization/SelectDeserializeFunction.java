@@ -12,6 +12,8 @@ import fr.ans.afas.mdbexpression.domain.fhir.MongoDbIncludeExpression;
 import org.bson.conversions.Bson;
 import org.springframework.util.StringUtils;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -25,15 +27,20 @@ public class SelectDeserializeFunction implements DeserializeFunction<Bson> {
         }
         var resourceType = parts[0];
         var count = parts[1];
-        var order = parts[2];
-        var expression = parts[3];
-        var include = parts[4];
-        var revinclude = parts[5];
+        var expression = parts[2];
+        var include = parts[3];
+        var revinclude = parts[4];
+        var has = parts[5];
         var se = new SelectExpression<>(resourceType, expressionFactory, (ContainerExpression<Bson>) expressionDeserializer.deserialize(expression));
         se.setCount(Integer.parseInt(count));
-        se.orderBy(order);
         se.getIncludes().addAll(deserializeInclude(searchConfig, include));
         se.getRevincludes().addAll(deserializeInclude(searchConfig, revinclude));
+
+
+        if (has.length() > 0) {
+            se.addHasCondition((HasCondition<Bson>) expressionDeserializer.deserialize(URLDecoder.decode(has, StandardCharsets.UTF_8)));
+        }
+
         return se;
     }
 

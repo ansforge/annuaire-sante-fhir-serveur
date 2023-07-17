@@ -6,12 +6,15 @@ package fr.ans.afas.provider;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.model.api.Include;
+import ca.uhn.fhir.model.api.annotation.Description;
 import ca.uhn.fhir.rest.annotation.*;
 import ca.uhn.fhir.rest.api.server.IBundleProvider;
+import ca.uhn.fhir.rest.param.DateRangeParam;
 import ca.uhn.fhir.rest.param.ReferenceAndListParam;
 import ca.uhn.fhir.rest.param.StringAndListParam;
 import ca.uhn.fhir.rest.param.TokenAndListParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.fhir.AfasBundleProvider;
 import fr.ans.afas.fhirserver.provider.AsBaseResourceProvider;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
@@ -59,23 +62,31 @@ public class DeviceProvider<T> extends AsBaseResourceProvider<T> implements IRes
     @Search()
     public IBundleProvider search(@Count Integer theCount,
                                   @OptionalParam(name = Device.SP_IDENTIFIER)
-                                  TokenAndListParam theIdentifier,
+                                          TokenAndListParam theIdentifier,
                                   @OptionalParam(name = Device.SP_DEVICE_NAME)
-                                  StringAndListParam theName,
+                                              StringAndListParam theName,
                                   @OptionalParam(name = Device.SP_ORGANIZATION)
-                                  ReferenceAndListParam theOwner,
+                                              ReferenceAndListParam theOwner,
+                                  @Description(shortDefinition = "Recherche sur le type de l'équipement matériel lourd")
+                                      @OptionalParam(name = Device.SP_TYPE)
+                                              TokenAndListParam theType,
+                                  @OptionalParam(name = "_lastUpdated")
+                                              DateRangeParam theLastUpdated,
                                   @IncludeParam(reverse = true)
-                                  Set<Include> theRevIncludes,
+                                              Set<Include> theRevIncludes,
                                   @IncludeParam(allow = {
                                           "Device:organization", "*"
                                   })
-                                  Set<Include> theIncludes
-    ) {//
+                                              Set<Include> theIncludes
+    ) throws BadDataFormatException {//
         var selectExpression = new SelectExpression<>(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME, expressionFactory);
         selectExpression.setCount(theCount);
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path(Device.SP_IDENTIFIER).build(), theIdentifier);
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path(Device.SP_DEVICE_NAME).build(), theName);
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path(Device.SP_ORGANIZATION).build(), theOwner);
+        selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path(Device.SP_TYPE).build(), theType);
+        selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path("_lastUpdated").build(), theLastUpdated);
+
 
         // if the user use _include with *, we recreate _include with all available include
         if (theIncludes != null && theIncludes.stream().anyMatch(ti -> "*".equals(ti.getValue()))) {

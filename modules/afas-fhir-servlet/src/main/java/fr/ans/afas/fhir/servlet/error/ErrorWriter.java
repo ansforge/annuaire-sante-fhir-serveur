@@ -6,6 +6,9 @@ package fr.ans.afas.fhir.servlet.error;
 
 import ca.uhn.fhir.context.FhirContext;
 import fr.ans.afas.fhirserver.service.exception.PublicException;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.OperationOutcome;
 
 import javax.servlet.AsyncContext;
@@ -18,21 +21,17 @@ import java.io.PrintWriter;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
+@Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ErrorWriter {
-
-
-    private ErrorWriter() {
-    }
 
     /**
      * Write an error as an OperationOutcome to an async context.
      *
      * @param e       the exception
      * @param context the async context
-     * @throws IOException if an error occur when we write the response
      */
-    public static void writeError(Exception e, AsyncContext context) throws IOException {
-        var parser = FhirContext.forR4().newJsonParser();
+    public static void writeError(Exception e, AsyncContext context) {
         var operationOutcome = new OperationOutcome();
         var operationOutcomeIssueComponent = operationOutcome.addIssue();
         operationOutcomeIssueComponent.setCode(OperationOutcome.IssueType.EXCEPTION);
@@ -42,7 +41,12 @@ public class ErrorWriter {
         } else {
             operationOutcomeIssueComponent.setDiagnostics("Unknown error");
         }
-        var writer = new PrintWriter(context.getResponse().getOutputStream());
-        parser.encodeResourceToWriter(operationOutcome, writer);
+        try {
+            var writer = new PrintWriter(context.getResponse().getOutputStream());
+            FhirContext.forR4().newJsonParser().encodeResourceToWriter(operationOutcome, writer);
+        } catch (IOException ex) {
+            log.debug("Error writing the error", e);
+        }
+
     }
 }

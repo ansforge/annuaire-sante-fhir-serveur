@@ -3,16 +3,22 @@ server:
   tomcat:
     connection-timeout: 300000
 
+project:
+  version: @project.version@
 
 afas:
   fhir:
+    audit:
+      enabled: true
+      read: true
+      write: true
     next-url-encryption-key: change-me
     subscription:
       hmacKey: 123456
       enabled: true
       pageSize: 50
   mongodb:
-    uri: ${MONGO_CONNECTION_STRING:mongodb://localhost:27017/?socketTimeoutMS=360000&connectTimeoutMS=360000}
+    uri: ${MONGO_CONNECTION_STRING:mongodb://root:root@localhost:27017/?socketTimeoutMS=360000&connectTimeoutMS=360000}
     dbname: ${DB_NAME:afassample}
 
   publicUrl: http://localhost:8000/fhir
@@ -26,3 +32,5 @@ spring:
 logging:
   level:
     root: INFO
+
+

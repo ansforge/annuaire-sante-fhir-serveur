@@ -7,7 +7,9 @@ package fr.ans.afas;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.server.IPagingProvider;
 import com.mongodb.client.MongoClient;
+import fr.ans.afas.audit.AuditFilter;
 import fr.ans.afas.config.MongoIndexConfiguration;
+import fr.ans.afas.domain.ResourceAndSubResources;
 import fr.ans.afas.fhir.AfasPagingProvider;
 import fr.ans.afas.fhir.TransactionalResourceProvider;
 import fr.ans.afas.fhirserver.hook.exception.BadHookConfiguration;
@@ -22,18 +24,23 @@ import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializ
 import fr.ans.afas.fhirserver.search.expression.serialization.SerializeUrlEncrypter;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
+import fr.ans.afas.fhirserver.service.audit.DefaultReadAuditService;
+import fr.ans.afas.fhirserver.service.audit.DefaultWriteAuditService;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
 import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
+import fr.ans.afas.rass.service.DatabaseService;
 import fr.ans.afas.rass.service.MongoDbFhirService;
 import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
+import fr.ans.afas.rass.service.impl.SimpleDatabaseService;
 import fr.ans.afas.rass.service.json.FhirBaseResourceDeSerializer;
 import fr.ans.afas.rass.service.json.FhirBaseResourceSerializer;
 import fr.ans.afas.rass.service.json.GenericSerializer;
 import fr.ans.afas.subscription.SubscriptionConfiguration;
 import org.bson.conversions.Bson;
-import org.hl7.fhir.r4.model.DomainResource;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -139,16 +146,15 @@ public class AfasServerAutoConfiguration {
     @Bean
     @Inject
     FhirStoreService<Bson> fhirStoreService(
-            List<FhirBaseResourceSerializer<DomainResource>> serializers,
+            List<FhirBaseResourceSerializer<ResourceAndSubResources>> serializers,
             FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer,
             MongoClient mongoClient,
             SearchConfig searchConfig,
             FhirContext fhirContext,
             ApplicationContext context,
             @Value("${afas.fhir.max-include-size:5000}")
-            int maxIncludePageSize,
-            @Value("${afas.mongodb.dbname}")
-            String dbName) throws BadHookConfiguration {
+                    int maxIncludePageSize,
+            DatabaseService databaseService) throws BadHookConfiguration {
         return new MongoDbFhirService(
                 serializers,
                 fhirBaseResourceDeSerializer,
@@ -157,8 +163,15 @@ public class AfasServerAutoConfiguration {
                 fhirContext,
                 new HookService(context),
                 maxIncludePageSize,
-                dbName
+                databaseService
         );
+    }
+
+
+    @ConditionalOnMissingBean
+    @Bean
+    DatabaseService databaseService(@Value("${afas.mongodb.dbname}") String dbName) {
+        return new SimpleDatabaseService(dbName);
     }
 
 
@@ -212,5 +225,47 @@ public class AfasServerAutoConfiguration {
     public TransactionalResourceProvider<Bson> transactionalResourceProvider(FhirStoreService<Bson> fhirStoreService) {
         return new TransactionalResourceProvider<>(fhirStoreService);
     }
+
+
+    // Audit
+
+    /**
+     * The audit filter
+     *
+     * @return audit filter
+     */
+    @ConditionalOnProperty(value = "afas.fhir.audit.enabled", havingValue = "true")
+    @Bean
+    public AuditFilter auditFilter() {
+        return new AuditFilter();
+    }
+
+
+    /**
+     * Default audit listener for read operations
+     */
+    @ConditionalOnExpression("${afas.fhir.audit.enabled:false} && ${afas.fhir.audit.read:false}")
+    @Bean
+    DefaultReadAuditService defaultReadAuditService() {
+        return new DefaultReadAuditService();
+    }
+
+    /**
+     * Default audit listener for write operations
+     */
+    @ConditionalOnExpression("${afas.fhir.audit.enabled:false} && ${afas.fhir.audit.write:true}")
+    @Bean
+    DefaultWriteAuditService defaultWriteAuditService() {
+        return new DefaultWriteAuditService();
+    }
+
+    /**
+     * Default audit listener for write operations
+
+     @ConditionalOnMissingBean
+     @Inject
+     @Bean DefaultIndexService defaultIndexService(FhirStoreService<Bson> fhirStoreService, ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig, GenericSerializer genericSerializer) {
+     return new DefaultIndexService(fhirStoreService, expressionFactory, searchConfig, genericSerializer);
+     }  */
 
 }

@@ -23,7 +23,7 @@ public class HapiSubscriptionConfiguration {
     @Bean
     @Inject
     <T> SubscriptionOperationService subscriptionOperationService(FhirStoreService<T> fhirStoreService, ExpressionFactory<T> expressionFactory) {
-        return new DefaultSubscriptionOperationService(fhirStoreService, expressionFactory);
+        return new DefaultSubscriptionOperationService<>(fhirStoreService, expressionFactory);
     }
 
 

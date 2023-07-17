@@ -8,6 +8,7 @@ import ca.uhn.fhir.context.FhirContext;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.google.common.collect.Lists;
+import fr.ans.afas.domain.ResourceAndSubResources;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
@@ -31,15 +32,15 @@ import java.util.stream.Collectors;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource> {
+public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSubResources> {
 
 
     /**
      * The search configuration
      */
-    SearchConfig searchConfig;
+    final SearchConfig searchConfig;
 
-    ExpressionParser expressionParser = new SpelExpressionParser();
+    final ExpressionParser expressionParser = new SpelExpressionParser();
 
     @Inject
     public GenericSerializer(SearchConfig searchConfig, FhirContext fhirContext) {
@@ -49,7 +50,12 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
     }
 
     @Override
-    public void serialize(DomainResource value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+    public void serialize(ResourceAndSubResources valueAndSubValues, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        this.serialize(valueAndSubValues, gen, provider, false);
+    }
+
+    public void serialize(ResourceAndSubResources valueAndSubValues, JsonGenerator gen, SerializerProvider provider, boolean onlyIndexes) throws IOException {
+        var value = valueAndSubValues.getResource();
         var configs = searchConfig.getAllByFhirResource(value.fhirType());
         if (configs == null) {
             if (logger.isErrorEnabled()) {
@@ -59,7 +65,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
             throw new BadConfigurationException("Can't write " + value.fhirType() + " resource. Resource not supported");
         }
         gen.writeStartObject();
-        super.writeFhirResource(value, gen, provider);
+        super.writeFhirResource(value, gen, provider, onlyIndexes);
 
         var internalIndexes = Set.of("_lastUpdated", "_id");
 
@@ -89,7 +95,30 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
             }
 
         }
+
+        // write links:
+        writeLinks(valueAndSubValues, gen, provider);
+
         gen.writeEndObject();
+    }
+
+    private void writeLinks(ResourceAndSubResources valueAndSubValues, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        if (valueAndSubValues.getSubResources() != null && !valueAndSubValues.getSubResources().isEmpty()) {
+
+            var resourcesToPersist = valueAndSubValues.getSubResources().stream()
+                    .collect(Collectors.groupingBy(r -> r.getResourceType().toString()));
+            gen.writeFieldName("links");
+            gen.writeStartObject();
+            for (var subs : resourcesToPersist.entrySet()) {
+                gen.writeFieldName(subs.getKey());
+                gen.writeStartArray();
+                for (var sub : subs.getValue()) {
+                    this.serialize(ResourceAndSubResources.builder().resource(sub).build(), gen, provider, true);
+                }
+                gen.writeEndArray();
+            }
+            gen.writeEndObject();
+        }
     }
 
     private void writeValue(DomainResource value, JsonGenerator gen, SearchParamConfig config, ArrayList<Object> extracts, Class<?> theType) throws IOException {
@@ -101,6 +130,8 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
             }
         } else if (theType.equals(StringType.class)) {
             this.writeMultiString(gen, extracts.stream().map(StringType.class::cast).collect(Collectors.toList()), config.getIndexName());
+        } else if (theType.equals(CodeType.class)) {
+            this.writeCodeTypes(gen, extracts.stream().map(CodeType.class::cast).collect(Collectors.toList()), config.getIndexName());
         } else if (theType.equals(Identifier.class)) {
             this.writeIdentifiers(gen, extracts.stream().map(Identifier.class::cast).collect(Collectors.toList()), config.getIndexName());
         } else if (theType.equals(Reference.class)) {
@@ -119,7 +150,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
     }
 
 
-    protected Collection<Object> extractValues(Object value, String stringPath) {
+    public Collection<Object> extractValues(Object value, String stringPath) {
         if (StringUtils.hasLength(stringPath)) {
             var pathParts = stringPath.split("\\|");
             return extractValuesInternal(List.of(value), new ArrayDeque<>(Lists.newArrayList(pathParts)));
@@ -165,8 +196,8 @@ public class GenericSerializer extends FhirBaseResourceSerializer<DomainResource
 
 
     @Override
-    public Class<DomainResource> getClassFor() {
-        return DomainResource.class;
+    public Class<ResourceAndSubResources> getClassFor() {
+        return ResourceAndSubResources.class;
     }
 
 

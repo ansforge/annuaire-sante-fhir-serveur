@@ -44,7 +44,7 @@ public class FhirBundleBuilder {
 
             sb.append(",\"link\": [ {");
             sb.append("\"relation\": \"next\",");
-            sb.append("\"url\": \"").append(serverUrl).append("/fhir/v2-alpha/_page?id=");
+            sb.append("\"url\": \"").append(serverUrl).append("/v2-alpha/_page?id=");
             sb.append(nextPageId);
             sb.append("\"}]");
 
@@ -55,10 +55,10 @@ public class FhirBundleBuilder {
 
 
     public static class BundleEntry {
-        String content;
-        String id;
+        final String content;
+        final String id;
 
-        String type;
+        final String type;
 
         public BundleEntry(String type, String id, String content) {
             this.content = content;

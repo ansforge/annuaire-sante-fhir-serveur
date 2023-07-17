@@ -29,15 +29,17 @@ public class FhirResourceSearchConfig {
 
     private List<SearchParamConfig> searchParams;
 
+    private List<JoinPath> joins;
 
     public FhirResourceSearchConfig() {
 
     }
 
     @Builder
-    public FhirResourceSearchConfig(String name, String profile, List<SearchParamConfig> searchParams) {
+    public FhirResourceSearchConfig(String name, String profile, List<SearchParamConfig> searchParams, List<JoinPath> joins) {
         this.name = name;
         this.profile = profile;
         this.searchParams = searchParams;
+        this.joins = joins;
     }
 }

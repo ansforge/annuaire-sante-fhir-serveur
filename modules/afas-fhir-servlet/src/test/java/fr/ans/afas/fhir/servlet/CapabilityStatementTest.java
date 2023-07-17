@@ -45,8 +45,8 @@ public class CapabilityStatementTest {
     @Test
     public void test() throws Exception {
 
-        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, FhirContext.forR4(), "");
-        StringWriter out = ServletTestUtil.callAsyncServlet(servlet, "GET", "/fhir/v2-alpha/metadata", "/fhir/v2-alpha/");
+        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, "");
+        StringWriter out = ServletTestUtil.callAsyncServlet(servlet, "GET", "/fhir/v2-alpha/metadata", "/fhir/v2-alpha/", null);
 
         var parser = FhirContext.forR4().newJsonParser();
         var capabilityStatement = (CapabilityStatement) parser.parseResource(out.toString());
@@ -61,7 +61,7 @@ public class CapabilityStatementTest {
         Assert.assertEquals(1, rest.size());
         var resource = rest.get(0);
         var params = resource.getResource().get(0).getSearchParam();
-        Assert.assertEquals(5, params.size());
+        Assert.assertEquals(6, params.size());
 
         var p1 = params.get(0);
         Assert.assertEquals("tokenPath", p1.getName());

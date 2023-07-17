@@ -1,3 +1,7 @@
+/*
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
+ */
+
 package fr.ans.afas.service;
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;

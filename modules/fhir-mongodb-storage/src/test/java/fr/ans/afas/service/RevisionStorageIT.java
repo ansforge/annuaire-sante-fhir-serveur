@@ -8,6 +8,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoClient;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.impl.MongoQueryUtils;
 import org.hl7.fhir.r4.model.Device;
 import org.hl7.fhir.r4.model.IdType;
 import org.junit.AfterClass;
@@ -177,7 +178,7 @@ public class RevisionStorageIT {
         var col = collection.find(new BasicDBObject()).cursor();
         var device = col.next();
         Assert.assertFalse(col.hasNext());
-        var date = (long) device.get(MongoDbFhirService.LAST_WRITE_DATE);
+        var date = (long) device.get(MongoQueryUtils.LAST_WRITE_DATE);
         await().atLeast(10, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 40);
         var t2 = new Date().getTime();
         Assert.assertTrue(t1 < date && t2 > date);
@@ -189,7 +190,7 @@ public class RevisionStorageIT {
         col = collection.find(new BasicDBObject()).cursor();
         device = col.next();
         Assert.assertFalse(col.hasNext());
-        date = (long) device.get(MongoDbFhirService.LAST_WRITE_DATE);
+        date = (long) device.get(MongoQueryUtils.LAST_WRITE_DATE);
 
         var t3 = new Date().getTime();
         Assert.assertTrue(t2 < date);
@@ -206,8 +207,8 @@ public class RevisionStorageIT {
         var device1 = col.next();
         var device2 = col.next();
         Assert.assertFalse(col.hasNext());
-        var date1 = (long) device1.get(MongoDbFhirService.LAST_WRITE_DATE);
-        var date2 = (long) device2.get(MongoDbFhirService.LAST_WRITE_DATE);
+        var date1 = (long) device1.get(MongoQueryUtils.LAST_WRITE_DATE);
+        var date2 = (long) device2.get(MongoQueryUtils.LAST_WRITE_DATE);
 
         Assert.assertTrue(t3 < date1 && t4 > date1);
         Assert.assertTrue(t3 < date2 && t4 > date2);

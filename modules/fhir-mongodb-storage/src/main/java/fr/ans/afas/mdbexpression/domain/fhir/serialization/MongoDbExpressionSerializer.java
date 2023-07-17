@@ -32,11 +32,11 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
     /**
      * The expression factory
      */
-    ExpressionFactory<Bson> expressionFactory;
+    final ExpressionFactory<Bson> expressionFactory;
     /**
      * The search config
      */
-    SearchConfig searchConfig;
+    final SearchConfig searchConfig;
 
     @Inject
     public MongoDbExpressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
@@ -127,22 +127,23 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
     }
 
     @Override
-    public String serialize(SelectExpression<Bson> andExpression) {
-        return ExpressionSerializationUtils.getCodeForClass(SelectExpression.class) +
-                Expression.SERIALIZE_SEPARATOR +
-                andExpression.getFhirResource() +
-                Expression.SERIALIZE_VALUE_SEPARATOR +
-                andExpression.getCount() +
-                Expression.SERIALIZE_VALUE_SEPARATOR +
-                andExpression.getOrder() +
-                Expression.SERIALIZE_VALUE_SEPARATOR +
-                URLEncoder.encode(andExpression.getExpression().serialize(this), StandardCharsets.UTF_8) +
+    public String serialize(SelectExpression<Bson> selectExpression) {
+        var sb = new StringBuilder()
+                .append(ExpressionSerializationUtils.getCodeForClass(SelectExpression.class))
+                .append(Expression.SERIALIZE_SEPARATOR)
+                .append(selectExpression.getFhirResource())
+                .append(Expression.SERIALIZE_VALUE_SEPARATOR)
+                .append(selectExpression.getCount())
+                .append(Expression.SERIALIZE_VALUE_SEPARATOR)
+                .append(URLEncoder.encode(selectExpression.getExpression().serialize(this), StandardCharsets.UTF_8))
                 // include and rev includes:
-                Expression.SERIALIZE_VALUE_SEPARATOR +
-                URLEncoder.encode(encodeInclude(andExpression.getIncludes()), StandardCharsets.UTF_8) +
-                Expression.SERIALIZE_VALUE_SEPARATOR +
-                URLEncoder.encode(encodeInclude(andExpression.getRevincludes()), StandardCharsets.UTF_8);
-
+                .append(Expression.SERIALIZE_VALUE_SEPARATOR)
+                .append(URLEncoder.encode(encodeInclude(selectExpression.getIncludes()), StandardCharsets.UTF_8))
+                .append(Expression.SERIALIZE_VALUE_SEPARATOR)
+                .append(URLEncoder.encode(encodeInclude(selectExpression.getRevincludes()), StandardCharsets.UTF_8))
+                .append(Expression.SERIALIZE_VALUE_SEPARATOR);
+        selectExpression.getHasConditions().forEach(h -> sb.append(URLEncoder.encode(h.serialize(this), StandardCharsets.UTF_8)));
+        return sb.toString();
     }
 
     private String encodeInclude(Set<IncludeExpression<Bson>> includes) {
@@ -190,6 +191,22 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
 
 
     @Override
+    public String serialize(HasCondition<Bson> condition) {
+        var sb = new StringBuilder();
+        sb.append(ExpressionSerializationUtils.getCodeForClass(HasCondition.class));
+        sb.append(Expression.SERIALIZE_SEPARATOR);
+        sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+        sb.append(condition.getFhirPath().getResource());
+        sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+        sb.append(condition.getFhirPath().getPath());
+        for (var e : condition.getExpressions()) {
+            sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+            sb.append(URLEncoder.encode(e.serialize(this), StandardCharsets.UTF_8));
+        }
+        return URLEncoder.encode(sb.toString(), StandardCharsets.UTF_8);
+    }
+
+    @Override
     public Expression<Bson> deserialize(String val) {
         var typeAndValue = val.split("\\" + Expression.SERIALIZE_SEPARATOR, 2);
         var type = typeAndValue[0];
@@ -200,6 +217,7 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
             value = "";
         }
         final var valueFinal = value;
+
         var classFound = ExpressionSerializationUtils.getClassForCode(type);
         var deserializeChooser = PatternMatching
                 .<Class<? extends Expression<Bson>>, Expression<Bson>>
@@ -210,7 +228,8 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
                 .orWhen(QuantityExpression.class::equals, x -> new QuantityDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
                 .orWhen(TokenExpression.class::equals, x -> new TokenDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
                 .orWhen(ReferenceExpression.class::equals, x -> new ReferenceDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
-                .orWhen(StringExpression.class::equals, x -> new StringDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal));
+                .orWhen(StringExpression.class::equals, x -> new StringDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
+                .orWhen(HasCondition.class::equals, x -> new HasDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal));
 
         return deserializeChooser.matches((Class<? extends Expression<Bson>>) classFound).orElseThrow();
     }

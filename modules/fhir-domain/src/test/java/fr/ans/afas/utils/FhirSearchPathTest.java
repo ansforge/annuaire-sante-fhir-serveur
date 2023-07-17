@@ -27,7 +27,7 @@ public class FhirSearchPathTest {
         Assert.assertEquals("r", oneBis.getResource());
         Assert.assertEquals(one, oneBis);
         Assert.assertEquals(one.hashCode(), oneBis.hashCode());
-        Assert.assertEquals("FhirSearchPath{resource='r', path='a'}", one.toString());
+        Assert.assertEquals("FhirSearchPath{resource='r',path='a'}", one.toString());
 
 
         Assert.assertNotEquals(one.hashCode(), two.hashCode());
@@ -41,20 +41,12 @@ public class FhirSearchPathTest {
     public void testFhirSearchPathNullEntries() {
 
         final var a = FhirSearchPath.builder();
-        Assert.assertThrows(NullPointerException.class, () -> {
-            a.path(null);
-        });
+        Assert.assertThrows(NullPointerException.class, () -> a.path(null));
         final var b = FhirSearchPath.builder().path("r");
-        Assert.assertThrows(NullPointerException.class, () -> {
-            b.resource(null);
-        });
+        Assert.assertThrows(NullPointerException.class, () -> b.resource(null));
         final var c = FhirSearchPath.builder();
-        Assert.assertThrows(NullPointerException.class, () -> {
-            c.path(null);
-        });
-        Assert.assertThrows(NullPointerException.class, () -> {
-            new FhirSearchPath(null, null);
-        });
+        Assert.assertThrows(NullPointerException.class, () -> c.path(null));
+        Assert.assertThrows(NullPointerException.class, () -> new FhirSearchPath(null, null));
     }
 
 }

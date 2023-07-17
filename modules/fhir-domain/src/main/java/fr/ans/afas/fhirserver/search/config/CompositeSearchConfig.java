@@ -30,5 +30,6 @@ public class CompositeSearchConfig extends BaseSearchConfigService {
             }
         }
 
+
     }
 }

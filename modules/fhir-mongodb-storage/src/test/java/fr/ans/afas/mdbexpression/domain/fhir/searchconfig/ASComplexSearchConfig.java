@@ -5,13 +5,12 @@
 package fr.ans.afas.mdbexpression.domain.fhir.searchconfig;
 
 import fr.ans.afas.domain.StorageConstants;
-import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
-import fr.ans.afas.fhirserver.search.config.domain.ResourcePathConfig;
-import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
-import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
+import fr.ans.afas.fhirserver.search.config.domain.*;
 import org.hl7.fhir.instance.model.api.IAnyResource;
 import org.hl7.fhir.r4.model.Device;
 import org.hl7.fhir.r4.model.Organization;
+import org.hl7.fhir.r4.model.Practitioner;
+import org.hl7.fhir.r4.model.PractitionerRole;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +53,14 @@ public class ASComplexSearchConfig extends ServerSearchConfig {
         // fake case to test human names;
         params.add(SearchParamConfig.builder().name("contact-hn").urlParameter("contact-hn").searchType(StorageConstants.INDEX_TYPE_STRING).description("").indexName("_contact-hn").resourcePaths(List.of(ResourcePathConfig.builder().path("contact|name").build())).build());
         organizationSearchConfig.setSearchParams(params);
+
+        // join search:
+        var jp = new JoinPath();
+        jp.setResource("Device");
+        jp.setPath("organization");
+        jp.setField("owner.reference");
+        organizationSearchConfig.setJoins(List.of(jp));
+
         this.getResources().add(organizationSearchConfig);
 
 
@@ -74,5 +81,24 @@ public class ASComplexSearchConfig extends ServerSearchConfig {
 
         deviceSearchConfig.setSearchParams(deviceParams);
         this.getResources().add(deviceSearchConfig);
+
+
+        var practitionerSearchConfig = FhirResourceSearchConfig.builder().name("Practitioner").profile("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Practitioner").build();
+        var practitionerParams = new ArrayList<SearchParamConfig>();
+        practitionerParams.add(SearchParamConfig.builder().name(Practitioner.SP_IDENTIFIER).urlParameter(Practitioner.SP_IDENTIFIER).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_PRACTITIONER_IDENTIFIER).resourcePaths(List.of(ResourcePathConfig.builder().path("identifier").build())).build());
+        practitionerSearchConfig.setSearchParams(practitionerParams);
+        this.getResources().add(practitionerSearchConfig);
+
+        var practitionerRoleSearchConfig = FhirResourceSearchConfig.builder().name("PractitionerRole").profile("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-PractitionerRole").build();
+        var practitionerRoleParams = new ArrayList<SearchParamConfig>();
+        practitionerRoleParams.add(SearchParamConfig.builder().name(PractitionerRole.SP_IDENTIFIER).urlParameter(PractitionerRole.SP_IDENTIFIER).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_PRACTITIONER_ROLE_IDENTIFIER).resourcePaths(List.of(ResourcePathConfig.builder().path("identifier").build())).build());
+        practitionerRoleParams.add(SearchParamConfig.builder().name(PractitionerRole.SP_PRACTITIONER).urlParameter(PractitionerRole.SP_PRACTITIONER).searchType(StorageConstants.INDEX_TYPE_REFERENCE).description("").indexName(StorageConstants.INDEX_PRACTITIONER_ROLE_PRACTITIONER).resourcePaths(List.of(ResourcePathConfig.builder().path("practitioner").build())).build());
+        practitionerRoleParams.add(SearchParamConfig.builder().name(PractitionerRole.SP_ORGANIZATION).urlParameter(PractitionerRole.SP_ORGANIZATION).searchType(StorageConstants.INDEX_TYPE_REFERENCE).description("").indexName(StorageConstants.INDEX_PRACTITIONER_ROLE_ORGANIZATION).resourcePaths(List.of(ResourcePathConfig.builder().path("organization").build())).build());
+        practitionerRoleParams.add(SearchParamConfig.builder().name(PractitionerRole.SP_ROLE).urlParameter(PractitionerRole.SP_ROLE).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_PRACTITIONER_ROLE_ROLE).resourcePaths(List.of(ResourcePathConfig.builder().path("code").build())).build());
+
+        practitionerRoleSearchConfig.setSearchParams(practitionerRoleParams);
+        this.getResources().add(practitionerRoleSearchConfig);
+
+
     }
 }
