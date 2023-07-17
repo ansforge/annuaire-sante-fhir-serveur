@@ -54,43 +54,34 @@ public class MongoDbQuantityExpression extends QuantityExpression<Bson> {
         if (config.isEmpty()) {
             throw new BadConfigurationException("Search not supported on path: " + fhirPath);
         }
-        String path = config.get().getIndexName();
+        String path = expressionContext.getPrefix() + config.get().getIndexName();
 
-        Bson ret = null;
         switch (operator) {
             case EQUALS:
-                ret = Filters.eq(path, value);
-                break;
+                return Filters.eq(path, value);
             case GT:
-                ret = Filters.gt(path, value);
-                break;
+                return Filters.gt(path, value);
             case LT:
-                ret = Filters.lt(path, value);
-                break;
+                return Filters.lt(path, value);
             case LE:
-                ret = Filters.lte(path, value);
-                break;
+                return Filters.lte(path, value);
             case GE:
-                ret = Filters.gte(path, value);
-                break;
+                return Filters.gte(path, value);
             case NE:
-                ret = Filters.ne(path, value);
-                break;
+                return Filters.ne(path, value);
             default:
                 throw new BadConfigurationException("Unsupported operation");
         }
-
-        return ret;
     }
 
 
     @Override
-    public String serialize(ExpressionSerializer expressionSerializer) {
+    public String serialize(ExpressionSerializer<Bson> expressionSerializer) {
         return expressionSerializer.serialize(this);
     }
 
     @Override
-    public Expression<Bson> deserialize(ExpressionSerializer expressionDeserializer) {
+    public Expression<Bson> deserialize(ExpressionSerializer<Bson> expressionDeserializer) {
         return null;
     }
 

@@ -41,7 +41,11 @@ public class MockedServletInputStream extends ServletInputStream {
 
     @Override
     public int available() throws IOException {
-        return this.sourceStream.available();
+        int available = this.sourceStream.available();
+        if(available > 0) {
+            readListener.onDataAvailable();
+        }
+        return available;
     }
 
     @Override

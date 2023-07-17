@@ -5,6 +5,7 @@ package fr.ans.afas.fhirserver.search.expression.serialization;
 
 import fr.ans.afas.fhirserver.search.expression.*;
 
+
 /**
  * (De)Serialize an expression
  *
@@ -86,6 +87,14 @@ public interface ExpressionSerializer<T> {
      * @return a string representation of the expression
      */
     String serialize(TokenExpression<T> tokenExpression);
+
+    /**
+     * Serialize has condition
+     *
+     * @param hasCondition condition to serialize
+     * @return serialized conditions
+     */
+    String serialize(HasCondition<T> hasCondition);
 
     /**
      * Deserialize the expression

@@ -118,6 +118,14 @@ public class TestSearchConfig extends BaseSearchConfigService {
                 .resourcePaths(List.of(ResourcePathConfig.builder().path("referencePath").build()))
                 .build());
 
+        list.add(SearchParamConfig.builder()
+                .urlParameter("family")
+                .name("family")
+                .searchType("string")
+                .indexName("t_family")
+                .resourcePaths(List.of(ResourcePathConfig.builder().path("family").build()))
+                .build());
+
 
         var sc = FhirResourceSearchConfig
                 .builder()

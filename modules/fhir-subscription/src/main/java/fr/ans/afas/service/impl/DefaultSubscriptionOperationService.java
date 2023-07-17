@@ -54,7 +54,7 @@ public class DefaultSubscriptionOperationService<T> implements SubscriptionOpera
             subscriptions.add(subscription);
         }
 
-        storeService.store(subscriptions, true);
+        storeService.store(subscriptions, true, false);
     }
 
     public void activateAllSubscription() {
@@ -76,7 +76,7 @@ public class DefaultSubscriptionOperationService<T> implements SubscriptionOpera
             }
         }
 
-        storeService.store(subscriptions, true);
+        storeService.store(subscriptions, true, false);
     }
 
     private boolean shouldActivate(Subscription subscription) {

@@ -24,7 +24,7 @@ import java.util.Set;
 
 
 /**
- * Test of the hook system with {@link  AfasSubscriber} ans {@link  AfasSubscribe} annotations
+ * Test of the hook system with {@link  AfasSubscriber} Ans {@link  AfasSubscribe} annotations
  *
  * @author Guillaume Poulériguen
  * @since 1.0.0
@@ -34,7 +34,7 @@ import java.util.Set;
 public class HookSystemTest {
 
 
-    static Set<AfasEvent> events = new HashSet<>();
+    static final Set<AfasEvent> events = new HashSet<>();
 
     @Inject
     ApplicationContext context;
@@ -45,9 +45,8 @@ public class HookSystemTest {
      */
     @Test
     public void testHookSystem() throws BadHookConfiguration {
-
+        events.clear();
         var hookService = new HookService(context);
-
 
         hookService.callHook(BeforeCreateResourceEvent.builder()
                 .resource(new Device().setId("id-d"))

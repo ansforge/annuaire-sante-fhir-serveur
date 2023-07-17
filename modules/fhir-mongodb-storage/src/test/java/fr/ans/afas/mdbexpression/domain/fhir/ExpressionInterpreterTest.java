@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class ExpressionTest {
+public class ExpressionInterpreterTest {
 
     /**
      * Config used for tests
@@ -243,11 +243,11 @@ public class ExpressionTest {
         var string = "Sample";
         var mongoDbStringExpression = new MongoDbStringExpression(testSearchConfig, fhirPath, string, StringExpression.Operator.EQUALS);
         var result = mongoDbStringExpression.interpreter(expressionContext);
-        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + "', operator='$eq', value=BsonRegularExpression{pattern='^" + Pattern.quote(string) + "', options='i'}}", result.toString());
+        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + MongoDbStringExpression.INSENSITIVE_SUFFIX + "', operator='$eq', value=BsonRegularExpression{pattern='^" + Pattern.quote(string.toLowerCase()) + "', options=''}}", result.toString());
 
         mongoDbStringExpression = new MongoDbStringExpression(testSearchConfig, fhirPath, string, StringExpression.Operator.CONTAINS);
         result = mongoDbStringExpression.interpreter(expressionContext);
-        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + "', operator='$eq', value=BsonRegularExpression{pattern='" + Pattern.quote(string) + "', options='i'}}", result.toString());
+        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + MongoDbStringExpression.INSENSITIVE_SUFFIX + "', operator='$eq', value=BsonRegularExpression{pattern='" + Pattern.quote(string.toLowerCase()) + "', options=''}}", result.toString());
 
         mongoDbStringExpression = new MongoDbStringExpression(testSearchConfig, fhirPath, string, StringExpression.Operator.EXACT);
         result = mongoDbStringExpression.interpreter(expressionContext);
@@ -257,8 +257,7 @@ public class ExpressionTest {
         String stringWithComplexChars = "Sample?a=b&b=c";
         mongoDbStringExpression = new MongoDbStringExpression(testSearchConfig, fhirPath, stringWithComplexChars, StringExpression.Operator.CONTAINS);
         result = mongoDbStringExpression.interpreter(expressionContext);
-        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + "', operator='$eq', value=BsonRegularExpression{pattern='" + Pattern.quote(stringWithComplexChars) + "', options='i'}}", result.toString());
-
-
+        Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfig.FHIR_RESOURCE_DB_STRING_PATH + MongoDbStringExpression.INSENSITIVE_SUFFIX + "', operator='$eq', value=BsonRegularExpression{pattern='" + Pattern.quote(stringWithComplexChars.toLowerCase()) + "', options=''}}", result.toString());
     }
+
 }

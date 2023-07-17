@@ -39,6 +39,8 @@ public final class StorageConstants {
     public static final String USE_VALUE_SUFFIX = "-use-value";
     public static final String HUMAN_NAME_PREFIX_SUFFIX = "-prefix";
     public static final String HUMAN_NAME_SUFFIX_SUFFIX = "-suffix";
+    public static final String HUMAN_NAME_FAMILY_SUFFIX = "-family";
+    public static final String HUMAN_NAME_GIVEN_SUFFIX = "-given";
     // Organization
     public static final String INDEX_ORGANIZATION_TYPE = "t_type";
 

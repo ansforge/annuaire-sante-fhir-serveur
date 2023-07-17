@@ -28,24 +28,19 @@ import java.util.concurrent.Executors;
 
 public class FhirHookPublisher {
 
-    private final ExecutorService executorService;
-    private final SignatureService signatureService;
-
-    private final HttpClient client;
-
-    private final int timeout;
-
-    private final AesEncrypter aesEncrypter;
-
     /**
      * To format the date in the header
      */
-    DateFormat dfHeader = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    final DateFormat dfHeader = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    private final SignatureService signatureService;
+    private final HttpClient client;
+    private final int timeout;
+    private final AesEncrypter aesEncrypter;
 
     public FhirHookPublisher(int timeout, SignatureService signatureService, AesEncrypter aesEncrypter) {
         this.signatureService = signatureService;
         this.timeout = timeout;
-        this.executorService = Executors.newFixedThreadPool(5);
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
         this.client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(timeout))
@@ -62,7 +57,7 @@ public class FhirHookPublisher {
      * @return the futur webhook response of the created request
      */
     public CompletableFuture<WebHookResponse> publish(SubscriptionMessage message, Subscription subscription) {
-        HttpRequest request = null;
+        HttpRequest request;
         try {
             request = this.createHttpRequest(message, subscription);
         } catch (WebHookConfigurationException e) {

@@ -95,7 +95,7 @@ public class AsBaseResourceProviderTest {
         protected SomeAsBaseResourceProvider() {
             super(service);
 
-            Mockito.when(service.store(Mockito.any(), Mockito.anyBoolean())).then((a) -> {
+            Mockito.when(service.store(Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean())).then((a) -> {
                 if (updateOk) {
                     var ret = new ArrayList<IIdType>();
                     var id = new IdType("Device", "01");
@@ -107,9 +107,7 @@ public class AsBaseResourceProviderTest {
                 }
             });
 
-            Mockito.when(service.delete(Mockito.any(), Mockito.any())).then((a) -> {
-                return deleteOk;
-            });
+            Mockito.when(service.delete(Mockito.any(), Mockito.any())).then((a) -> deleteOk);
 
 
         }

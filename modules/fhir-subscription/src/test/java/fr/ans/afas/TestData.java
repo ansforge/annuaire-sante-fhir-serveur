@@ -20,10 +20,10 @@ import java.util.UUID;
  */
 public class TestData {
 
-    public static String SUBSCRIPTION_ID_1 = "006-1234";
+    public static final String SUBSCRIPTION_ID_1 = "006-1234";
 
-    public static Device SAMPLE_DEVICE = new Device().addIdentifier(new Identifier().setSystem("http://a").setValue("324"));
-    public static String SAMPLE_DEVICE_SERIALIZED = "{\"resourceType\":\"Device\",\"identifier\":[{\"system\":\"http://a\",\"value\":\"324\"}]}";
+    public static final Device SAMPLE_DEVICE = new Device().addIdentifier(new Identifier().setSystem("http://a").setValue("324"));
+    public static final String SAMPLE_DEVICE_SERIALIZED = "{\"resourceType\":\"Device\",\"identifier\":[{\"system\":\"http://a\",\"value\":\"324\"}]}";
 
 
     public static SubscriptionMessage createMessage(SubscriptionMessageStatus status, int retryDateDeltaInSecondFromNow) {

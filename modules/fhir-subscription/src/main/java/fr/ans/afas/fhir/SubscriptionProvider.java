@@ -12,6 +12,7 @@ import ca.uhn.fhir.rest.api.server.IBundleProvider;
 import ca.uhn.fhir.rest.param.StringAndListParam;
 import ca.uhn.fhir.rest.param.TokenAndListParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.fhirserver.provider.AsBaseResourceProvider;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.FhirServerConstants;
@@ -26,6 +27,7 @@ import org.hl7.fhir.r4.model.StringType;
 import org.hl7.fhir.r4.model.Subscription;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Resource provider implementation for {@link org.hl7.fhir.r4.model.Subscription}.
@@ -105,23 +107,23 @@ public class SubscriptionProvider<T> extends AsBaseResourceProvider<T> implement
     public IBundleProvider search(@Count Integer theCount,
                                   @Description(shortDefinition = "Recherche sur l'id de la ressource Subscription")
                                   @OptionalParam(name = IAnyResource.SP_RES_ID)
-                                  TokenAndListParam theId,
+                                          TokenAndListParam theId,
                                   @Description(shortDefinition = "Recherche sur le status de la subscription")
                                   @OptionalParam(name = Subscription.SP_STATUS)
-                                  TokenAndListParam theStatus,
+                                          TokenAndListParam theStatus,
                                   @Description(shortDefinition = "Recherche sur le critère de la subscription")
                                   @OptionalParam(name = Subscription.SP_CRITERIA)
-                                  StringAndListParam theCriteria,
+                                          StringAndListParam theCriteria,
                                   @Description(shortDefinition = "Recherche sur le url (payload) de la subscription")
                                   @OptionalParam(name = Subscription.SP_URL)
-                                  StringAndListParam theUrl,
+                                          StringAndListParam theUrl,
                                   @Description(shortDefinition = "Recherche sur le type de payload de la subscription")
                                   @OptionalParam(name = Subscription.SP_PAYLOAD)
-                                  TokenAndListParam thePayload,
+                                          TokenAndListParam thePayload,
                                   @Description(shortDefinition = "Recherche sur le type de la subscription")
                                   @OptionalParam(name = Subscription.SP_TYPE)
-                                  TokenAndListParam theType
-    ) {
+                                          TokenAndListParam theType
+    ) throws BadDataFormatException {
         var selectExpression = new SelectExpression<>(FhirServerConstants.SUBSCRIPTION_FHIR_RESOURCE_NAME, expressionFactory);
         selectExpression.setCount(theCount);
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.SUBSCRIPTION_FHIR_RESOURCE_NAME).path(IAnyResource.SP_RES_ID).build(), theId);
@@ -137,14 +139,50 @@ public class SubscriptionProvider<T> extends AsBaseResourceProvider<T> implement
 
 
     /**
+     * Create a resource of type Subscription
+     *
+     * @param subscription the subscription to store
+     * @return the operation outcome
+     */
+    @Create
+    public MethodOutcome create(@ResourceParam Subscription subscription) {
+        encryptHeader(subscription);
+        return super.create(List.of(subscription)).get(0);
+    }
+
+
+    /**
      * Update a resource of type Subscription
      *
-     * @param id           the id of the device
+     * @param id           the id of the subscription
      * @param subscription the subscription to update
      * @return the operation outcome
      */
     @Update
     public MethodOutcome update(@IdParam IdType id, @ResourceParam Subscription subscription) {
+        encryptHeader(subscription);
+        return super.update(id, subscription);
+    }
+
+
+    /**
+     * Delete a resource of type Subscription
+     *
+     * @param id the id of the subscription
+     * @return the operation outcome
+     */
+    @Delete
+    @Override
+    public MethodOutcome delete(@IdParam IdType id) {
+        return super.delete(id);
+    }
+
+    /**
+     * Encrypt the headers of a subscription
+     *
+     * @param subscription the subscription
+     */
+    private void encryptHeader(Subscription subscription) {
         // encrypt the header:
         if (subscription.getChannel() != null) {
             var newHeaders = new ArrayList<StringType>();
@@ -154,7 +192,6 @@ public class SubscriptionProvider<T> extends AsBaseResourceProvider<T> implement
             }
             subscription.getChannel().setHeader(newHeaders);
         }
-        return super.update(id, subscription);
     }
 
 

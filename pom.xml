@@ -2,18 +2,16 @@
 <!--
   ~ (c) Copyright 1998-2023, ANS. All rights reserved.
   -->
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>fr.ans</groupId>
         <artifactId>bom-ms</artifactId>
         <version>3.0.4</version>
-        <relativePath>../</relativePath>
+        <relativePath>..</relativePath>
     </parent>
-    <groupId>fr.ans</groupId>
     <artifactId>annuaire-sante-fhir-serveur</artifactId>
-    <version>1.22.0-SNAPSHOT</version>
+    <version>1.23.14</version>
     <name>annuaire-sante-fhir-serveur</name>
     <packaging>pom</packaging>
     <description>A FHIR server based on Hapi and MongoDB to expose FHIR resources.</description>
@@ -46,15 +44,18 @@
     <modules>
         <module>modules/fhir-domain</module>
         <module>modules/fhir-mongodb-storage</module>
-        <module>modules/fhir-server-test-lib</module>
         <module>modules/fhir-subscription</module>
         <module>modules/afas-fhir-hapi</module>
+        <module>modules/afas-fhir-servlet</module>
         <module>modules/project-report</module>
         <module>modules/afas-server-starter</module>
+        <!-- test modules -->
+        <module>modules/fhir-server-test-lib</module>
+
     </modules>
     <scm>
         <developerConnection>${developperConnectionJenkinsfile}</developerConnection>
-        <tag>HEAD</tag>
+        <tag>annuaire-sante-fhir-serveur-1.23.14</tag>
     </scm>
     <distributionManagement>
         <repository>

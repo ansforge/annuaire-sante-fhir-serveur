@@ -4,10 +4,9 @@
 
 package fr.ans.afas.fhir.servlet.metadata;
 
-import ca.uhn.fhir.context.FhirContext;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
@@ -21,45 +20,23 @@ import java.io.IOException;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
+@Slf4j
+@RequiredArgsConstructor
 public class CapabilityStatementReadListener implements ReadListener {
-
-    /**
-     * Logger
-     */
-    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     /**
      * The servlet response
      */
-    final HttpServletResponse response;
-    /**
-     * The fhir context
-     */
-    final FhirContext context;
+    private final HttpServletResponse response;
+
     /**
      * The context
      */
-    final AsyncContext asyncContext;
+    private final AsyncContext asyncContext;
     /**
      * The search configuration
      */
-    final SearchConfig searchConfig;
-
-
-    /**
-     * Construct the read listener for the capability statement
-     *
-     * @param r            the response
-     * @param asyncContext the async context
-     * @param context      the fhir context
-     * @param searchConfig the search config
-     */
-    public CapabilityStatementReadListener(HttpServletResponse r, AsyncContext asyncContext, FhirContext context, SearchConfig searchConfig) {
-        this.response = r;
-        this.context = context;
-        this.asyncContext = asyncContext;
-        this.searchConfig = searchConfig;
-    }
+    private final SearchConfig searchConfig;
 
     @Override
     public void onDataAvailable() {
@@ -69,13 +46,13 @@ public class CapabilityStatementReadListener implements ReadListener {
     @Override
     public void onAllDataRead() throws IOException {
         var output = response.getOutputStream();
-        var writeListener = new CapabilityStatementWriteListener(output, asyncContext, context, searchConfig);
+        var writeListener = new CapabilityStatementWriteListener(output, asyncContext, searchConfig);
         output.setWriteListener(writeListener);
     }
 
     @Override
     public void onError(Throwable throwable) {
-        logger.debug("Error reading the request", throwable);
+        log.debug("Error reading the request", throwable);
         asyncContext.complete();
     }
 }

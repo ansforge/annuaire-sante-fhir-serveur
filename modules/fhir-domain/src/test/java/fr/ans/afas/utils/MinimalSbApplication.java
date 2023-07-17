@@ -4,9 +4,17 @@
 
 package fr.ans.afas.utils;
 
+import fr.ans.afas.fhirserver.hook.exception.BadHookConfiguration;
+import fr.ans.afas.fhirserver.hook.service.HookService;
 import fr.ans.afas.fhirserver.search.config.yaml.YamlSearchConfig;
+import fr.ans.afas.fhirserver.service.audit.DefaultReadAuditService;
+import fr.ans.afas.fhirserver.service.audit.DefaultWriteAuditService;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+
+import javax.inject.Inject;
 
 
 /**
@@ -18,4 +26,26 @@ import org.springframework.context.annotation.Import;
 @SpringBootApplication
 @Import(YamlSearchConfig.class)
 public class MinimalSbApplication {
+
+    @Bean
+    SampleHookService sampleHookService() {
+        return new SampleHookService();
+    }
+
+
+    @Bean
+    public DefaultWriteAuditService defaultWriteAuditService() {
+        return new DefaultWriteAuditService();
+    }
+
+    @Bean
+    public DefaultReadAuditService defaultReadAuditService() {
+        return new DefaultReadAuditService();
+    }
+
+    @Inject
+    @Bean
+    public HookService hookService(ApplicationContext applicationContext) throws BadHookConfiguration {
+        return new HookService(applicationContext);
+    }
 }

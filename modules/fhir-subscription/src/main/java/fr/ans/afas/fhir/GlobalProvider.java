@@ -22,7 +22,7 @@ public class GlobalProvider {
     }
 
 
-    @Operation(name = "$admin-patch-server-configuration", idempotent = false)
+    @Operation(name = "$admin-patch-server-configuration")
     public OperationOutcome adminPatchServerConfiguration(
             @OperationParam(name = "subscriptionsActivated") BooleanType activated
     ) {

@@ -13,7 +13,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.ans</groupId>
     <artifactId>server-sample</artifactId>
-    <version>1.22.0-SNAPSHOT</version>
+    <version>1.23.0-SNAPSHOT</version>
     <name>Sample FHIR Server</name>
     <description>A sample server based on the AS FHIR server</description>
     <properties>

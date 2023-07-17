@@ -8,25 +8,26 @@ import ca.uhn.fhir.context.FhirContext;
 import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhir.servlet.error.ErrorWriter;
 import fr.ans.afas.fhir.servlet.metadata.CapabilityStatementReadListener;
+import fr.ans.afas.fhir.servlet.read.ReadResourceReadListener;
+import fr.ans.afas.fhir.servlet.read.ReadSearchParams;
 import fr.ans.afas.fhir.servlet.search.bundle.FhirQueryFirstPageReadListener;
 import fr.ans.afas.fhir.servlet.search.bundle.FhirQueryNextPageReadListener;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 
-import javax.inject.Inject;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletInputStream;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import java.util.Optional;
 
 /**
  * Servlet that handle fhir api calls
@@ -34,44 +35,30 @@ import java.io.IOException;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
+@Slf4j
+@RequiredArgsConstructor
 @WebServlet(urlPatterns = "/fhir/v2-alpha/*", asyncSupported = true)
 public class FhirResourceServlet<T> extends HttpServlet {
 
-
     private static final String FHIR_CONTENT_TYPE = "application/fhir+json;charset=UTF-8";
+
+    private final FhirStoreService<T> fhirStoreService;
+
+    private final ExpressionFactory<T> expressionFactory;
+
+    private final SearchConfig searchConfig;
+
+    private final NextUrlManager<T> nextUrlManager;
+
+    @Value("${afas.publicUrl}")
+    private final String serverUrl;
     /**
-     * Logger
+     * The Fhir context
      */
-    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private static final FhirContext fhirContext = FhirContext.forR4();
 
-    final FhirStoreService<T> fhirStoreService;
-
-    final ExpressionFactory<T> expressionFactory;
-
-    final SearchConfig searchConfig;
-
-    final NextUrlManager<T> nextUrlManager;
-
-    final FhirContext fhirContext;
-
-    final String serverUrl;
-
-
-    //    @Autowired
-    @Inject
-    public FhirResourceServlet(FhirStoreService<T> fhirStoreService,
-                               ExpressionFactory<T> expressionFactory,
-                               SearchConfig searchConfig,
-                               NextUrlManager<T> nextUrlManager,
-                               FhirContext fhirContext,
-                               @Value("${afas.publicUrl}") String serverUrl) {
-        this.fhirStoreService = fhirStoreService;
-        this.expressionFactory = expressionFactory;
-        this.searchConfig = searchConfig;
-        this.nextUrlManager = nextUrlManager;
-        this.fhirContext = fhirContext;
-        this.serverUrl = serverUrl;
-    }
+    @Value("${afas.servletTimeout:600000}")
+    private int servletTimeout;
 
     /**
      * Handle the get (SEARCH/READ/CAPABILITY STATEMENT) of the fhir server.
@@ -83,14 +70,13 @@ public class FhirResourceServlet<T> extends HttpServlet {
      * @param response an {@link HttpServletResponse} object that
      *                 contains the response the servlet sends
      *                 to the client
-     * @throws IOException if something was wrong with io
      */
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
         AsyncContext context = null;
         try {
             context = request.startAsync();
-            context.setTimeout(300000);
+            context.setTimeout(servletTimeout);
             var input = request.getInputStream();
             response.setContentType(FHIR_CONTENT_TYPE);
 
@@ -105,29 +91,42 @@ public class FhirResourceServlet<T> extends HttpServlet {
                 fullPath = fullPath + "?" + params;
             }
 
-
             // next page:
             if (fhirPath.startsWith("_page")) {
                 searchNextPage(request, response, context, input);
+                return;
             }
+
             // capability statement:
-            else if (fhirPath.startsWith("metadata")) {
+            if (fhirPath.startsWith("metadata")) {
                 getCapabilityStatement(response, context, input);
+                return;
             }
+
+            // read:
+            var parts = fhirPath.split("/");
+            if (parts.length == 2 && !parts[1].startsWith("_")) {
+                read(response, context, input, ReadSearchParams.builder().resource(parts[0]).id(parts[1]).build());
+                return;
+            }
+
             // first page:
-            else {
-                searchFirstPage(response, context, input, fullPath);
-            }
+            searchFirstPage(response, context, input, fullPath);
+
         } catch (Exception e) {
-            if (context != null) {
-                try {
-                    ErrorWriter.writeError(e, context);
-                    context.complete();
-                } catch (IOException ioException) {
-                    logger.debug("Error writing the error");
-                }
-            }
+            log.error("doGet error : ", e);
+            Optional.ofNullable(context)
+                    .ifPresent(c -> {
+                        ErrorWriter.writeError(e, c);
+                        c.complete();
+                    });
         }
+    }
+
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
+        doGet(req, resp);
     }
 
     /**
@@ -138,7 +137,20 @@ public class FhirResourceServlet<T> extends HttpServlet {
      * @param input    the servlet input stream
      */
     private void getCapabilityStatement(HttpServletResponse response, AsyncContext context, ServletInputStream input) {
-        var readListener = new CapabilityStatementReadListener(response, context, fhirContext, searchConfig);
+        var readListener = new CapabilityStatementReadListener(response, context, searchConfig);
+        input.setReadListener(readListener);
+    }
+
+
+    /**
+     * Process the read operation
+     *
+     * @param response
+     * @param context
+     * @param build
+     */
+    private void read(HttpServletResponse response, AsyncContext context, ServletInputStream input, ReadSearchParams build) {
+        var readListener = new ReadResourceReadListener<T>(response, context, fhirStoreService, build, fhirContext);
         input.setReadListener(readListener);
     }
 

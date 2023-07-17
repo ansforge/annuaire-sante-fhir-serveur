@@ -5,7 +5,10 @@
 package fr.ans.afas.fhirserver.service;
 
 
+import fr.ans.afas.domain.FhirBundleBuilder;
+import fr.ans.afas.domain.ResourceAndSubResources;
 import fr.ans.afas.fhirserver.search.data.SearchContext;
+import fr.ans.afas.fhirserver.search.expression.IncludeExpression;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
 import fr.ans.afas.fhirserver.service.data.CountResult;
 import fr.ans.afas.fhirserver.service.exception.TooManyElementToDeleteException;
@@ -14,7 +17,9 @@ import org.hl7.fhir.instance.model.api.IIdType;
 import org.hl7.fhir.r4.model.DomainResource;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A service that can persist a search FHIR resources.
@@ -24,6 +29,17 @@ import java.util.List;
  */
 public interface FhirStoreService<T> {
 
+
+    /**
+     * Store a collection of fhir entities and store its dependencies (entity that point to this entity)
+     *
+     * @param fhirResource        fhir entities to store
+     * @param overrideLastUpdated if true, will set the last updated date to the server date
+     * @param forceUpdate         if true force the update
+     * @return the list of created/updated ids
+     */
+    List<IIdType> storeWithDependencies(Collection<ResourceAndSubResources> fhirResource, boolean overrideLastUpdated, boolean forceUpdate);
+
     /**
      * Store a collection of fhir entities
      *
@@ -32,6 +48,16 @@ public interface FhirStoreService<T> {
      * @return the list of created/updated ids
      */
     List<IIdType> store(Collection<? extends DomainResource> fhirResource, boolean overrideLastUpdated);
+
+    /**
+     * Store a collection of fhir entities
+     *
+     * @param fhirResource        fhir entities to store
+     * @param overrideLastUpdated if true, will set the last updated date to the server date
+     * @param forceUpdate         if true force the update
+     * @return the list of created/updated ids
+     */
+    List<IIdType> store(Collection<? extends DomainResource> fhirResource, boolean overrideLastUpdated, boolean forceUpdate);
 
     /**
      * Search fhir resources.
@@ -88,4 +114,25 @@ public interface FhirStoreService<T> {
      * @return true if an element was deleted
      */
     boolean delete(String type, IIdType theId);
+
+    /**
+     * Find all resources by id as a cursor
+     *
+     * @param searchRevision the revision
+     * @param resourceType   type of the fhir resource
+     * @param ids            list of id of elements to includes. Ids are FHIR Id with resourceId/id
+     * @return iterator to the response elements
+     */
+    Iterator<FhirBundleBuilder.BundleEntry> findByIds(long searchRevision, String resourceType, Set<String> ids);
+
+
+    /**
+     * Find elements to renInclude
+     *
+     * @param searchRevision the search revision
+     * @param ids            id of the main request
+     * @param includes       include expressions
+     */
+    List<DomainResource> findRevIncludes(long searchRevision, Set<String> ids, Set<IncludeExpression<T>> includes);
+
 }

@@ -19,10 +19,6 @@ import javax.validation.constraints.NotNull;
 public abstract class TokenExpression<T> implements ElementExpression<T> {
 
     /**
-     * The fhir path where to find
-     */
-    protected final FhirSearchPath fhirPath;
-    /**
      * The system of the token
      */
     protected final String system;
@@ -30,6 +26,10 @@ public abstract class TokenExpression<T> implements ElementExpression<T> {
      * The value of the token
      */
     protected final String value;
+    /**
+     * The fhir path where to find
+     */
+    protected FhirSearchPath fhirPath;
 
     /**
      * Construct a token expression
@@ -42,5 +42,19 @@ public abstract class TokenExpression<T> implements ElementExpression<T> {
         this.fhirPath = fhirPath;
         this.system = system;
         this.value = value;
+    }
+
+    @Override
+    public String toString() {
+        return "TokenExpression{" +
+                "fhirPath=" + fhirPath +
+                ",system='" + system + '\'' +
+                ",value='" + value + '\'' +
+                '}';
+    }
+
+    @Override
+    public void setFhirPath(FhirSearchPath path) {
+        this.fhirPath = path;
     }
 }

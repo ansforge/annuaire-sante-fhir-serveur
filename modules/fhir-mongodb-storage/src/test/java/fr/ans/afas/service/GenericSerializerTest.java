@@ -1,9 +1,14 @@
+/*
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
+ */
+
 package fr.ans.afas.service;
 
 import ca.uhn.fhir.context.FhirContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import fr.ans.afas.domain.ResourceAndSubResources;
 import fr.ans.afas.domain.StorageConstants;
 import fr.ans.afas.fhirserver.search.config.BaseSearchConfigService;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
@@ -13,9 +18,8 @@ import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 import fr.ans.afas.rass.service.json.GenericSerializer;
 import org.bson.Document;
-import org.hl7.fhir.r4.model.Device;
-import org.hl7.fhir.r4.model.Identifier;
-import org.hl7.fhir.r4.model.StringType;
+import org.hl7.fhir.instance.model.api.IAnyResource;
+import org.hl7.fhir.r4.model.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,17 +39,17 @@ public class GenericSerializerTest {
     /**
      * The serializer to test
      */
-    static GenericSerializer genericSerializer = new GenericSerializer(fhirResourceConfig(), FhirContext.forR4());
+    static final GenericSerializer genericSerializer = new GenericSerializer(fhirResourceConfig(), FhirContext.forR4());
 
 
     /**
      * Register an object mapper to run our tests
      */
-    static ObjectMapper om = new ObjectMapper();
+    static final ObjectMapper om = new ObjectMapper();
 
     static {
         var module = new SimpleModule();
-        module.addSerializer(Device.class, genericSerializer);
+        module.addSerializer(ResourceAndSubResources.class, genericSerializer);
         om.registerModule(module);
     }
 
@@ -67,9 +71,32 @@ public class GenericSerializerTest {
                         SearchParamConfig.builder().name("extension-sample").urlParameter("extension-sample").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='someUrl']|value").build())).indexName("t_extension-sample").searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
                         SearchParamConfig.builder().name("extension-sample2").urlParameter("extension-sample2").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='someUrl2']|value").build())).indexName("t_extension-sample2").searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
                         SearchParamConfig.builder().name("extension-sample3").urlParameter("extension-sample3").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='withSub']|extension.?[#this.url=='sub']|value").build())).indexName("t_extension-sample3").searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
-                        SearchParamConfig.builder().name("status").urlParameter("status").resourcePaths(List.of(ResourcePathConfig.builder().path("status?.toCode()").build())).indexName("t_status").searchType(StorageConstants.INDEX_TYPE_TOKEN).build()
+                        SearchParamConfig.builder().name("status").urlParameter("status").resourcePaths(List.of(ResourcePathConfig.builder().path("status?.toCode()").build())).indexName("t_status").searchType(StorageConstants.INDEX_TYPE_TOKEN).build(),
+                        SearchParamConfig.builder().name("extension-sample-code-type").urlParameter("extension-sample-code-type").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='someUrl3']|value").build())).indexName("t_extension-sample-code-type").searchType(StorageConstants.INDEX_TYPE_TOKEN).build()
                 ))
                 .build());
+
+        config.put("Practitioner", FhirResourceSearchConfig.builder()
+                .name("Practitioner")
+                .profile("http://hl7.org/fhir/StructureDefinition/Practitioner")
+                .searchParams(List.of(
+                        SearchParamConfig.builder().name(Practitioner.SP_NAME).urlParameter(Practitioner.SP_NAME).resourcePaths(List.of(ResourcePathConfig.builder().path("name").build())).indexName(StorageConstants.INDEX_PRACTITIONER_NAME).searchType(StorageConstants.INDEX_TYPE_STRING).build()
+                )).build());
+
+        config.put("Organization", FhirResourceSearchConfig.builder()
+                .name("Organization")
+                .profile("http://hl7.org/fhir/StructureDefinition/Organization")
+                .searchParams(List.of(
+                        SearchParamConfig.builder().name(IAnyResource.SP_RES_ID).urlParameter(IAnyResource.SP_RES_ID).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_T_ID).resourcePaths(List.of(ResourcePathConfig.builder().path("id").build())).build()
+                )).build());
+
+        config.put("PractitionerRole", FhirResourceSearchConfig.builder()
+                .name("PractitionerRole")
+                .profile("http://hl7.org/fhir/StructureDefinition/PractitionerRole")
+                .searchParams(List.of(
+                        SearchParamConfig.builder().name(IAnyResource.SP_RES_ID).urlParameter(IAnyResource.SP_RES_ID).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_T_ID).resourcePaths(List.of(ResourcePathConfig.builder().path("id").build())).build()
+                )).build());
+
 
         return new BaseSearchConfigService(ServerSearchConfig.builder()
                 .resources(config.values())
@@ -84,9 +111,6 @@ public class GenericSerializerTest {
     public void testValueExtractor() {
 
         var genericSerializer = new GenericSerializer(null, null) {
-            {
-            }
-
             @Override
             public Collection<Object> extractValues(Object value, String stringPath) {
                 return super.extractValues(value, stringPath);
@@ -114,7 +138,7 @@ public class GenericSerializerTest {
     public void entityDetectionTest() throws IOException {
         var device = generateDevice();
         var writer = om.writer();
-        var json = writer.writeValueAsString(device);
+        var json = writer.writeValueAsString(ResourceAndSubResources.builder().resource(device).build());
 
         // assert that indexes are created:
         var doc = Document.parse(json);
@@ -131,7 +155,7 @@ public class GenericSerializerTest {
     public void arraySerializationTest() throws JsonProcessingException {
         var device = generateDeviceWithArray();
         var writer = om.writer();
-        var json = writer.writeValueAsString(device);
+        var json = writer.writeValueAsString(ResourceAndSubResources.builder().resource(device).build());
 
         // assert that indexes are created:
         var doc = Document.parse(json);
@@ -154,7 +178,7 @@ public class GenericSerializerTest {
     public void multiPathTest() throws JsonProcessingException {
         var device = generateDeviceWithMultiplePaths();
         var writer = om.writer();
-        var json = writer.writeValueAsString(device);
+        var json = writer.writeValueAsString(ResourceAndSubResources.builder().resource(device).build());
 
         // assert that indexes are created:
         var doc = Document.parse(json);
@@ -169,7 +193,7 @@ public class GenericSerializerTest {
 
         var device = generateDeviceWithExtension();
         var writer = om.writer();
-        var json = writer.writeValueAsString(device);
+        var json = writer.writeValueAsString(ResourceAndSubResources.builder().resource(device).build());
 
         // assert that indexes are created:
         var doc = Document.parse(json);
@@ -188,13 +212,16 @@ public class GenericSerializerTest {
         Assert.assertEquals("subValue1", ((List<String>) doc.get("t_extension-sample3")).get(0));
         Assert.assertEquals("subValue2", ((List<String>) doc.get("t_extension-sample3")).get(1));
 
+        Assert.assertEquals(1, ((List<String>) doc.get("t_extension-sample-code-type-value")).size());
+        Assert.assertEquals("someValueCodeType", ((List<String>) doc.get("t_extension-sample-code-type-value")).get(0));
+
     }
 
     @Test
     public void spelUsageInExtractionTest() throws JsonProcessingException {
         var device = generateDeviceWithStatus();
         var writer = om.writer();
-        var json = writer.writeValueAsString(device);
+        var json = writer.writeValueAsString(ResourceAndSubResources.builder().resource(device).build());
 
         // assert that indexes are created:
         var doc = Document.parse(json);
@@ -203,17 +230,108 @@ public class GenericSerializerTest {
 
     }
 
+    @Test
+    public void humaneNameSerializationTest() throws JsonProcessingException {
+        var practitioner = generatePractitioner();
+        var writer = om.writer();
+        var json = writer.writeValueAsString(ResourceAndSubResources.builder().resource(practitioner).build());
+
+        // assert that indexes are created:
+        var doc = Document.parse(json);
+        Assert.assertEquals(1, ((List<String>) doc.get("t_name-prefix")).size());
+        Assert.assertEquals("M", ((List<String>) doc.get("t_name-prefix")).get(0));
+        Assert.assertEquals("m", ((List<String>) doc.get("t_name-prefix-i")).get(0));
+
+        Assert.assertEquals(1, ((List<String>) doc.get("t_name-suffix")).size());
+        Assert.assertEquals("Dr", ((List<String>) doc.get("t_name-suffix")).get(0));
+        Assert.assertEquals("dr", ((List<String>) doc.get("t_name-suffix-i")).get(0));
+
+        Assert.assertEquals(1, ((List<String>) doc.get("t_name-family")).size());
+        Assert.assertEquals("Dupont", ((List<String>) doc.get("t_name-family")).get(0));
+        Assert.assertEquals("dupont", ((List<String>) doc.get("t_name-family-i")).get(0));
+
+        Assert.assertEquals(1, ((List<String>) doc.get("t_name-given")).size());
+        Assert.assertEquals("Jean", ((List<String>) doc.get("t_name-given")).get(0));
+        Assert.assertEquals("jean", ((List<String>) doc.get("t_name-given-i")).get(0));
+
+    }
+
+    @Test
+    public void subResourceSerialization() throws JsonProcessingException {
+
+        // Pracitioner?_has:PractitionerRole:_id=1
+        // Organization?_has:PractitionerRole:_id=1
+
+        var practitioner = generatePractitioner();
+        var organization = generateOrganization();
+        var practitionerRole = generatePractitionerRole();
+        var writer = om.writer();
+        var json = writer.writeValueAsString(
+                ResourceAndSubResources.builder()
+                        .resource(practitionerRole)
+                        .subResources(List.of(organization, practitioner))
+                        .build());
+
+        var doc = Document.parse(json);
+
+        var links = (Document) doc.get("links");
+        var linkedOrganizations = (List<Document>) links.get("Organization");
+        var linkedPractitioner = (List<Document>) links.get("Practitioner");
+
+
+        Assert.assertEquals(1, linkedOrganizations.size());
+        Assert.assertEquals(1, linkedPractitioner.size());
+
+
+    }
+
 
     /**
      * Generate a simple device
      */
     Device generateDevice() {
-        Device device01 = new Device();
+        var device01 = new Device();
         device01.setId("id-1");
         device01.addDeviceName().setName("My device name");
         device01.addIdentifier().setSystem("http://system.org/").setValue("ID-1");
         return device01;
     }
+
+    /**
+     * Generate a simple practitioner
+     */
+    Practitioner generatePractitioner() {
+        var practitioner = new Practitioner();
+        practitioner.setId("id-1");
+        practitioner.addName().setPrefix(List.of(new StringType("M"))).setSuffix(List.of(new StringType("Dr"))).setFamily("Dupont").setGiven(List.of(new StringType("Jean")));
+        return practitioner;
+    }
+
+
+    /**
+     * Generate a simple practitionerrole
+     */
+    PractitionerRole generatePractitionerRole() {
+        var practitionerRole = new PractitionerRole();
+        practitionerRole.setId("id-1");
+        var referenceP = new Reference();
+        referenceP.setReference("Practitioner/id-1");
+        practitionerRole.setPractitioner(referenceP);
+        var referenceO = new Reference();
+        referenceO.setReference("Organization/id-1");
+        practitionerRole.setOrganization(referenceO);
+        return practitionerRole;
+    }
+
+    /**
+     * Generate a simple practitionerrole
+     */
+    Organization generateOrganization() {
+        var organization = new Organization();
+        organization.setId("id-1");
+        return organization;
+    }
+
 
     /**
      * Generate a simple device with a status (enumeration)
@@ -259,6 +377,7 @@ public class GenericSerializerTest {
         device01.addExtension().setUrl("someUrl").setValue(new StringType("someValue"));
         device01.addExtension().setUrl("someUrl2").setValue(new StringType("someValue2"));
         device01.addExtension().setUrl("someUrl2").setValue(new StringType("someValue3"));
+        device01.addExtension().setUrl("someUrl3").setValue(new CodeType("someValueCodeType"));
 
         device01.addExtension().setUrl("withSub")
                 .addExtension().setUrl("sub").setValue(new StringType("subValue1"));

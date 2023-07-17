@@ -8,7 +8,6 @@ import fr.ans.afas.fhirserver.search.FhirServerConstants;
 import fr.ans.afas.fhirserver.search.data.SearchContext;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
-import fr.ans.afas.fhirserver.service.FhirPage;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.rass.service.MongoDbFhirService;
 import org.bson.conversions.Bson;
@@ -75,7 +74,7 @@ public class SearchInRevisionIT {
         sE.setCount(1);
         SearchContext searchContext = null;
         for (var i = 0; i < count; i++) {
-            FhirPage page = mongoDbFhirService.search(searchContext, sE);
+            var page = mongoDbFhirService.search(searchContext, sE);
             Assert.assertTrue(((Device) page.getPage().get(0)).getLotNumber().contains("first-set"));
             searchContext = page.getContext();
             if (i == 4) {
@@ -86,7 +85,7 @@ public class SearchInRevisionIT {
         // search again and the data must be the new one:
         searchContext = null;
         for (var i = 0; i < count; i++) {
-            FhirPage page = mongoDbFhirService.search(searchContext, sE);
+            var page = mongoDbFhirService.search(searchContext, sE);
             Assert.assertTrue(((Device) page.getPage().get(0)).getLotNumber().contains("second-set"));
             searchContext = page.getContext();
         }

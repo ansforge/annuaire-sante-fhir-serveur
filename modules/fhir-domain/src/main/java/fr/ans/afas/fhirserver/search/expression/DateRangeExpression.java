@@ -22,10 +22,6 @@ import java.util.Date;
 public abstract class DateRangeExpression<T> implements ElementExpression<T> {
 
     /**
-     * The fhir path where to search
-     */
-    protected final FhirSearchPath fhirPath;
-    /**
      * The date
      */
     protected final Date date;
@@ -33,11 +29,14 @@ public abstract class DateRangeExpression<T> implements ElementExpression<T> {
      * The precision
      */
     protected final TemporalPrecisionEnum precision;
-
     /**
      * How to query (gt, lt, eq...)
      */
     protected final ParamPrefixEnum prefix;
+    /**
+     * The fhir path where to search
+     */
+    protected FhirSearchPath fhirPath;
 
     /**
      * Constructor
@@ -54,4 +53,18 @@ public abstract class DateRangeExpression<T> implements ElementExpression<T> {
         this.prefix = prefix;
     }
 
+    @Override
+    public String toString() {
+        return "DateRangeExpression{" +
+                "fhirPath=" + fhirPath +
+                ",date=" + date +
+                ",precision=" + precision +
+                ",prefix=" + prefix +
+                '}';
+    }
+
+    @Override
+    public void setFhirPath(FhirSearchPath path) {
+        this.fhirPath = path;
+    }
 }

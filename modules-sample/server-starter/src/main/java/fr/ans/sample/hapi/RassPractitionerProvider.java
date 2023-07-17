@@ -12,6 +12,7 @@ import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.api.server.IBundleProvider;
 import ca.uhn.fhir.rest.param.TokenAndListParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhir.AfasBundleProvider;
 import fr.ans.afas.fhirserver.provider.AsBaseResourceProvider;
@@ -101,18 +102,18 @@ public class RassPractitionerProvider<T> extends AsBaseResourceProvider<T> imple
             @Count Integer theCount,
             @Description(shortDefinition = "The ID of the resource")
             @OptionalParam(name = IAnyResource.SP_RES_ID)
-            TokenAndListParam theId,
+                    TokenAndListParam theId,
             @Description(shortDefinition = "Recherche sur tous les identifiants des professionnels de santé")
             @OptionalParam(name = Practitioner.SP_IDENTIFIER)
-            TokenAndListParam theIdentifier,
+                    TokenAndListParam theIdentifier,
             @Description(shortDefinition = "Renvoie uniquement les ressources qui ont été mises à jour pour la dernière fois comme spécifié par la période donnée")
             @IncludeParam(reverse = true)
-            Set<Include> theRevIncludes,
+                    Set<Include> theRevIncludes,
             @OptionalParam(name = "_total") String theTotal,
             @Since InstantType theSince
 
 
-    ) throws BadSelectExpression {
+    ) throws BadSelectExpression, BadDataFormatException {
         var selectExpression = new SelectExpression<>("Practitioner", expressionFactory);
         selectExpression.setCount(theCount);
         selectExpression.setTotalMode(theTotal);
@@ -141,7 +142,7 @@ public class RassPractitionerProvider<T> extends AsBaseResourceProvider<T> imple
      */
     @Create
     public MethodOutcome create(@ResourceParam Practitioner practitioner) {
-        return (MethodOutcome) super.create(List.of(practitioner)).get(0);
+        return super.create(List.of(practitioner)).get(0);
     }
 
     /**

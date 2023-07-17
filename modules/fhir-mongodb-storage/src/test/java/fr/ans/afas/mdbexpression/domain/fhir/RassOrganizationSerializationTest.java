@@ -8,6 +8,7 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.jayway.jsonpath.JsonPath;
+import fr.ans.afas.domain.ResourceAndSubResources;
 import fr.ans.afas.domain.StorageConstants;
 import fr.ans.afas.fhirserver.search.config.CompositeSearchConfig;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
@@ -115,7 +116,7 @@ public class RassOrganizationSerializationTest {
         var writer = new StringWriter();
         var factory = new JsonFactory();
         var generator = factory.createGenerator(writer);
-        rassOrganizationResourceSerializer.serialize(getSampleOrganization(), generator, null);
+        rassOrganizationResourceSerializer.serialize(ResourceAndSubResources.builder().resource(getSampleOrganization()).build(), generator, null);
         generator.close();
 
         var jsonAsString = writer.toString();

@@ -9,6 +9,7 @@ import com.mongodb.client.MongoCollection;
 import fr.ans.afas.domain.StorageConstants;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
+import fr.ans.afas.mdbexpression.domain.fhir.MongoDbStringExpression;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -50,7 +51,25 @@ public class MongoIndexConfiguration {
             var collection = getCollection(resourceSearchConfig);
             createGenericIndexes(collection);
             for (var config : searchConfig.getAllByFhirResource(resourceSearchConfig)) {
-                writeIndex(collection, config);
+                if (config.isIndex()) {
+                    writeIndex(collection, config, "");
+                }
+            }
+
+            // joins:
+            createJoins(resourceSearchConfig, collection);
+        }
+    }
+
+    private void createJoins(String resourceSearchConfig, MongoCollection<Document> collection) {
+        var joins = searchConfig.getJoinsByFhirResource(resourceSearchConfig);
+        if (joins != null) {
+            for (var j : joins) {
+                for (var config : searchConfig.getAllByFhirResource(j.getResource())) {
+                    if (config.isIndexInSubRequest()) {
+                        writeIndex(collection, config, "links." + j.getResource() + ".");
+                    }
+                }
             }
         }
     }
@@ -60,19 +79,26 @@ public class MongoIndexConfiguration {
      *
      * @param col    the database collection
      * @param config the configuration
+     * @param prefix the prefix of the index
      * @see SearchParamConfig
      */
-    private void writeIndex(MongoCollection<Document> col, SearchParamConfig config) {
-        if (config.getSearchType().equals(StorageConstants.INDEX_TYPE_TOKEN)) {
-            col.createIndex(new Document(config.getIndexName() + StorageConstants.SYSTEM_SUFFIX, 1));
-            col.createIndex(new Document(config.getIndexName() + StorageConstants.VALUE_SUFFIX, 1));
-            col.createIndex(new Document(config.getIndexName() + StorageConstants.SYSVAL_SUFFIX, 1));
-        } else if (config.getSearchType().equals(StorageConstants.INDEX_TYPE_STRING)) {
-            col.createIndex(new Document(config.getIndexName(), 1));
-        } else if (config.getSearchType().equals(StorageConstants.INDEX_TYPE_REFERENCE)) {
-            col.createIndex(new Document(config.getIndexName() + StorageConstants.REFERENCE_SUFFIX, 1));
-            col.createIndex(new Document(config.getIndexName() + StorageConstants.TYPE_SUFFIX, 1));
-            col.createIndex(new Document(config.getIndexName() + StorageConstants.ID_SUFFIX, 1));
+    private void writeIndex(MongoCollection<Document> col, SearchParamConfig config, String prefix) {
+        switch (config.getSearchType()) {
+            case StorageConstants.INDEX_TYPE_TOKEN:
+                col.createIndex(new Document(prefix + config.getIndexName() + StorageConstants.SYSTEM_SUFFIX, 1));
+                col.createIndex(new Document(prefix + config.getIndexName() + StorageConstants.VALUE_SUFFIX, 1));
+                col.createIndex(new Document(prefix + config.getIndexName() + StorageConstants.SYSVAL_SUFFIX, 1));
+                break;
+            case StorageConstants.INDEX_TYPE_REFERENCE:
+                col.createIndex(new Document(prefix + config.getIndexName() + StorageConstants.REFERENCE_SUFFIX, 1));
+                col.createIndex(new Document(prefix + config.getIndexName() + StorageConstants.TYPE_SUFFIX, 1));
+                col.createIndex(new Document(prefix + config.getIndexName() + StorageConstants.ID_SUFFIX, 1));
+                break;
+            case StorageConstants.INDEX_TYPE_STRING:
+            default:
+                col.createIndex(new Document(prefix + config.getIndexName(), 1));
+                col.createIndex(new Document(prefix + config.getIndexName() + MongoDbStringExpression.INSENSITIVE_SUFFIX, 1));
+                break;
         }
     }
 

@@ -27,6 +27,8 @@ import java.util.regex.Pattern;
 @Getter
 public class MongoDbStringExpression extends StringExpression<Bson> {
 
+    public static final String INSENSITIVE_SUFFIX = "-i";
+
     /**
      * the search configuration
      */
@@ -55,14 +57,14 @@ public class MongoDbStringExpression extends StringExpression<Bson> {
         Bson ret;
         switch (operator) {
             case EXACT:
-                ret = Filters.eq(config.get().getIndexName(), value);
+                ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName(), value);
                 break;
             case EQUALS:
-                ret = Filters.regex(config.get().getIndexName(), "^" + Pattern.quote(value), "i");
+                ret = Filters.regex(expressionContext.getPrefix() + config.get().getIndexName() + INSENSITIVE_SUFFIX, "^" + Pattern.quote(value.toLowerCase()));
                 break;
             case CONTAINS:
             default:
-                ret = Filters.regex(config.get().getIndexName(), Pattern.quote(value), "i");
+                ret = Filters.regex(expressionContext.getPrefix() + config.get().getIndexName() + INSENSITIVE_SUFFIX, Pattern.quote(value.toLowerCase()));
                 break;
         }
         return ret;
@@ -70,12 +72,12 @@ public class MongoDbStringExpression extends StringExpression<Bson> {
 
 
     @Override
-    public String serialize(ExpressionSerializer expressionSerializer) {
+    public String serialize(ExpressionSerializer<Bson> expressionSerializer) {
         return expressionSerializer.serialize(this);
     }
 
     @Override
-    public Expression<Bson> deserialize(ExpressionSerializer expressionDeserializer) {
+    public Expression<Bson> deserialize(ExpressionSerializer<Bson> expressionDeserializer) {
         return null;
     }
 

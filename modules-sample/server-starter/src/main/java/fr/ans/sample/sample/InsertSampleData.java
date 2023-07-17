@@ -34,15 +34,15 @@ public class InsertSampleData {
     @PostConstruct
     public void insertSampleData() {
         var l = new ArrayList<DomainResource>();
-        for (var i = 0; i < 0; i++) {
+        for (var i = 0; i < 3; i++) {
             var d1 = new Device();
             d1.setId("id-" + i);
             d1.addDeviceName().setName("My device name " + System.currentTimeMillis());
             d1.addIdentifier().setSystem("http://system.org/").setValue("ID-" + i);
             d1.setLotNumber("lot" + i);
             l.add(d1);
-            // flush each 1000:
-            if (i % 5000 == 0) {
+            // flush each x:
+            if (i % 2 == 0) {
                 storeService.store(l, true);
                 l.clear();
             }

@@ -11,6 +11,7 @@ import ca.uhn.fhir.rest.api.server.IBundleProvider;
 import ca.uhn.fhir.rest.param.StringAndListParam;
 import ca.uhn.fhir.rest.param.TokenAndListParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.fhir.AfasBundleProvider;
 import fr.ans.afas.fhir.TransactionalResourceProvider;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
@@ -81,10 +82,10 @@ public class DeviceProvider<T> extends TransactionalResourceProvider<T> implemen
     public IBundleProvider search(@Count Integer theCount,
                                   @Description(shortDefinition = "Recherche sur l'identifiant de l'équipement matériel lourd")
                                   @OptionalParam(name = Device.SP_IDENTIFIER)
-                                  TokenAndListParam theIdentifier,
+                                          TokenAndListParam theIdentifier,
                                   @Description(shortDefinition = "The device name")
                                   @OptionalParam(name = Device.SP_DEVICE_NAME)
-                                  StringAndListParam theName) {
+                                          StringAndListParam theName) throws BadDataFormatException {
 
         var selectExpression = new SelectExpression<>(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME, expressionFactory);
         selectExpression.setCount(theCount);

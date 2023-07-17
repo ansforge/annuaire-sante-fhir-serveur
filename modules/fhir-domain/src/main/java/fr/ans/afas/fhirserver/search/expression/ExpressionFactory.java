@@ -10,6 +10,7 @@ import fr.ans.afas.fhirserver.search.FhirSearchPath;
 
 import javax.validation.constraints.NotNull;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Generate request expressions (string, token...).
@@ -58,6 +59,16 @@ public interface ExpressionFactory<T> {
      * @return the expression
      */
     ReferenceExpression<T> newReferenceExpression(FhirSearchPath fhirPath, String reference);
+
+    /**
+     * Create a new _has expression (reverse chaining)
+     *
+     * @param linkPath  the path of the field used for the reverse chaining
+     * @param paramPath the search path
+     * @param values    values of the expression
+     * @return the _has expression
+     */
+    HasCondition<T> newHasExpression(FhirSearchPath linkPath, FhirSearchPath paramPath, List<String> values);
 
     /**
      * Create a new logical OR expression

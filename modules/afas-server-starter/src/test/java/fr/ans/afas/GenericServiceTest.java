@@ -4,71 +4,37 @@
 
 package fr.ans.afas;
 
-import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.model.api.Include;
-import ca.uhn.fhir.rest.client.api.IGenericClient;
-import ca.uhn.fhir.rest.client.interceptor.LoggingInterceptor;
 import ca.uhn.fhir.rest.param.*;
+import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.fhir.AfasBundleProvider;
-import fr.ans.afas.fhir.TransactionalResourceProvider;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
-import fr.ans.afas.fhirserver.service.FhirStoreService;
-import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
-import org.bson.conversions.Bson;
-import org.hl7.fhir.r4.model.*;
+import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.Device;
+import org.hl7.fhir.r4.model.IdType;
+import org.hl7.fhir.r4.model.Organization;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
+/**
+ * Test different search
+ */
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = SimpleTestApp.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
-public class GenericFhirTest {
+public class GenericServiceTest extends BaseTest {
 
-    /**
-     * The Fhir context
-     */
-    protected static final FhirContext ctx = FhirContext.forR4();
-    /**
-     * The Fhir client
-     */
-    protected static IGenericClient client;
-
-    /**
-     * The port of the server used in tests
-     */
-    @LocalServerPort
-    int port;
-
-    @Inject
-    TransactionalResourceProvider<?> transactionalResourceProvider;
-
-    /**
-     * Service to access fhir data
-     */
-    @Inject
-    private FhirStoreService<Bson> fhirStoreService;
-
-    @Inject
-    private NextUrlManager<Bson> nextUrlManager;
-
-
-    @Inject
-    private ExpressionFactory<Bson> expressionFactory;
 
     @AfterClass
     public static void shutdown() {
@@ -85,8 +51,7 @@ public class GenericFhirTest {
      */
     @Before
     public void init() {
-        setupClient();
-        createSampleData(true, true);
+        createSampleData(fhirStoreService, true, true);
     }
 
     /**
@@ -104,7 +69,7 @@ public class GenericFhirTest {
      * Search Devices
      */
     @Test
-    public void testDeviceSearch() {
+    public void testDeviceSearch() throws BadDataFormatException {
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.setCount(2);
 
@@ -120,7 +85,7 @@ public class GenericFhirTest {
      * Serch Devices by name
      */
     @Test
-    public void testDeviceNameSearch() {
+    public void testDeviceNameSearch() throws BadDataFormatException {
         final var deviceName = "Device";
         final var deviceNameParameter = Device.DEVICE_NAME.getParamName();
         var selectExpression = new SelectExpression<>(deviceName, expressionFactory);
@@ -163,7 +128,7 @@ public class GenericFhirTest {
     }
 
     @Test
-    public void testDevicePagination() {
+    public void testDevicePagination() throws BadDataFormatException {
         final var deviceName = "Device";
         final var deviceNameParameter = Device.DEVICE_NAME.getParamName();
         var selectExpression = new SelectExpression<>(deviceName, expressionFactory);
@@ -208,7 +173,7 @@ public class GenericFhirTest {
      * Search Devices by Organization
      */
     @Test
-    public void testDeviceOrganizationSearch() {
+    public void testDeviceOrganizationSearch() throws BadDataFormatException {
         // single search
         final var resourceName = "Device";
         final var organizationParameter = Device.ORGANIZATION.getParamName();
@@ -241,49 +206,19 @@ public class GenericFhirTest {
         Assert.assertEquals(2, (long) selectCount.getTotal());
     }
 
-    /**
-     * Test the paging of Devices
-     */
-    @Test
-    public void testDevicePagingSearch() {
-        var bundle = (Bundle) client.search().forResource(Device.class)
-                .count(1)
-                .execute();
-        // page 1:
-        Assert.assertEquals(1, bundle.getEntry().size());
-        // page 2:
-        bundle.getLink("next").setUrl(bundle.getLink("next").getUrl().replaceAll("http://localhost:8080", "http://localhost:" + this.getServerPort()));
-        bundle = client.loadPage().next(bundle).execute();
-        Assert.assertEquals(1, bundle.getEntry().size());
-        // page 3:
-        bundle.getLink("next").setUrl(bundle.getLink("next").getUrl().replaceAll("http://localhost:8080", "http://localhost:" + this.getServerPort()));
-        bundle = client.loadPage().next(bundle).execute();
-        Assert.assertEquals(1, bundle.getEntry().size());
-        // page 4 doesnt exit:
-        Assert.assertNull(bundle.getLink("next"));
-    }
-
-    /**
-     * Test the search of device with _include
-     */
-    @Test
-    public void testDeviceIncludeSearch() {
-        var resultName = (Bundle) client.search().forResource(Device.class).include(Device.INCLUDE_ORGANIZATION.asNonRecursive()).where(Device.IDENTIFIER.exactly().codes("1")).execute();
-        Assert.assertEquals(1, resultName.getTotal());
-        Assert.assertEquals(2, resultName.getEntry().size());
-
-        var resultNameAll = (Bundle) client.search().forResource(Device.class).include(Device.INCLUDE_ALL.asNonRecursive()).where(Device.IDENTIFIER.exactly().codes("1")).execute();
-        Assert.assertEquals(1, resultNameAll.getTotal());
-        Assert.assertEquals(2, resultNameAll.getEntry().size());
-    }
 
     /**
      * Test the search of organization with _revinclude (device)
      */
     @Test
-    public void testOrganizationRevincludeDeviceSearch() {
+    public void testOrganizationRevincludeDeviceSearch() throws BadDataFormatException {
         Set<Include> theRevIncludes = Set.of(new Include("Device:organization"));
         var selectExpression = new SelectExpression<>("Organization", expressionFactory);
+
+        var searchParams = FhirSearchPath.builder().resource("Organization").path("_id").build();
+        var tokenParam = new TokenAndListParam().addAnd(new TokenOrListParam().add(new TokenParam("org1")));
+        selectExpression.fromFhirParams(searchParams, tokenParam);
+
         selectExpression.fromFhirParamsRevInclude(theRevIncludes);
 
         var result = new AfasBundleProvider<>(fhirStoreService, selectExpression, nextUrlManager);
@@ -302,7 +237,7 @@ public class GenericFhirTest {
         Assert.assertEquals(0, search.getPage().size());
 
         // get resources to handle
-        var elems = List.of(this.createSampleData(false, true));
+        var elems = List.of(this.createSampleData(fhirStoreService, false, true));
         var idsPrefixMapping = Map.of(
                 "Device", "device",
                 "Organization", "org",
@@ -372,104 +307,5 @@ public class GenericFhirTest {
         }
     }
 
-    /**
-     * Create the client with the good port and a Hapi interceptor to add the token in the headers.
-     * Note that the token is only used for write operations
-     */
-    protected void setupClient() {
-        client = ctx.newRestfulGenericClient("http://localhost:" + getServerPort() + "/fhir");
-        client.registerInterceptor(new LoggingInterceptor(false));
-    }
 
-    /**
-     * Get the port of the server
-     *
-     * @return the port of the server
-     */
-    protected int getServerPort() {
-        return this.port;
-    }
-
-
-    protected List<DomainResource> createSampleData(boolean store, boolean createOrganization) {
-        var extArhgos = "https://annuaire.sante.gouv.fr/fhir/StructureDefinition/Device-NumberAuthorizationARHGOS";
-        var rassDevice1 = new Device();
-        String DEVICE_ID_1 = "device1";
-        rassDevice1.setId(DEVICE_ID_1);
-        rassDevice1.addIdentifier().setSystem("http://samplesysyem").setValue("1");
-        rassDevice1.addDeviceName().setName("Some dName");
-        var location1 = new Reference();
-        location1.setReference("Location/loc1");
-        rassDevice1.setLocation(location1);
-        rassDevice1.setManufacturer("man1");
-        rassDevice1.setModelNumber("model1");
-        var owner1 = new Reference();
-        owner1.setReference("Organization/org1");
-        rassDevice1.setOwner(owner1);
-        var type = new CodeableConcept();
-        type.addCoding().setSystem("http://types/").setCode("type1");
-        type.addCoding().setSystem("http://part1/").setCode("other1");
-        rassDevice1.setType(type);
-        rassDevice1.setStatus(Device.FHIRDeviceStatus.ACTIVE);
-        rassDevice1.addExtension().setUrl(extArhgos).setValue(new StringType("56565.6456.45789531230001"));
-
-        var rassDevice2 = new Device();
-        String deviceId2 = "device2";
-        rassDevice2.setId(deviceId2);
-        rassDevice2.addDeviceName().setName("Some dName 2");
-        rassDevice2.addIdentifier().setSystem("http://samplesysyem").setValue("2");
-        var location2 = new Reference();
-        location2.setReference("Location/loc 2");
-        rassDevice2.setLocation(location2);
-        rassDevice2.setManufacturer("man 2");
-        rassDevice2.setModelNumber("model 2");
-        var owner2 = new Reference();
-        owner2.setReference("Organization/org 2");
-        rassDevice2.setOwner(owner2);
-        var type2 = new CodeableConcept();
-        type2.addCoding().setSystem("http://types/").setCode("type2");
-        type2.addCoding().setSystem("http://part1/").setCode("other2");
-        rassDevice2.setType(type2);
-        rassDevice2.setStatus(Device.FHIRDeviceStatus.INACTIVE);
-        rassDevice2.addExtension().setUrl(extArhgos).setValue(new StringType("56565.6456.45789531230002"));
-
-        var rassDevice3 = new Device();
-        String DEVICE_ID_3 = "device3";
-        rassDevice3.setId(DEVICE_ID_3);
-        rassDevice3.addIdentifier().setSystem("http://samplesysyem").setValue("3");
-        var location3 = new Reference();
-        location3.setReference("Location/loc3");
-        rassDevice3.setLocation(location3);
-        rassDevice3.setManufacturer("man3");
-        rassDevice3.setModelNumber("model3");
-        var owner3 = new Reference();
-        owner3.setReference("Organization/org3");
-        rassDevice3.setOwner(owner3);
-        var type3 = new CodeableConcept();
-        type3.addCoding().setSystem("http://types/").setCode("type2");
-        type3.addCoding().setSystem("http://part1/").setCode("other3");
-        type3.addCoding().setSystem("http://part1/").setCode("type2");
-        rassDevice3.setType(type3);
-        rassDevice3.setStatus(Device.FHIRDeviceStatus.INACTIVE);
-
-        if (store) {
-            this.fhirStoreService.store(List.of(rassDevice1, rassDevice2, rassDevice3), false);
-        }
-
-        if (createOrganization) {
-            var organization1 = new Organization();
-            organization1.setId("org1");
-            var partOf1 = new Reference();
-            partOf1.setReference("Organization/org2");
-            organization1.setPartOf(partOf1);
-
-            if (store) {
-                this.fhirStoreService.store(List.of(organization1), false);
-            }
-
-            return List.of(rassDevice1, rassDevice2, rassDevice3, organization1);
-        }
-
-        return List.of(rassDevice1, rassDevice2, rassDevice3);
-    }
 }

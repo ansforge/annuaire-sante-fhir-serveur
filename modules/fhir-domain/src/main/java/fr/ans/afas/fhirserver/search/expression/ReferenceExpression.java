@@ -19,11 +19,6 @@ import javax.validation.constraints.NotNull;
 public abstract class ReferenceExpression<T> implements ElementExpression<T> {
 
     /**
-     * The fhir path where to find
-     */
-    protected final FhirSearchPath fhirPath;
-
-    /**
      * The fhir reference type like "Organization" in Organization/ID_1
      */
     protected final String type;
@@ -31,6 +26,10 @@ public abstract class ReferenceExpression<T> implements ElementExpression<T> {
      * The fhir reference id like "ID_1" in Organization/ID_1
      */
     protected final String id;
+    /**
+     * The fhir path where to find
+     */
+    protected FhirSearchPath fhirPath;
 
     /**
      * Constructor
@@ -43,5 +42,19 @@ public abstract class ReferenceExpression<T> implements ElementExpression<T> {
         this.fhirPath = fhirPath;
         this.type = type;
         this.id = id;
+    }
+
+    @Override
+    public String toString() {
+        return "ReferenceExpression{" +
+                "fhirPath=" + fhirPath +
+                ",type='" + type + '\'' +
+                ",id='" + id + '\'' +
+                '}';
+    }
+
+    @Override
+    public void setFhirPath(FhirSearchPath path) {
+        this.fhirPath = path;
     }
 }

@@ -87,7 +87,7 @@ public class AfasPagingProvider<T> implements IPagingProvider {
             if (parts.length != 2) {
                 throw new InvalidRequestException("Your request is not valid.");
             }
-            return new AfasBundleProvider<T>(fhirStoreService, nextUrlManager, parts[1], parts[0]);
+            return new AfasBundleProvider<>(fhirStoreService, nextUrlManager, parts[1], parts[0]);
         } catch (BadLinkException | BadRequestException e) {
             throw new InvalidRequestException(e.getMessage());
         }

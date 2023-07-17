@@ -24,4 +24,10 @@ public class CountResult {
     @Nullable
     Long total;
 
+    @Override
+    public String toString() {
+        return "CountResult{" +
+                "total=" + total +
+                '}';
+    }
 }

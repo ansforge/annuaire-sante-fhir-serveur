@@ -25,7 +25,7 @@ public class DefaultDeviceSerializer extends FhirBaseResourceSerializer<Device> 
     @Override
     public void serialize(Device value, JsonGenerator gen, SerializerProvider provider) throws IOException {
         gen.writeStartObject();
-        super.writeFhirResource(value, gen, provider);
+        super.writeFhirResource(value, gen, provider, false);
         gen.writeEndObject();
     }
 

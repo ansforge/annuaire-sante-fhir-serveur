@@ -5,16 +5,15 @@
 package fr.ans.afas.fhir.servlet.metadata;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.parser.IParser;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.hl7.fhir.r4.model.CanonicalType;
 import org.hl7.fhir.r4.model.CapabilityStatement;
 import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.Enumerations;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
@@ -29,37 +28,29 @@ import java.util.List;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
+@Slf4j
+@RequiredArgsConstructor
 public class CapabilityStatementWriteListener implements WriteListener {
-    /**
-     * Logger
-     */
-    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-    /**
-     * The fhir parser
-     */
-    final IParser parser;
 
     /**
      * The servlet output stream
      */
-    final ServletOutputStream sos;
+    private final ServletOutputStream sos;
 
     /**
      * The async context
      */
-    final AsyncContext context;
+    private final AsyncContext context;
 
     /**
      * The search config
      */
-    final SearchConfig searchConfig;
+    private final SearchConfig searchConfig;
 
-    public CapabilityStatementWriteListener(ServletOutputStream sos, AsyncContext context, FhirContext fhirContext, SearchConfig searchConfig) {
-        this.parser = fhirContext.newJsonParser();
-        this.sos = sos;
-        this.context = context;
-        this.searchConfig = searchConfig;
-    }
+    /**
+     * The fhir context
+     */
+    private final FhirContext fhirContext = FhirContext.forR4();
 
     /**
      * Add interactions to the capability statement for a resource
@@ -87,10 +78,10 @@ public class CapabilityStatementWriteListener implements WriteListener {
             var cs = new CapabilityStatement();
             writeMeta(cs);
             cs.setRest(buildServer());
-            sos.write(parser.encodeResourceToString(cs).getBytes(Charset.defaultCharset()));
+            sos.write(fhirContext.newJsonParser().encodeResourceToString(cs).getBytes(Charset.defaultCharset()));
             context.complete();
         } catch (Exception e) {
-            logger.debug("Error writing the request", e);
+            log.debug("Error writing the request", e);
             context.complete();
         }
     }
@@ -115,7 +106,7 @@ public class CapabilityStatementWriteListener implements WriteListener {
 
     @Override
     public void onError(Throwable throwable) {
-        logger.debug("Error writing the request", throwable);
+        log.debug("Error writing the request", throwable);
         context.complete();
     }
 

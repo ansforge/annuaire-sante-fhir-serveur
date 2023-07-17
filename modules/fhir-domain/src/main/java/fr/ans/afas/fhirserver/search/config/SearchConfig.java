@@ -5,6 +5,7 @@
 package fr.ans.afas.fhirserver.search.config;
 
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
+import fr.ans.afas.fhirserver.search.config.domain.JoinPath;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 
@@ -54,9 +55,19 @@ public interface SearchConfig {
     Optional<SearchParamConfig> getSearchConfigByResourceAndParamName(String resourceType, String paramName);
 
     /**
+     * Get joins for a specific resource
+     *
+     * @param fhirResource the resource
+     * @return the list of join
+     */
+    List<JoinPath> getJoinsByFhirResource(String fhirResource);
+
+
+    /**
      * Return the Set of configured FHIR resources (Device, Organization...)
      *
      * @return configured resources names
      */
     Set<String> getResources();
+
 }

@@ -55,10 +55,9 @@ public class AesEncrypter {
      * @param myKey the string key
      */
     protected void setKey(final String myKey) {
-        MessageDigest sha = null;
         try {
             var key = myKey.getBytes(StandardCharsets.UTF_8);
-            sha = MessageDigest.getInstance("SHA-256");
+            var sha = MessageDigest.getInstance("SHA-256");
             key = sha.digest(key);
             key = Arrays.copyOf(key, GCM_TAG_LENGTH);
             secretKey = new SecretKeySpec(key, "AES");

@@ -174,7 +174,7 @@ public class WebHookTestIT {
         this.fhirHookManager.process();
 
 
-        Awaitility.await().atMost(5000, TimeUnit.MILLISECONDS).until(() -> this.testHookController.getNbErrorCalled() == 1);
+        Awaitility.await().atMost(5000, TimeUnit.MILLISECONDS).until(() -> this.testHookController.getNbErrorCalled() >= 1);
 
         assertEquals(0, this.testHookController.getNbCalled());
         assertTrue(1 <= this.testHookController.getNbErrorCalled());

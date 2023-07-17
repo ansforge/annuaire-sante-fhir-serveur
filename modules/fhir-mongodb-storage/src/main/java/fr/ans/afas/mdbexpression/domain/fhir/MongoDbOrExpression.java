@@ -48,12 +48,12 @@ public class MongoDbOrExpression extends OrExpression<Bson> {
 
 
     @Override
-    public String serialize(ExpressionSerializer expressionSerializer) {
+    public String serialize(ExpressionSerializer<Bson> expressionSerializer) {
         return expressionSerializer.serialize(this);
     }
 
     @Override
-    public Expression<Bson> deserialize(ExpressionSerializer expressionDeserializer) {
+    public Expression<Bson> deserialize(ExpressionSerializer<Bson> expressionDeserializer) {
         return null;
     }
 

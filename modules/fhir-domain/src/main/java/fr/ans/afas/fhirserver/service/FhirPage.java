@@ -8,7 +8,7 @@ import fr.ans.afas.fhirserver.search.data.SearchContext;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
-import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.r4.model.DomainResource;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
@@ -24,12 +24,12 @@ import java.util.function.Consumer;
  */
 @Getter
 @Builder
-public class FhirPage implements Iterable<IBaseResource> {
+public class FhirPage implements Iterable<DomainResource> {
     /**
      * Content of the fhir page
      */
     @NonNull
-    List<IBaseResource> page;
+    List<DomainResource> page;
     /**
      * Used to store the context of the request like the last id of the query. Can be used for paging or store other metadata.
      */
@@ -43,17 +43,17 @@ public class FhirPage implements Iterable<IBaseResource> {
 
     @NotNull
     @Override
-    public Iterator<IBaseResource> iterator() {
+    public Iterator<DomainResource> iterator() {
         return page.iterator();
     }
 
     @Override
-    public void forEach(Consumer<? super IBaseResource> action) {
+    public void forEach(Consumer<? super DomainResource> action) {
         this.page.forEach(action);
     }
 
     @Override
-    public Spliterator<IBaseResource> spliterator() {
+    public Spliterator<DomainResource> spliterator() {
         return this.page.spliterator();
     }
 }

@@ -64,23 +64,23 @@ public class MongoDbTokenExpression extends TokenExpression<Bson> {
         }
         Bson ret = null;
         if (StringUtils.hasText(this.system) && StringUtils.hasLength(this.value)) {
-            ret = Filters.eq(config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSVAL, system + "|" + value);
+            ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSVAL, system + "|" + value);
         } else if (!StringUtils.hasLength(this.system)) {
-            ret = Filters.eq(config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_VALUE, value);
+            ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_VALUE, value);
         } else if (!StringUtils.hasLength(this.value)) {
-            ret = Filters.eq(config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSTEM, system);
+            ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSTEM, system);
         }
         return ret;
     }
 
 
     @Override
-    public String serialize(ExpressionSerializer expressionSerializer) {
+    public String serialize(ExpressionSerializer<Bson> expressionSerializer) {
         return expressionSerializer.serialize(this);
     }
 
     @Override
-    public Expression<Bson> deserialize(ExpressionSerializer expressionDeserializer) {
+    public Expression<Bson> deserialize(ExpressionSerializer<Bson> expressionDeserializer) {
         return null;
     }
 

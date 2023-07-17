@@ -71,9 +71,6 @@ public class PersistenceTestIT {
         Assert.assertEquals(saved.getCreationDate(), saved.getNextTryDate());
         Assert.assertEquals(36, saved.getUuid().length());
 
-        // FIXME check the hmac or check that it is not empty and test it in another service
-        // Assert.assertEquals("", saved.getSignature());
-
     }
 
     @Test

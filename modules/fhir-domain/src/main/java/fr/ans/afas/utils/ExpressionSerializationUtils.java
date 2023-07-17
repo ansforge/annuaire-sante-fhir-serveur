@@ -36,6 +36,7 @@ public final class ExpressionSerializationUtils {
         codeExpressionClass.put(DateRangeExpression.class, "5");
         codeExpressionClass.put(SelectExpression.class, "6");
         codeExpressionClass.put(ReferenceExpression.class, "7");
+        codeExpressionClass.put(HasCondition.class, "8");
         for (var classCode : codeExpressionClass.entrySet()) {
             classCodeExpression.put(classCode.getValue(), classCode.getKey());
         }

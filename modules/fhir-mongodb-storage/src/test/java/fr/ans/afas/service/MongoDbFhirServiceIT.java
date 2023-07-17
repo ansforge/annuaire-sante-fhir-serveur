@@ -1,3 +1,7 @@
+/*
+ * (c) Copyright 1998-2023, ANS. All rights reserved.
+ */
+
 package fr.ans.afas.service;
 
 
@@ -15,6 +19,7 @@ import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbDateRangeExpression;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbIncludeExpression;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbStringExpression;
+import fr.ans.afas.mdbexpression.domain.fhir.MongoDbTokenExpression;
 import fr.ans.afas.rass.service.MongoDbFhirService;
 import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.Device;
@@ -39,6 +44,9 @@ import java.util.List;
 
 /**
  * Test the mongodb search service
+ *
+ * @author Guillaume Poulériguen
+ * @since 1.0.0
  */
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @RunWith(SpringRunner.class)
@@ -80,7 +88,7 @@ public class MongoDbFhirServiceIT {
      */
     @Test
     public void testEmptySave() {
-        Assert.assertEquals(0, this.mongoDbFhirService.store(List.of(), false).size());
+        Assert.assertEquals(0, this.mongoDbFhirService.store(List.of(), false, false).size());
     }
 
 
@@ -94,11 +102,11 @@ public class MongoDbFhirServiceIT {
         var owner1 = new Reference();
         owner1.setReference("Organization/org1");
         device1.setOwner(owner1);
-        this.mongoDbFhirService.store(List.of(device1), false);
+        this.mongoDbFhirService.store(List.of(device1), false, false);
 
         var org1 = new Organization();
         org1.setId("org1");
-        this.mongoDbFhirService.store(List.of(org1), false);
+        this.mongoDbFhirService.store(List.of(org1), false, false);
 
         //
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
@@ -126,12 +134,12 @@ public class MongoDbFhirServiceIT {
         var d = new Device();
         d.setId("ID");
         d.getMeta().setLastUpdated(cal.getTime());
-        this.mongoDbFhirService.store(List.of(d), false);
+        this.mongoDbFhirService.store(List.of(d), false, false);
 
         for (var i = 0; i < 3; i++) {
             var d2 = new Device();
             d2.setId("ID" + i);
-            this.mongoDbFhirService.store(List.of(d2), true);
+            this.mongoDbFhirService.store(List.of(d2), true, false);
         }
 
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
@@ -154,7 +162,7 @@ public class MongoDbFhirServiceIT {
         for (var i = 0; i < 3; i++) {
             var d2 = new Device();
             d2.setId("ID" + i);
-            this.mongoDbFhirService.store(List.of(d2), true);
+            this.mongoDbFhirService.store(List.of(d2), true, false);
         }
 
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
@@ -175,7 +183,7 @@ public class MongoDbFhirServiceIT {
     public void testStoreNotAllowed() {
         var d2 = new Patient();
         d2.setId("ID");
-        this.mongoDbFhirService.store(List.of(d2), true);
+        this.mongoDbFhirService.store(List.of(d2), true, false);
     }
 
     /**
@@ -200,7 +208,7 @@ public class MongoDbFhirServiceIT {
         var owner1 = new Reference();
         owner1.setReference("Organization/org1");
         device1.setOwner(owner1);
-        this.mongoDbFhirService.store(List.of(device1), false);
+        this.mongoDbFhirService.store(List.of(device1), false, false);
 
 
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
@@ -229,5 +237,76 @@ public class MongoDbFhirServiceIT {
         this.mongoDbFhirService.store(List.of(new Device(), new Organization()), true);
     }
 
+
+    @Test
+    public void testSearchWithIterator() {
+        for (var i = 0; i < 3; i++) {
+            var d2 = new Device();
+            d2.setId("ID" + i);
+            this.mongoDbFhirService.store(List.of(d2), true);
+        }
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
+        selectExpression.setCount(2);
+        var all = this.mongoDbFhirService.iterate(null, selectExpression);
+
+        var count = 0;
+        while (all.hasNext()) {
+            all.next();
+            count++;
+        }
+        Assert.assertEquals(2, count);
+    }
+
+
+    @Test
+    public void testSearchWithIteratorNextPage() {
+        for (var i = 0; i < 3; i++) {
+            var d2 = new Device();
+            d2.setId("ID" + i);
+            this.mongoDbFhirService.store(List.of(d2), true);
+        }
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
+        selectExpression.setCount(2);
+        var fhirPageIterator = this.mongoDbFhirService.iterate(null, selectExpression);
+
+        fhirPageIterator.next();
+        var sc = fhirPageIterator.searchContext();
+
+        // next Page
+        fhirPageIterator = this.mongoDbFhirService.iterate(sc, selectExpression);
+        var count = 0;
+        while (fhirPageIterator.hasNext()) {
+            fhirPageIterator.next();
+            count++;
+        }
+        Assert.assertEquals(2, count);
+    }
+
+
+    @Test
+    public void testSearchWithIteratorWithParams() {
+        for (var i = 0; i < 3; i++) {
+            var d2 = new Device();
+            d2.setId("ID" + i);
+            this.mongoDbFhirService.store(List.of(d2), true);
+        }
+        var selectExpression = new SelectExpression<>("Device", expressionFactory);
+        selectExpression.getExpression().addExpression(new MongoDbTokenExpression(searchConfig, FhirSearchPath.builder().path("_id").resource("Device").build(), null, "ID1"));
+        selectExpression.setCount(1);
+        var fhirPageIterator = this.mongoDbFhirService.iterate(null, selectExpression);
+
+        var count = 0;
+        while (fhirPageIterator.hasNext()) {
+            fhirPageIterator.next();
+            count++;
+        }
+        Assert.assertEquals(1, count);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void testSearchWithIteratorInError() {
+        var selectExpression = new SelectExpression<>("DeviceNotFound", expressionFactory);
+        this.mongoDbFhirService.iterate(null, selectExpression);
+    }
 
 }

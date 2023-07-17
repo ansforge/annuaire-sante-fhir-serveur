@@ -20,10 +20,6 @@ import javax.validation.constraints.NotNull;
 public abstract class StringExpression<T> implements ElementExpression<T> {
 
     /**
-     * The fhir path where to find
-     */
-    protected final FhirSearchPath fhirPath;
-    /**
      * The value to search
      */
     protected final String value;
@@ -31,6 +27,10 @@ public abstract class StringExpression<T> implements ElementExpression<T> {
      * The operator
      */
     protected final Operator operator;
+    /**
+     * The fhir path where to find
+     */
+    protected FhirSearchPath fhirPath;
 
     /**
      * Constructor
@@ -43,6 +43,20 @@ public abstract class StringExpression<T> implements ElementExpression<T> {
         this.fhirPath = fhirPath;
         this.value = value;
         this.operator = operator;
+    }
+
+    @Override
+    public String toString() {
+        return "StringExpression{" +
+                "fhirPath=" + fhirPath +
+                ",value='" + value + '\'' +
+                ",operator=" + operator +
+                '}';
+    }
+
+    @Override
+    public void setFhirPath(FhirSearchPath path) {
+        this.fhirPath = path;
     }
 
     /**

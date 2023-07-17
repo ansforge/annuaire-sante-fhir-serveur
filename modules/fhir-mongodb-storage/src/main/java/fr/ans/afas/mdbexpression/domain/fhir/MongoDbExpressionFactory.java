@@ -12,10 +12,12 @@ import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.*;
 import org.bson.conversions.Bson;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import javax.inject.Inject;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Implementation of expression factory for mongodb.
@@ -29,7 +31,7 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
     /**
      * The search config
      */
-    SearchConfig searchConfig;
+    final SearchConfig searchConfig;
 
 
     @Inject
@@ -143,4 +145,60 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
         return new MongoDbDateRangeExpression(searchConfig, path, value, precision, prefix);
     }
 
+    @Override
+    public HasCondition<Bson> newHasExpression(FhirSearchPath linkPath, FhirSearchPath paramPath, List<String> values) {
+
+        var config = searchConfig.getSearchConfigByPath(paramPath).orElseThrow(() -> new BadConfigurationException("Chained param doesn't exist: " + paramPath.getResource() + "." + paramPath.getPath()));
+
+        var hasCondition = new HasCondition<Bson>(linkPath);
+        if ("string".equals(config.getSearchType())) {
+            newStringHasCondition(paramPath, values, hasCondition);
+        } else if ("token".equals(config.getSearchType())) {
+            newTokenHasCondition(paramPath, values, hasCondition);
+        } else {
+            throw new BadConfigurationException("Reverse chained search (_has) is only supported on string and token params ");
+        }
+
+
+        return hasCondition;
+    }
+
+    private void newTokenHasCondition(FhirSearchPath paramPath, List<String> values, HasCondition<Bson> hasCondition) {
+        if (!values.isEmpty()) {
+            var or = new MongoDbOrExpression();
+            for (var value : values) {
+                var ex = parseTokenValue(paramPath, value);
+                or.addExpression(ex);
+            }
+            hasCondition.addExpression(or);
+        } else {
+            throw new BadConfigurationException("Reverse chained search (_has) must be used with a non empty value");
+        }
+    }
+
+    private TokenExpression<Bson> parseTokenValue(FhirSearchPath paramPath, String value) {
+        String systemToUse = null;
+        String valueToUse = null;
+        var split = value.split("\\|");
+        if (split.length > 1) {
+            if (StringUtils.hasLength(split[0])) {
+                systemToUse = split[0];
+            }
+            if (StringUtils.hasLength(split[1])) {
+                valueToUse = split[1];
+            }
+        } else {
+            valueToUse = value;
+        }
+        return this.newTokenExpression(paramPath, systemToUse, valueToUse);
+    }
+
+    private void newStringHasCondition(FhirSearchPath paramPath, List<String> values, HasCondition<Bson> hasCondition) {
+        var or = new MongoDbOrExpression();
+        for (var value : values) {
+            var ex = this.newStringExpression(paramPath, value, StringExpression.Operator.EQUALS);
+            or.addExpression(ex);
+        }
+        hasCondition.addExpression(or);
+    }
 }
