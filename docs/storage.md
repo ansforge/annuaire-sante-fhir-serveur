@@ -2,7 +2,7 @@
 
 ## Contexte
 
-Iris Dp stock les données dans une base de données MongoDb. Les données sont stockées au format FHIR comme elles sont
+Le serveur fhir stock les données dans une base de données MongoDb. Les données sont stockées au format FHIR comme elles sont
 recues avec en complément des champs techniques tel que les indexes.
 
 Le service est un service qui a été pensé pour offrir des performances meilleures en lecture qu’en écriture. Pour avoir
@@ -87,31 +87,30 @@ Le champ est traité comme un CodeableConcept
 
 ### Type String
 
-| Champs         | Description            |
-|----------------|------------------------|
-| t_<index-name> | La chaine de caractère |
+| Champs           | Description                                                                        |
+|------------------|------------------------------------------------------------------------------------|
+| t_<index-name>   | La chaine de caractère                                                             |
+| t_<index-name>-i | La chaine de caractère en minuscule (pour les recherches non sensitives à la case) |
 
 ### Type String multi-lignes
 
-| Champs         | Description                                   |
-|----------------|-----------------------------------------------|
-| t_<index-name> | Un tableau contenant les chaines de caractère |
+| Champs           | Description                                                         |
+|------------------|---------------------------------------------------------------------|
+| t_<index-name>   | Un tableau contenant les chaines de caractère : Voir le type string |
+| t_<index-name>-i | Un tableau qui contient des strings : Voir le type string           |
 
 ### Type Reference
 
-Champs Description t_<index-name>-reference Définir t_<index-name>-type Définir
 
-### Type Reference multiple
+| Champs                   | Description                            |
+|--------------------------|----------------------------------------|
+| t_<index-name>-reference | Référence complète (Organization/123)  |
+| t_<index-name>-type      | Type de la référence (Organization)    |
+| t_<index-name>-id        | Id de la référence                     |
 
-Champs Description t_<index-name>-reference Définir t_<index-name>-type Définir
 
-### Type Adresse
 
-Champs Description t_<index-name>-city Définir t_<index-name>-country Définir
-
-t_<index-name>-postalcode Définir t_<index-name>-state Définir t_<index-name>-use Définir t_<index-name>    Définir
-
-_Exemple:_
+### Exemple
 
 Prenons l’exemple d’un champ FHIR de type CodeableConcept. Dans ce cas, la structure FHIR est du type :
 

@@ -28,5 +28,17 @@ public interface ContainerExpression<T> extends Expression<T> {
      */
     List<Expression<T>> getExpressions();
 
-
+    default String toString(List<Expression<T>> expressions, String condition) {
+        var sb = new StringBuilder();
+        var i = 0;
+        sb.append("(");
+        for (var e : expressions) {
+            if (i++ > 0) {
+                sb.append(condition);
+            }
+            sb.append(e);
+        }
+        sb.append(")");
+        return sb.toString();
+    }
 }

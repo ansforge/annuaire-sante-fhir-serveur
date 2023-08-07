@@ -5,6 +5,7 @@
 package fr.ans.afas.fhir.servlet;
 
 import ca.uhn.fhir.context.FhirContext;
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhir.servlet.error.ErrorWriter;
 import fr.ans.afas.fhir.servlet.metadata.CapabilityStatementReadListener;
@@ -12,6 +13,7 @@ import fr.ans.afas.fhir.servlet.read.ReadResourceReadListener;
 import fr.ans.afas.fhir.servlet.read.ReadSearchParams;
 import fr.ans.afas.fhir.servlet.search.bundle.FhirQueryFirstPageReadListener;
 import fr.ans.afas.fhir.servlet.search.bundle.FhirQueryNextPageReadListener;
+import fr.ans.afas.fhir.servlet.service.FhirOperationFactory;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
@@ -19,7 +21,6 @@ import fr.ans.afas.fhirserver.service.NextUrlManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletInputStream;
@@ -50,15 +51,14 @@ public class FhirResourceServlet<T> extends HttpServlet {
 
     private final NextUrlManager<T> nextUrlManager;
 
-    @Value("${afas.publicUrl}")
-    private final String serverUrl;
+    private final AfasConfiguration afasConfiguration;
     /**
      * The Fhir context
      */
     private static final FhirContext fhirContext = FhirContext.forR4();
 
-    @Value("${afas.servletTimeout:600000}")
-    private int servletTimeout;
+
+    private final FhirOperationFactory fhirOperationFactory;
 
     /**
      * Handle the get (SEARCH/READ/CAPABILITY STATEMENT) of the fhir server.
@@ -76,7 +76,7 @@ public class FhirResourceServlet<T> extends HttpServlet {
         AsyncContext context = null;
         try {
             context = request.startAsync();
-            context.setTimeout(servletTimeout);
+            context.setTimeout(afasConfiguration.getServletTimeout());
             var input = request.getInputStream();
             response.setContentType(FHIR_CONTENT_TYPE);
 
@@ -100,6 +100,13 @@ public class FhirResourceServlet<T> extends HttpServlet {
             // capability statement:
             if (fhirPath.startsWith("metadata")) {
                 getCapabilityStatement(response, context, input);
+                return;
+            }
+
+            // operations:
+            if (fhirPath.startsWith("$")) {
+                var operation = fhirOperationFactory.findOperationByName(fhirPath, context);
+                context.start(operation);
                 return;
             }
 
@@ -142,6 +149,7 @@ public class FhirResourceServlet<T> extends HttpServlet {
     }
 
 
+
     /**
      * Process the read operation
      *
@@ -168,7 +176,7 @@ public class FhirResourceServlet<T> extends HttpServlet {
         if (StringUtils.isBlank(pageId)) {
             throw new BadSelectExpression("Parameter id required to fetch the next page");
         }
-        var readListener = new FhirQueryNextPageReadListener<>(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, input, response, context, pageId, serverUrl);
+        var readListener = new FhirQueryNextPageReadListener<>(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, input, response, context, pageId, afasConfiguration);
         input.setReadListener(readListener);
     }
 
@@ -181,7 +189,7 @@ public class FhirResourceServlet<T> extends HttpServlet {
      * @param fhirPath the full path of the query
      */
     private void searchFirstPage(HttpServletResponse response, AsyncContext context, ServletInputStream input, String fhirPath) {
-        var readListener = new FhirQueryFirstPageReadListener<>(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, input, response, context, fhirPath, serverUrl);
+        var readListener = new FhirQueryFirstPageReadListener<>(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, input, response, context, fhirPath, afasConfiguration);
         input.setReadListener(readListener);
     }
 

@@ -6,6 +6,7 @@ package fr.ans.afas.fhir.servlet;
 
 
 import ca.uhn.fhir.context.FhirContext;
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
@@ -16,6 +17,7 @@ import org.hl7.fhir.r4.model.Patient;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -32,8 +34,8 @@ import static org.mockito.ArgumentMatchers.any;
  */
 public class FhirReadTest {
 
-
-    private static final String SERVER_URL = "http://localhost:8080/fhir";
+    @InjectMocks
+    FhirResourceServlet<?> servlet;
 
     @Mock
     FhirStoreService<Object> fhirStoreService;
@@ -43,6 +45,9 @@ public class FhirReadTest {
 
     @Mock
     NextUrlManager<Object> nextUrlManager;
+
+    @Mock
+    AfasConfiguration afasConfiguration;
 
 
     Patient p1 = new Patient();
@@ -64,7 +69,7 @@ public class FhirReadTest {
                 p1
         );
 
-        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, SERVER_URL);
+        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, afasConfiguration, null);
         StringWriter out = ServletTestUtil.callAsyncServlet(servlet, "GET", "/fhir/v2-alpha/Patient/id1", "/fhir/v2-alpha/", null);
         var parser = FhirContext.forR4().newJsonParser();
         var patient = (Patient) parser.parseResource(out.toString());
@@ -78,7 +83,7 @@ public class FhirReadTest {
                 null
         );
 
-        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, SERVER_URL);
+        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, afasConfiguration, null);
         StringWriter out = ServletTestUtil.callAsyncServlet(servlet, "GET", "/fhir/v2-alpha/Patient/id2", "/fhir/v2-alpha/", null);
         var parser = FhirContext.forR4().newJsonParser();
         var error404 = (OperationOutcome) parser.parseResource(out.toString());

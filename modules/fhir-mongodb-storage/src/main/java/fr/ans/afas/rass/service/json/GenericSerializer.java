@@ -13,7 +13,10 @@ import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import org.hl7.fhir.r4.model.*;
+import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.SpelCompilerMode;
+import org.springframework.expression.spel.SpelParserConfiguration;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.StringUtils;
@@ -40,7 +43,17 @@ public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSub
      */
     final SearchConfig searchConfig;
 
-    final ExpressionParser expressionParser = new SpelExpressionParser();
+    SpelParserConfiguration config = new SpelParserConfiguration(SpelCompilerMode.IMMEDIATE,
+            this.getClass().getClassLoader());
+
+    final ExpressionParser expressionParser = new SpelExpressionParser(config);
+
+
+    /**
+     * Used to cache spring spel expressions (they are compiled)
+     */
+    Map<String, Expression> cachedExpression = new HashMap<>();
+
 
     @Inject
     public GenericSerializer(SearchConfig searchConfig, FhirContext fhirContext) {
@@ -69,12 +82,12 @@ public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSub
 
         var internalIndexes = Set.of("_lastUpdated", "_id");
 
-        for (var config : configs) {
+        for (var oneConfig : configs) {
             // we don't process internal indexes, they are already processed:
-            if (!internalIndexes.contains(config.getName())) {
+            if (!internalIndexes.contains(oneConfig.getName())) {
                 var extracts = new ArrayList<>();
                 // serialize paths:
-                for (var path : config.getResourcePaths()) {
+                for (var path : oneConfig.getResourcePaths()) {
                     var stringPath = path.getPath();
                     extracts.addAll(extractValues(value, stringPath));
                 }
@@ -91,7 +104,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSub
                 }
 
                 var theType = types.stream().iterator().next();
-                writeValue(value, gen, config, extracts, theType);
+                writeValue(value, gen, oneConfig, extracts, theType);
             }
 
         }
@@ -168,7 +181,15 @@ public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSub
      * @return extracted values
      */
     protected Collection<Object> extractValuesInternal(Collection<Object> values, Deque<String> stringPath) {
-        var expression = expressionParser.parseExpression(stringPath.getFirst());
+        var elem = values.stream().findAny();
+        if (elem.isEmpty()) {
+            return List.of();
+        }
+        var cacheKey = elem.get().getClass() + "_" + stringPath.getFirst();
+        if (!cachedExpression.containsKey(cacheKey)) {
+            cachedExpression.put(cacheKey, expressionParser.parseExpression(stringPath.getFirst()));
+        }
+        var expression = cachedExpression.get(cacheKey);
 
         var results = new ArrayList<>();
         for (var eachValue : values) {

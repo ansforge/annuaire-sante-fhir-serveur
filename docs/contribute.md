@@ -13,12 +13,7 @@ Ce guide vous permet de contribuer au développement de l'application.
 
 ### Mongodb
 
-Le projet permet de démarrer les développements rapidement avec docker. Un fichier docker-compose permet de créer un
-mongodb déjà configuré.
-
-Lancement du docker : `docker-compose -f docker/dev/docker-compose.yml up`
-
-Si vous ne disposez pas de docker, installez un mongodb et utilisez le.
+Le système nécessite mongodb comme moteur de stockage. Vous devez l'installer. Il est compatible Mongodb 5 et 6.
 
 ### Build
 
@@ -91,50 +86,3 @@ docker: `mvn clean install -DskipIntegrationTest -Duser.timezone=UTC`
 Le système utilise spring boot. Se référer a
 la [documentation de Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/index.html) pour plus
 d'informations.
-
-### Docker
-
-Pour les déploiements docker, nous utilisons le plugin maven jib com.google.cloud.tools:jib-maven-plugin
-
-Plus d'informations sur la [page officielle](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin)
-du plugin.
-
-Après avoir installé la version courante (`mvn install`) puis dans le dossier: `modules-as/fhir-server`
-
-Compilation et build de l'image docker locale: `mvn compile jib:dockerBuild`
-
-Déploiement du conteneur vers le registre: `mvn compile jib:build`
-
-Puis le docker sera déployé sous le nom positionné dans le fichier : `modules-as/fhir-server/pom.xml` :
-
-```xml
-
-<plugin>
-    <groupId>com.google.cloud.tools</groupId>
-    <artifactId>jib-maven-plugin</artifactId>
-    <version>3.2.1</version>
-    <configuration>
-        <to>
-            <image>ans/as-fhir-server[TODO Name of the repo and version]</image>
-        </to>
-    </configuration>
-</plugin>
-```
-
-Une fois l'image créée, vous pouvez la lancer avec une commande de ce type:
-
-`docker run -p 8085:8080 -e SPRING_CONFIG_LOCATION="/opt/props/" -e JAVA_TOOL_OPTIONS="-Dspring.profiles.active=local" -e MONGO_CONNECTION_STRING="mongodb://root:root@host.docker.internal:27017/?socketTimeoutMS=360000&connectTimeoutMS=360000" --mount type=bind,source=D:/dev/ans/irisdp-api-fhir-back/modules-as/fhir-server/src/main/resources/,target=/opt/props/ ans/as-fhir-server`
-
-Cela lance un conteneur avec 3 variables d'environnement :
-
-* SPRING_CONFIG_LOCATION="/opt/props/": Permet de dire à spring où chercher la configuration
-* JAVA_TOOL_OPTIONS="-Dspring.profiles.active=local": Permet de spécifier le profil spring à "local"
-* MONGO_CONNECTION_STRING="mongodb://root:root@host.docker.internal:
-  27017/?socketTimeoutMS=360000&connectTimeoutMS=360000": Permet de spécifier l'url du serveur mongodb (connection
-  string). On note que l'url utilisée ici est spéciale car nous sommes dans un conteneur.
-
-Et cela monte un dossier depuis notre dossier de propriétés vers /opt/props.
-
-Avec cette commande vous devriez pouvoir accéder au CapabilityStatement
-avec : `http://localhost:8085/fhir/v1/metadata?_format=json`
-

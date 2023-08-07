@@ -6,6 +6,7 @@ package fr.ans.afas;
 
 
 import ca.uhn.fhir.context.FhirContext;
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.fhir.GlobalProvider;
 import fr.ans.afas.fhir.TransactionalResourceProvider;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
@@ -23,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 /**
  *
  */
+//@ConfigurationPropertiesScan(basePackageClasses = AfasConfiguration.class)
 @SpringBootApplication
 public class SimpleTestApp extends AfasServerConfigurerAdapter {
     /**

@@ -2,8 +2,7 @@
 
 ## Contexte
 
-L’application annuaire-sante-fhir-serveur est une application qui permet d’exposer un serveur FHIR avec les profils FHIR
-publiques de l'ANS.
+L’application annuaire-sante-fhir-serveur est une application qui permet d’exposer un serveur FHIR.
 
 Il s’agit d’une application monolithique stateless qui expose une api REST en utilisant une base de données MongoDB.
 
@@ -56,6 +55,20 @@ Parmi les utilitaires pour les tests, il y aura des classes pour lancer des test
 
 C'est un module spring boot starter qui permet d'utiliser le système afas avec la mécanique spring boot "
 AutoConfiguration".
+
+#### fhir-subscription
+
+C'est un module qui permet d'ajouter des fonctionnalités fhir de Subscription (https://www.hl7.org/fhir/R4/subscription.html).
+
+#### afas-fhir-hapi
+
+Ce module contient les classes liés à la librairie Hapi pour son utilisation ou sa configuration. 
+
+#### afas-fhir-servlet
+
+Ce module contient les classes permettant de faire fonctionner le serveur sans utiliser les controlleurs de hapi. Ce module rest en phase de test
+et permet notamment de se passer d'une grande partie de configuration sur la mise en place d'un nouveau serveur. 
+Le module s'active ou non en l'ajoutant au classpath. 
 
 #### project-report
 

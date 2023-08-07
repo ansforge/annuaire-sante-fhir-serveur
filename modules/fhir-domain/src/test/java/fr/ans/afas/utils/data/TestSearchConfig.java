@@ -27,6 +27,22 @@ public class TestSearchConfig extends BaseSearchConfigService {
      * The name of the Sample Fhir Resource
      */
     public static final String FHIR_RESOURCE_NAME = "FhirResource";
+
+    /**
+     * The name of the Sample Fhir Resource Device
+     */
+    public static final String FHIR_RESOURCE_DEVICE = "Device";
+
+    /**
+     * The name of the Sample Fhir Resource Practitioner Role
+     */
+    public static final String FHIR_RESOURCE_PRACTITIONER_ROLE = "PractitionerRole";
+
+    /**
+     * The name of the Sample Fhir Resource Organization
+     */
+    public static final String FHIR_RESOURCE_ORGANIZATION = "Organization";
+
     /**
      * The exemple path for a token
      */
@@ -116,5 +132,53 @@ public class TestSearchConfig extends BaseSearchConfigService {
                 .build());
 
         configs.put(FHIR_RESOURCE_NAME, FhirResourceSearchConfig.builder().name(FHIR_RESOURCE_NAME).searchParams(list).build());
+        configs.put(FHIR_RESOURCE_DEVICE, FhirResourceSearchConfig.builder().name(FHIR_RESOURCE_DEVICE)
+                .searchParams(
+                        List.of(SearchParamConfig.builder()
+                        .urlParameter("organization")
+                        .name("includePath")
+                        .searchType("reference")
+                        .indexName(FHIR_RESOURCE_DB_REFERENCE_PATH)
+                        .resourcePaths(List.of(ResourcePathConfig.builder().path("includePath").build()))
+                        .build())
+                ).build());
+
+        configs.put(FHIR_RESOURCE_PRACTITIONER_ROLE, FhirResourceSearchConfig.builder().name(FHIR_RESOURCE_PRACTITIONER_ROLE)
+                .searchParams(
+                        List.of(
+                                SearchParamConfig.builder()
+                                        .urlParameter("partof")
+                                        .name("includePath")
+                                        .searchType("reference")
+                                        .indexName(FHIR_RESOURCE_DB_REFERENCE_PATH)
+                                        .resourcePaths(List.of(ResourcePathConfig.builder().path("includePath").build()))
+                                        .build(),
+                                SearchParamConfig.builder()
+                                        .urlParameter("organization")
+                                        .name("includePath")
+                                        .searchType("reference")
+                                        .indexName(FHIR_RESOURCE_DB_REFERENCE_PATH)
+                                        .resourcePaths(List.of(ResourcePathConfig.builder().path("includePath").build()))
+                                        .build(),
+                                SearchParamConfig.builder()
+                                        .urlParameter("practitioner")
+                                        .name("includePath")
+                                        .searchType("reference")
+                                        .indexName(FHIR_RESOURCE_DB_REFERENCE_PATH)
+                                        .resourcePaths(List.of(ResourcePathConfig.builder().path("includePath").build()))
+                                        .build()
+                        )
+                ).build());
+
+        configs.put(FHIR_RESOURCE_ORGANIZATION, FhirResourceSearchConfig.builder().name(FHIR_RESOURCE_ORGANIZATION)
+                .searchParams(
+                        List.of(SearchParamConfig.builder()
+                                .urlParameter("partof")
+                                .name("includePath")
+                                .searchType("reference")
+                                .indexName(FHIR_RESOURCE_DB_REFERENCE_PATH)
+                                .resourcePaths(List.of(ResourcePathConfig.builder().path("includePath").build()))
+                                .build())
+                ).build());
     }
 }

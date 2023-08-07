@@ -75,8 +75,16 @@ public class MockedFhirPageIterator implements FhirPageIterator {
     }
 
     @Override
+    public void clearIncludesTypeReference() {
+    }
+
+    @Override
     public Set<String> getRevIncludeIds() {
-        return null;
+        return new HashSet<>();
+    }
+
+    @Override
+    public void clearRevIncludeIds() {
     }
 
     @Override

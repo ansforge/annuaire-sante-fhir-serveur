@@ -17,7 +17,11 @@ public interface FhirPageIterator extends Iterator<FhirBundleBuilder.BundleEntry
 
     Map<String, Set<String>> getIncludesTypeReference();
 
+    void clearIncludesTypeReference();
+
     Set<String> getRevIncludeIds();
+
+    void clearRevIncludeIds();
 
     boolean hasNextPage();
 }

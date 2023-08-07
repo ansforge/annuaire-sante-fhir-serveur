@@ -211,11 +211,11 @@ public class MongoQueryUtils {
                                                                                    MongoCollection<Document> collection,
                                                                                    Long searchRevision) {
 
-        Bson bson = Optional.ofNullable(selectExpression.interpreter())
+        var bson = Optional.ofNullable(selectExpression.interpreter())
                 .map(r -> Filters.and(Filters.gte(VALID_TO_ATTRIBUTE, searchRevision), r))
                 .orElseGet(() -> Filters.gte(VALID_TO_ATTRIBUTE, searchRevision));
 
-        FindIterable<Document> documents = collection.find(addSinceParam(selectExpression, bson))
+        var documents = collection.find(addSinceParam(selectExpression, bson))
                 .sort(Sorts.ascending(ID_ATTRIBUTE))
                 .limit(pageSize + 1);
 

@@ -70,10 +70,10 @@ public class FhirRequestParser {
                         handleCountParam(selectExpression, parsedParam);
                         break;
                     case "_include":
-                        handleIncludeParam(searchConfig, selectExpression, parsedParam);
+                        handleIncludeParam(searchConfig, selectExpression, resourceType, parsedParam);
                         break;
                     case "_revinclude":
-                        handleRevIncludeParam(selectExpression, parsedParam);
+                        handleRevIncludeParam(searchConfig, selectExpression, resourceType, parsedParam);
                         break;
                     case "_pretty":
                     case "_format":
@@ -243,9 +243,10 @@ public class FhirRequestParser {
     }
 
 
-    public static void handleIncludeParam(SearchConfig searchConfig, SelectExpression<?> selectExpression, ParsedParam parsedParam) throws BadDataFormatException {
+    public static void handleIncludeParam(SearchConfig searchConfig, SelectExpression<?> selectExpression, String resourceType, ParsedParam parsedParam) throws BadDataFormatException, BadSelectExpression {
         var includes = new HashSet<Include>();
         for (var val : parsedParam.getParamValues()) {
+
             if ("*".equals(val)) {
                 // add all references:
                 var resource = selectExpression.getFhirResource();
@@ -253,17 +254,45 @@ public class FhirRequestParser {
                         includes.add(new Include(resource + ":" + p.getUrlParameter()))
                 );
             } else {
+                checkParametersInclude(searchConfig, resourceType, val);
                 includes.add(new Include(val));
             }
         }
         selectExpression.fromFhirParams(includes);
     }
 
-    public static void handleRevIncludeParam(SelectExpression<?> selectExpression, ParsedParam parsedParam) throws BadDataFormatException {
+    public static void handleRevIncludeParam(SearchConfig searchConfig, SelectExpression<?> selectExpression, String resourceType, ParsedParam parsedParam) throws BadDataFormatException, BadSelectExpression {
         var includes = new HashSet<Include>();
         for (var val : parsedParam.getParamValues()) {
+            checkParametersRevInclude(searchConfig, resourceType, val);
             includes.add(new Include(val));
         }
         selectExpression.fromFhirParamsRevInclude(includes);
+    }
+
+    private static void checkParametersInclude(SearchConfig searchConfig, String resourceType, String includeValue) throws BadSelectExpression {
+        String resource = includeValue.split(":")[0];
+        if (resourceType.equals(resource)){
+            checkParameters(searchConfig, resourceType, includeValue);
+        }
+        else {
+            throwBadSelectExpression(resourceType, includeValue);
+        }
+    }
+
+    private static void checkParametersRevInclude(SearchConfig searchConfig, String resourceType, String includeValue) throws BadSelectExpression {
+        checkParameters(searchConfig,resourceType, includeValue);
+    }
+
+    private static void checkParameters(SearchConfig searchConfig, String resourceType, String includeValue) throws BadSelectExpression {
+        String[] parts = includeValue.split(":");
+        if (parts.length != 2 || searchConfig.getResources().stream().noneMatch(res -> res.equals(parts[0]))
+                || searchConfig.getAllByFhirResource(parts[0]).stream().noneMatch(res -> res.getUrlParameter().equals(parts[1]))) {
+            throwBadSelectExpression(resourceType, includeValue);
+        }
+    }
+
+    private static void throwBadSelectExpression(String resourceType, String includeValue) throws BadSelectExpression {
+        throw new BadSelectExpression(String.format("Parameter %s not found for resource %s", includeValue,resourceType));
     }
 }

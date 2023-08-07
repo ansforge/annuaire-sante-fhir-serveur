@@ -16,12 +16,15 @@ import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.serialization.DefaultSerializeUrlEncrypter;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.SerializeUrlEncrypter;
+import fr.ans.afas.fhirserver.service.FhirStoreService;
+import fr.ans.afas.fhirserver.service.IndexService;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
 import fr.ans.afas.mdbexpression.domain.fhir.searchconfig.ASComplexSearchConfig;
 import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
 import fr.ans.afas.rass.service.DatabaseService;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.impl.DefaultIndexService;
 import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
 import fr.ans.afas.rass.service.impl.SimpleDatabaseService;
 import fr.ans.afas.rass.service.json.FhirBaseResourceDeSerializer;
@@ -80,7 +83,6 @@ public class TestFhirApplication {
                                           MongoClient mongoClient,
                                           SearchConfig searchConfig,
                                           ApplicationContext context,
-                                          @Value("${afas.fhir.max-include-size:5000}") int maxIncludePageSize,
                                           DatabaseService databaseService
     ) throws BadHookConfiguration {
         return new MongoDbFhirService(List.of(new GenericSerializer(searchConfig, fhirContext)),
@@ -89,7 +91,6 @@ public class TestFhirApplication {
                 searchConfig,
                 fhirContext,
                 new HookService(context),
-                maxIncludePageSize,
                 databaseService
         );
     }
@@ -156,6 +157,19 @@ public class TestFhirApplication {
                                         @Value("${spring.data.mongodb.database}") String dbName
     ) {
         return new MongoDbNextUrlManager(mongoClient, maxNextUrlLength, expressionSerializer, serializeUrlEncrypter, dbName);
+    }
+
+
+    @Bean
+    @Inject
+    GenericSerializer genericSerializer(SearchConfig searchConfig, FhirContext fhirContext){
+        return new GenericSerializer(searchConfig, fhirContext);
+    }
+
+    @Bean
+    @Inject
+    IndexService indexService(FhirStoreService<Bson> fhirStoreService, ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig, GenericSerializer genericSerializer){
+        return new DefaultIndexService(fhirStoreService,  expressionFactory,  searchConfig, genericSerializer);
     }
 
 }

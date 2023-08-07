@@ -36,18 +36,20 @@ public class FhirBundleBuilder {
     }
 
     public String getFooter(String serverUrl, String nextPageId) {
-        var sb = new StringBuilder();
-        sb.append("]");
+        var sb = new StringBuilder("]");
 
         //,{"relation":
         if (nextPageId != null) {
-
-            sb.append(",\"link\": [ {");
-            sb.append("\"relation\": \"next\",");
-            sb.append("\"url\": \"").append(serverUrl).append("/v2-alpha/_page?id=");
-            sb.append(nextPageId);
-            sb.append("\"}]");
-
+            sb.append(",\"link\": [ {")
+                    .append("\"relation\": \"next\",")
+                    .append("\"url\": \"")
+                    .append(serverUrl);
+            if (!serverUrl.endsWith("/")) {
+                sb.append("/");
+            }
+            sb.append("v2-alpha/_page?id=")
+                    .append(nextPageId)
+                    .append("\"}]");
         }
         sb.append("}");
         return sb.toString();

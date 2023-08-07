@@ -182,8 +182,6 @@ public class FullSpringAppWithMongo {
             SearchConfig searchConfig,
             ApplicationContext context,
             FhirContext fhirContext,
-            @Value("${afas.fhir.max-include-size:5000}")
-                    int maxIncludePageSize,
             DatabaseService databaseService) throws BadHookConfiguration {
         return new MongoDbFhirService(
                 serializers,
@@ -192,7 +190,6 @@ public class FullSpringAppWithMongo {
                 searchConfig,
                 fhirContext,
                 new HookService(context),
-                maxIncludePageSize,
                 databaseService
         );
     }

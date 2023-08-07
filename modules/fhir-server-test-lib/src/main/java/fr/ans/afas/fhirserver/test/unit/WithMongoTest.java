@@ -55,7 +55,7 @@ public final class WithMongoTest {
         @Override
         public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
 
-            boolean mongoDockerEnabled = Boolean.parseBoolean(configurableApplicationContext.getEnvironment().getProperty("afas.mongodb.docker.enabled"));
+            var mongoDockerEnabled = Boolean.parseBoolean(configurableApplicationContext.getEnvironment().getProperty("afas.mongodb.docker.enabled"));
 
             if (mongoDockerEnabled) {
                 // if you encounter some problems with docker, disable RYUK with this env var:  TESTCONTAINERS_RYUK_DISABLED=true

@@ -36,7 +36,11 @@ public class SearchParamConfig {
         this.description = description;
         this.resourcePaths = resourcePaths;
         this.indexName = indexName;
-        this.index = index != null ? index : true;
-        this.indexInSubRequest = indexInSubRequest != null ? indexInSubRequest : false;
+        if (index != null) {
+            this.index = index;
+        }
+        if (indexInSubRequest != null) {
+            this.indexInSubRequest = indexInSubRequest;
+        }
     }
 }

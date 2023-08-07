@@ -5,6 +5,7 @@
 package fr.ans.afas.fhirserver.search.expression;
 
 
+import ca.uhn.fhir.model.api.IQueryParameterAnd;
 import ca.uhn.fhir.model.api.Include;
 import ca.uhn.fhir.rest.param.*;
 import fr.ans.afas.exception.BadDataFormatException;
@@ -13,6 +14,7 @@ import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.data.TotalMode;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
+import fr.ans.afas.utils.SelectExpressionMatching;
 import fr.ans.afas.validation.DataValidationUtils;
 import lombok.Getter;
 import org.springframework.util.Assert;
@@ -38,7 +40,7 @@ public class SelectExpression<T> implements Expression<T> {
     /**
      * The maximum size of a select expression. Hardcoded, juste to ensure that there is no abuse.
      */
-    private static final int MAX_SELECT_COUNT = 5000;
+    private static final int MAX_SELECT_COUNT = 5_000_0000;
     /**
      * The fhir resource of the select
      */
@@ -74,6 +76,8 @@ public class SelectExpression<T> implements Expression<T> {
      */
     Date since;
 
+    SelectExpressionMatching<OrExpression<T>, Object, FhirSearchPath, Object, OrExpression<T>> constructOrExpression;
+
     /**
      * Construct a SelectExpression.
      * Use the expression factory to choose the implementation.
@@ -83,6 +87,38 @@ public class SelectExpression<T> implements Expression<T> {
      */
     public SelectExpression(@NotNull String fhirResource, @NotNull ExpressionFactory<T> expressionFactory) {
         this(fhirResource, expressionFactory, expressionFactory.newAndExpression());
+        this.initSelectExpressionMatching();
+    }
+
+    private void initSelectExpressionMatching(){
+        constructOrExpression =  SelectExpressionMatching
+                .when(TokenParam.class::equals, (OrExpression<T> orExpression, FhirSearchPath path, Object param) -> {
+                    var tokenParam = (TokenParam) param;
+                    String system = Optional.ofNullable(tokenParam.getSystem()).map(String::trim).filter(s -> !s.isEmpty()).orElse(null);
+                    String value = Optional.ofNullable(tokenParam.getValue()).map(String::trim).filter(s -> !s.isEmpty()).orElse(null);
+                    DataValidationUtils.validateTokenParameter(system);
+                    DataValidationUtils.validateTokenParameter(value);
+                    return orExpression.or(expressionFactory.newTokenExpression(path, system, value));
+                })
+                .orWhen(StringParam.class::equals, (OrExpression<T> orExpression, FhirSearchPath path, Object param) -> {
+                    var stringParam = (StringParam) param;
+                    DataValidationUtils.validateTokenParameter(stringParam.getValue());
+                    return orExpression.or(expressionFactory.newStringExpression(path, stringParam.getValue(), resolveOperator(stringParam)));
+                })
+                .orWhen(ReferenceParam.class::equals, (OrExpression<T> orExpression, FhirSearchPath path, Object param) -> {
+                    var referenceParam = (ReferenceParam) param;
+                    DataValidationUtils.validateTokenParameter(referenceParam.getValue());
+                    return orExpression.or(expressionFactory.newReferenceExpression(path, referenceParam.getValue()));
+                })
+                .orWhen(DateParam.class::equals, (OrExpression<T> orExpression, FhirSearchPath path, Object param) -> {
+                    var dateRangeParam = (DateParam) param;
+                    return orExpression.or(expressionFactory.newDateRangeExpression(path, dateRangeParam.getValue(), dateRangeParam.getPrecision(), dateRangeParam.getPrefix()));
+                })
+                .orWhen(UriParam.class::equals, (OrExpression<T> orExpression, FhirSearchPath path, Object param) -> {
+                    var uriParam = (UriParam) param;
+                    DataValidationUtils.validateTokenParameter(uriParam.getValue());
+                    return orExpression.or(expressionFactory.newStringExpression(path, uriParam.getValue(), StringExpression.Operator.EXACT));
+                });
     }
 
     /**
@@ -100,20 +136,12 @@ public class SelectExpression<T> implements Expression<T> {
         this.expressionFactory = expressionFactory;
     }
 
-    /**
-     * Convert a Hapi parameter to a Select expression for StringAndListParam
-     *
-     * @param path               the path of the parameter
-     * @param stringAndListParam the parameter to convert
-     * @return the converted select expression
-     */
-    public SelectExpression<T> fromFhirParams(FhirSearchPath path, StringAndListParam stringAndListParam) throws BadDataFormatException {
-        if (stringAndListParam != null) {
-            for (var orParams : stringAndListParam.getValuesAsQueryTokens()) {
+    public <P extends IQueryParameterAnd<?>> SelectExpression<T> fromFhirParams(FhirSearchPath path, P iQueryParam) {
+        if (iQueryParam != null) {
+            for (var orParams : iQueryParam.getValuesAsQueryTokens()) {
                 OrExpression<T> orExpression = expressionFactory.newOrExpression();
                 for (var param : orParams.getValuesAsQueryTokens()) {
-                    DataValidationUtils.validateTokenParameter(param.getValue());
-                    orExpression.or(expressionFactory.newStringExpression(path, param.getValue(), resolveOperator(param)));
+                    constructOrExpression.addOrExpression(orExpression, param.getClass(), path, param);
                 }
                 this.expression.addExpression(orExpression);
             }
@@ -128,42 +156,19 @@ public class SelectExpression<T> implements Expression<T> {
      * @param stringAndListParam the parameter to convert
      * @return the converted select expression
      */
-    public SelectExpression<T> fromFhirParams(List<FhirSearchPath> paths, StringAndListParam stringAndListParam) throws BadDataFormatException {
+    public SelectExpression<T> fromFhirParams(List<FhirSearchPath> paths, StringAndListParam stringAndListParam) {
         if (stringAndListParam != null) {
             var orExpression = expressionFactory.newOrExpression();
             for (var path : paths) {
                 for (var orParams : stringAndListParam.getValuesAsQueryTokens()) {
                     var orExpressionInternal = expressionFactory.newOrExpression();
                     for (var param : orParams.getValuesAsQueryTokens()) {
-                        DataValidationUtils.validateTokenParameter(param.getValue());
-                        orExpressionInternal.or(expressionFactory.newStringExpression(path, param.getValue(), resolveOperator(param)));
+                        constructOrExpression.addOrExpression(orExpressionInternal, param.getClass(), path, param);
                     }
                     orExpression.addExpression(orExpressionInternal);
                 }
             }
             this.expression.addExpression(orExpression);
-        }
-        return this;
-    }
-
-    /**
-     * Convert a Hapi parameter to a Select expression for TokenAndListParam
-     *
-     * @param path              the path of the parameter
-     * @param tokenAndListParam the parameter to convert
-     * @return the converted select expression
-     */
-    public SelectExpression<T> fromFhirParams(FhirSearchPath path, TokenAndListParam tokenAndListParam) throws BadDataFormatException {
-        if (tokenAndListParam != null) {
-            for (var orParams : tokenAndListParam.getValuesAsQueryTokens()) {
-                var orExpression = expressionFactory.newOrExpression();
-                for (var param : orParams.getValuesAsQueryTokens()) {
-                    DataValidationUtils.validateTokenParameter(param.getSystem());
-                    DataValidationUtils.validateTokenParameter(param.getValue());
-                    orExpression.or(expressionFactory.newTokenExpression(path, param.getSystem(), param.getValue()));
-                }
-                this.expression.addExpression(orExpression);
-            }
         }
         return this;
     }
@@ -188,47 +193,6 @@ public class SelectExpression<T> implements Expression<T> {
     }
 
     /**
-     * Convert a Hapi parameter to a Select expression for ReferenceAndListParam
-     *
-     * @param path        the path of the parameter
-     * @param theEndpoint the parameter to convert
-     * @return the converted select expression
-     */
-    public SelectExpression<T> fromFhirParams(FhirSearchPath path, ReferenceAndListParam theEndpoint) throws BadDataFormatException {
-        if (theEndpoint != null) {
-            for (var orParams : theEndpoint.getValuesAsQueryTokens()) {
-                var orExpression = expressionFactory.newOrExpression();
-                for (var param : orParams.getValuesAsQueryTokens()) {
-                    DataValidationUtils.validateTokenParameter(param.getValue());
-                    orExpression.or(expressionFactory.newReferenceExpression(path, param.getValue()));
-                }
-                this.expression.addExpression(orExpression);
-            }
-        }
-        return this;
-    }
-
-    /**
-     * Convert a Hapi parameter to a Select expression for DateRangeParam
-     *
-     * @param path           the path of the parameter
-     * @param dateRangeParam the parameter to convert
-     * @return the converted select expression
-     */
-    public SelectExpression<T> fromFhirParams(FhirSearchPath path, DateRangeParam dateRangeParam) {
-        if (dateRangeParam != null) {
-            for (var orParams : dateRangeParam.getValuesAsQueryTokens()) {
-                var orExpression = expressionFactory.newOrExpression();
-                for (var param : orParams.getValuesAsQueryTokens()) {
-                    orExpression.or(expressionFactory.newDateRangeExpression(path, param.getValue(), param.getPrecision(), param.getPrefix()));
-                }
-                this.expression.addExpression(orExpression);
-            }
-        }
-        return this;
-    }
-
-    /**
      * Convert a Hapi parameter to a Select expression for multiple DateParam. The parameters will be applied with a logical OR.
      *
      * @param path       the path of the parameter
@@ -238,24 +202,10 @@ public class SelectExpression<T> implements Expression<T> {
         if (dateParams != null) {
             var orExpression = expressionFactory.newOrExpression();
             for (var param : dateParams) {
-                orExpression.or(expressionFactory.newDateRangeExpression(path, param.getValue(), param.getPrecision(), param.getPrefix()));
+                constructOrExpression.addOrExpression(orExpression, param.getClass(), path, param);
             }
             this.expression.addExpression(orExpression);
         }
-    }
-
-    public SelectExpression<T> fromFhirParams(FhirSearchPath path, UriAndListParam theSearchForProfile) throws BadDataFormatException {
-        if (theSearchForProfile != null) {
-            for (var orParams : theSearchForProfile.getValuesAsQueryTokens()) {
-                OrExpression<T> orExpression = expressionFactory.newOrExpression();
-                for (var param : orParams.getValuesAsQueryTokens()) {
-                    DataValidationUtils.validateTokenParameter(param.getValue());
-                    orExpression.or(expressionFactory.newStringExpression(path, param.getValue(), StringExpression.Operator.EXACT));
-                }
-                this.expression.addExpression(orExpression);
-            }
-        }
-        return this;
     }
 
     public SelectExpression<T> fromFhirParams(Set<Include> theInclude) throws BadDataFormatException {
@@ -391,5 +341,4 @@ public class SelectExpression<T> implements Expression<T> {
         this.hasConditions.clear();
         this.hasConditions.addAll(expression);
     }
-
 }

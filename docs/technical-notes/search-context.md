@@ -115,6 +115,37 @@ pageSize (_count)...
 Enfin nous utiliserons l'objet ExpressionDeserializer pour désérialiser la requête en elle
 même `expressionDeserializer.deserialize(exp)`.
 
+
+## Cas des requêtes longues
+
+Dans certains cas, la sérialisation des urls produit des urls trop longues pour certains navigateurs.
+Aussi, lorsque cela se produit, l'url est stockée en base de données et un id de correspondance est utilisé dans l'url.
+
+La collection MongoDb utilisée pour stocker les ids est NextPages.
+
+Le format est le suivant : 
+
+Url => 
+```
+http://localhost:8080/fhir/v1?_getpages=661cd3fe-d97d-4694-aa6e-66facfb19c23&_pageId=64bfd0befbbd943aab58a82b_d661cd3fe-d97d-4694-aa6e-66facfb19c23&_format=json&_pretty=true&_bundletype=searchset
+```
+
+Base de données => 
+```
+{
+    "_id": {
+        "$oid": "64cb90c3937a32489779b7d1"
+    },
+    "id": "661cd3fe-d97d-4694-aa6e-66facfb19c23",
+    "ca": {
+        "$numberLong": "1691062467852"
+    },
+    "value": "50_-1_1691062467852_Practitioner_64bfd0befbbd943aab58a82b_661cd3fe-d97d-4694-aa6e-66facfb19c23_6|Practitioner$50$0%7C1%257C1%25257C2%2525257C0%25252524M%25252524Practitioner%25252524name-prefix%25257C1%25257C2%2525257C0%25252524M%25252524Practitioner%25252524name-prefix%25257C1%25257C2%2525257C0%25252524M%25252524Practitioner%25252524name-prefix%25257C1%25257C2%2525257C0%25252524M%25252524Practitioner%25252524name-prefix%25257C1%25257C2%2525257C0%25252524M%25252524Practitioner%25252524name-prefix$$$"
+}
+```
+Ici le paramètre "_getpages" contient l'id de l'élément en base qui permet de retrouver la requête lors de la pagination. 
+
+
 ## Limitations du système
 
 Le système ne supporte pas l'affichage du lien HATEAOS "prev".

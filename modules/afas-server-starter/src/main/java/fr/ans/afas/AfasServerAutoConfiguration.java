@@ -9,6 +9,7 @@ import ca.uhn.fhir.rest.server.IPagingProvider;
 import com.mongodb.client.MongoClient;
 import fr.ans.afas.audit.AuditFilter;
 import fr.ans.afas.config.MongoIndexConfiguration;
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.domain.ResourceAndSubResources;
 import fr.ans.afas.fhir.AfasPagingProvider;
 import fr.ans.afas.fhir.TransactionalResourceProvider;
@@ -30,6 +31,7 @@ import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
 import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
 import fr.ans.afas.rass.service.DatabaseService;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.impl.DefaultIndexService;
 import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
 import fr.ans.afas.rass.service.impl.SimpleDatabaseService;
 import fr.ans.afas.rass.service.json.FhirBaseResourceDeSerializer;
@@ -41,6 +43,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -60,6 +63,7 @@ import java.util.List;
 @Configuration
 @Import({MongoConfig.class, YamlSearchConfig.class, SubscriptionConfiguration.class})
 @ServletComponentScan
+@ConfigurationPropertiesScan
 public class AfasServerAutoConfiguration {
 
     @ConditionalOnMissingBean
@@ -152,8 +156,6 @@ public class AfasServerAutoConfiguration {
             SearchConfig searchConfig,
             FhirContext fhirContext,
             ApplicationContext context,
-            @Value("${afas.fhir.max-include-size:5000}")
-                    int maxIncludePageSize,
             DatabaseService databaseService) throws BadHookConfiguration {
         return new MongoDbFhirService(
                 serializers,
@@ -162,7 +164,6 @@ public class AfasServerAutoConfiguration {
                 searchConfig,
                 fhirContext,
                 new HookService(context),
-                maxIncludePageSize,
                 databaseService
         );
     }
@@ -261,11 +262,25 @@ public class AfasServerAutoConfiguration {
 
     /**
      * Default audit listener for write operations
+     */
+    @ConditionalOnMissingBean
+    @Inject
+    @Bean
+    DefaultIndexService defaultIndexService(FhirStoreService<Bson> fhirStoreService, ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig, GenericSerializer genericSerializer) {
+        return new DefaultIndexService(fhirStoreService, expressionFactory, searchConfig, genericSerializer);
+    }
 
-     @ConditionalOnMissingBean
-     @Inject
-     @Bean DefaultIndexService defaultIndexService(FhirStoreService<Bson> fhirStoreService, ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig, GenericSerializer genericSerializer) {
-     return new DefaultIndexService(fhirStoreService, expressionFactory, searchConfig, genericSerializer);
-     }  */
+
+    /**
+     * The server configuration from the property file
+     *
+     * @return
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    AfasConfiguration afasConfiguration() {
+        return new AfasConfiguration();
+    }
+
 
 }

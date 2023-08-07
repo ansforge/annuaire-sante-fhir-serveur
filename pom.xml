@@ -11,7 +11,7 @@
         <relativePath>..</relativePath>
     </parent>
     <artifactId>annuaire-sante-fhir-serveur</artifactId>
-    <version>1.23.14</version>
+    <version>1.23.21-SNAPSHOT</version>
     <name>annuaire-sante-fhir-serveur</name>
     <packaging>pom</packaging>
     <description>A FHIR server based on Hapi and MongoDB to expose FHIR resources.</description>
@@ -55,7 +55,7 @@
     </modules>
     <scm>
         <developerConnection>${developperConnectionJenkinsfile}</developerConnection>
-        <tag>annuaire-sante-fhir-serveur-1.23.14</tag>
+        <tag>HEAD</tag>
     </scm>
     <distributionManagement>
         <repository>

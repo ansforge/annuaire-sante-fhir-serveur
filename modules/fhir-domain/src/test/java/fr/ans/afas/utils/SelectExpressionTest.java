@@ -6,14 +6,15 @@ package fr.ans.afas.utils;
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.param.*;
-import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
 import fr.ans.afas.fhirserver.search.expression.*;
 import fr.ans.afas.fhirserver.search.expression.emptyimpl.*;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,7 +31,7 @@ import java.util.List;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class SelectExpressionTest {
+class SelectExpressionTest {
 
 
     static final FhirSearchPath pathString = FhirSearchPath.builder().resource("FhirResource").path("string_path").build();
@@ -44,10 +45,8 @@ public class SelectExpressionTest {
     static final Date testDate = new Date(1663849410512L);
     final ExpressionFactory<?> expressionFactory = Mockito.mock(ExpressionFactory.class);
 
-    @Before
+    @BeforeEach
     public void setup() {
-
-
         Mockito.when(expressionFactory.newAndExpression()).then((a) -> new EmptyAndExpression());
         Mockito.when(expressionFactory.newOrExpression()).then((a) -> new EmptyOrExpression());
         Mockito.when(expressionFactory.newStringExpression(pathString, "bla", StringExpression.Operator.EXACT)).then((a) -> new EmptyStringExpression(pathString, "bla", StringExpression.Operator.EXACT));
@@ -63,11 +62,13 @@ public class SelectExpressionTest {
             hc.addExpression(new EmptyStringExpression(pathHasParam, "v1", StringExpression.Operator.CONTAINS));
             return hc;
         });
-
+        Mockito.when(expressionFactory.newTokenExpression(pathToken, null, "1234")).then((a) -> new EmptyTokenExpression(pathToken, "http://identifier", "1234") {});
+        Mockito.when(expressionFactory.newTokenExpression(pathToken, "http://identifier", null)).then((a) -> new EmptyTokenExpression(pathToken, "http://identifier", "1234") {});
+        Mockito.when(expressionFactory.newTokenExpression(pathToken, "http://identifier", "1234")).then((a) -> new EmptyTokenExpression(pathToken, "http://identifier", "1234") {});
     }
 
     @Test
-    public void testFromStringParams() throws BadDataFormatException {
+    void testFromStringParams() {
         var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
@@ -89,7 +90,7 @@ public class SelectExpressionTest {
 
 
     @Test
-    public void testFromTokenParams() throws BadDataFormatException {
+    void testFromTokenParams() {
         var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
@@ -107,9 +108,54 @@ public class SelectExpressionTest {
         Assert.assertEquals("s", ((TokenExpression<?>) oe.getExpressions().get(0)).getSystem());
     }
 
+    @ParameterizedTest
+    @CsvSource(value = {
+            "'  ',XXXXXXX",
+            "'  http://identifier  ', XXXXXXX",
+            "' http://systemnotexist  ', 1234",
+            "http://identifier, XXXXXX"
+    })
+    void testFromTokenParamsWithSpacesNotResultsExpected(String system, String code) {
+        var selectExpression = new SelectExpression<>("FhirResource", expressionFactory);
+        TokenAndListParam tokenAndListParam = new TokenAndListParam();
+        var tokenOrListParam = new TokenOrListParam();
+        tokenOrListParam.add(new TokenParam(system, code));
+        tokenAndListParam.addAnd(tokenOrListParam);
+
+        selectExpression.fromFhirParams(pathToken, tokenAndListParam);
+
+        var oe = (OrExpression<?>) ((AndExpression<?>) selectExpression.getExpression()).getExpressions().get(0);
+        Assert.assertEquals(1, oe.getExpressions().size());
+        Assert.assertNull(oe.getExpressions().get(0));
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "'  ',1234",
+            "'  http://identifier  ', 1234",
+            "'  http://identifier  ', '  1234  '",
+            "http://identifier, '  1234  '",
+            "' http://identifier ', '  '",
+            "http://identifier, '  '"
+    })
+    void testFromTokenParamsWithSpacesResultsExpected(String system, String code) {
+        var selectExpression = new SelectExpression<>("FhirResource", expressionFactory);
+        TokenAndListParam tokenAndListParam = new TokenAndListParam();
+        var tokenOrListParam = new TokenOrListParam();
+        tokenOrListParam.add(new TokenParam(system, code));
+        tokenAndListParam.addAnd(tokenOrListParam);
+
+        selectExpression.fromFhirParams(pathToken, tokenAndListParam);
+
+        var oe = (OrExpression<?>) ((AndExpression<?>) selectExpression.getExpression()).getExpressions().get(0);
+        Assert.assertEquals(1, oe.getExpressions().size());
+        Assert.assertEquals("1234", ((TokenExpression<?>) oe.getExpressions().get(0)).getValue());
+        Assert.assertEquals(pathToken, ((TokenExpression<?>) oe.getExpressions().get(0)).getFhirPath());
+        Assert.assertEquals("http://identifier", ((TokenExpression<?>) oe.getExpressions().get(0)).getSystem());
+    }
 
     @Test
-    public void testFromDateParams() {
+    void testFromDateParams() {
         var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
@@ -130,7 +176,7 @@ public class SelectExpressionTest {
 
 
     @Test
-    public void testFromReferenceParams() throws BadDataFormatException {
+    void testFromReferenceParams() {
         var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
@@ -150,7 +196,7 @@ public class SelectExpressionTest {
     }
 
     @Test
-    public void testFromHasParams() {
+    void testFromHasParams() {
 
         // simple has:
         var se = new SelectExpression<>("FhirResource", expressionFactory);
@@ -186,7 +232,7 @@ public class SelectExpressionTest {
     }
 
     @Test
-    public void testFromUriParams() throws BadDataFormatException {
+    void testFromUriParams() {
         var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 
@@ -207,7 +253,7 @@ public class SelectExpressionTest {
 
 
     @Test
-    public void testSetCount() {
+    void testSetCount() {
         var se = new SelectExpression<>("FhirResource", expressionFactory);
 
 

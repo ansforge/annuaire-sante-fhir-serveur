@@ -78,6 +78,7 @@ public class ExpressionSerializationTest {
         Assert.assertTrue(((SelectExpression<Bson>) deserialized).getExpression() instanceof AndExpression);
         var andExpression = (AndExpression<Bson>) ((SelectExpression<Bson>) deserialized).getExpression();
         Assert.assertEquals(5, andExpression.getExpressions().size());
+        Assert.assertFalse(andExpression.toString().isEmpty());
         Assert.assertTrue(andExpression.getExpressions().get(0) instanceof MongoDbDateRangeExpression);
         Assert.assertTrue(andExpression.getExpressions().get(1) instanceof MongoDbReferenceExpression);
         Assert.assertTrue(andExpression.getExpressions().get(2) instanceof MongoDbQuantityExpression);
@@ -101,10 +102,12 @@ public class ExpressionSerializationTest {
         Assert.assertTrue(deserialized instanceof SelectExpression);
         Assert.assertTrue(((SelectExpression<Bson>) deserialized).getExpression() instanceof AndExpression);
         var andExpression = (AndExpression<Bson>) ((SelectExpression<Bson>) deserialized).getExpression();
+        Assert.assertFalse(andExpression.toString().isEmpty());
         Assert.assertEquals(2, andExpression.getExpressions().size());
         Assert.assertTrue(andExpression.getExpressions().get(0) instanceof MongoDbDateRangeExpression);
         Assert.assertTrue(andExpression.getExpressions().get(1) instanceof MongoDbOrExpression);
         var orExpression = (MongoDbOrExpression) andExpression.getExpressions().get(1);
+        Assert.assertFalse(orExpression.toString().isEmpty());
         Assert.assertTrue(orExpression.getExpressions().get(0) instanceof MongoDbStringExpression);
         Assert.assertTrue(orExpression.getExpressions().get(1) instanceof MongoDbStringExpression);
     }

@@ -3,6 +3,8 @@
 Les ressources du serveur FHIR sont configurées grâce à un fichier de configuration. Ce fichier de configuration au
 format yaml permet de déclarer et définir les ressources, paramètres et indexes en base de données.
 
+Tous les paramètres de recherche sont à définir dans le système de configuration.
+
 ## Format du fichier
 
 Le format du fichier est le suivant :
@@ -36,7 +38,7 @@ Les ressources sont définies sous le chemin `fhir.resources`.
 
 ## Configuration générale
 
-validationMode : non utilisé pour le moment resources : définition de toutes les ressources
+validationMode : non utilisé pour le moment.
 
 ## Ressources
 
@@ -75,6 +77,8 @@ Les champs des paramètres de ressource sont :
 | searchType    | The type of the search parameter. Allowed values are date, string, token, reference, quantity, uri                                                      | string                                   |
 | description   | The description of the parameter                                                                                                                        | Name of the patient                      |
 | resourcePaths | The path of the field that match the resource in the Fhir object. Use a '&vert;' to chain properties. All paths must match a the same type of resource. | - name&vert;family<br/>- name&vert;given |
+| indexName     | The name of the index in the storage system                                                                                                             | t_name                                   |
+
 
 Exemple sur l'implémentation de référence "Patient (R4)" et quelques champs:
 

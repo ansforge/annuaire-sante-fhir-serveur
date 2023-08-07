@@ -4,6 +4,9 @@
 
 package fr.ans.afas.fhir.servlet.search.bundle;
 
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.parser.IParser;
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.domain.FhirBundleBuilder;
 import fr.ans.afas.fhir.servlet.exception.UnknownErrorWritingResponse;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
@@ -12,18 +15,18 @@ import fr.ans.afas.fhirserver.service.FhirStoreService;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.fhirserver.service.data.CountResult;
 import fr.ans.afas.fhirserver.service.data.PagingData;
+import fr.ans.afas.fhirserver.service.exception.CantWriteFhirResource;
+import fr.ans.afas.utils.ConditionMatching;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hl7.fhir.r4.model.DomainResource;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 
 /**
@@ -36,7 +39,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public abstract class AbstractFhirBundleWriteListener<T> implements WriteListener {
     private final FhirStoreService<T> fhirStoreService;
-    private final String serverUrl;
+    private final AfasConfiguration afasConfiguration;
     private final ServletOutputStream output;
     private final AsyncContext context;
     private final NextUrlManager<T> nextUrlManager;
@@ -48,6 +51,8 @@ public abstract class AbstractFhirBundleWriteListener<T> implements WriteListene
     private int index = 0;
     private Map<String, Set<String>> toInclude;
     private Set<String> toRevInclude;
+
+    static IParser parser = FhirContext.forR4().newJsonParser();
 
     @Override
     public void onWritePossible() {
@@ -72,7 +77,7 @@ public abstract class AbstractFhirBundleWriteListener<T> implements WriteListene
                 }
             }
         } catch (Exception e) {
-            log.debug("Error writing the request", e);
+            log.error("Error writing the request", e);
             context.complete();
         }
     }
@@ -88,7 +93,7 @@ public abstract class AbstractFhirBundleWriteListener<T> implements WriteListene
                     .timestamp(fhirPageIterator.searchContext().getRevision())
                     .lastId(fhirPageIterator.searchContext().getFirstId())
                     .build());
-            output.write(this.fhirBundleBuilder.getFooter(serverUrl, id).getBytes(Charset.defaultCharset()));
+            output.write(this.fhirBundleBuilder.getFooter(afasConfiguration.getPublicUrl(), id).getBytes(Charset.defaultCharset()));
             context.complete();
             return;
         }
@@ -98,24 +103,43 @@ public abstract class AbstractFhirBundleWriteListener<T> implements WriteListene
 
     private void writeEntries() throws UnknownErrorWritingResponse {
         try {
-            if (fhirPageIterator.hasNext()) {
-                var entry = fhirPageIterator.next();
-                var resourceAsByte = "";
-                if (index++ > 0) {
-                    resourceAsByte += ",";
-                }
-                resourceAsByte += FhirBundleBuilder.wrapBundleEntry(entry);
-                output.write(resourceAsByte.getBytes(Charset.defaultCharset()));
-            } else {
+            boolean match =
+                ConditionMatching.ifExecute(fhirPageIterator::hasNext, x -> writeIteratorEntries())
+                .elseIfExecute(() -> this.toInclude != null && !this.toInclude.isEmpty(), x -> state = RenderingState.INCLUDES)
+                .elseIfExecute(() -> this.toRevInclude != null && !this.toRevInclude.isEmpty(), x -> this.addRevIncludes(1))
+                .matches();
+
+            if(!match) {
                 fhirPageIterator.close();
-                // prepare the rendering of includes:
-                toInclude = fhirPageIterator.getIncludesTypeReference();
-                toRevInclude = fhirPageIterator.getRevIncludeIds();
-                state = RenderingState.INCLUDES;
+                state = RenderingState.FOOTER;
             }
         } catch (Exception e) {
-            log.debug("Error writing fhir response", e);
+            log.error("Error writing fhir response", e);
             throw new UnknownErrorWritingResponse(e.getMessage());
+        }
+    }
+
+    private void writeIteratorEntries() {
+        try {
+            var entry = fhirPageIterator.next();
+            var resourceAsByte = "";
+            if (index++ > 0) {
+                resourceAsByte += ",";
+            }
+            resourceAsByte += FhirBundleBuilder.wrapBundleEntry(entry);
+            output.write(resourceAsByte.getBytes(Charset.defaultCharset()));
+            toInclude = fhirPageIterator.getIncludesTypeReference();
+            toRevInclude = fhirPageIterator.getRevIncludeIds();
+            this.addRevIncludes(afasConfiguration.getFhir().getIncludes().getBufferSize());
+        } catch (Exception e) {
+            log.error("Error writing fhir response", e);
+            throw new CantWriteFhirResource(e.getMessage());
+        }
+    }
+
+    private void addRevIncludes(int includeSize) {
+        if(fhirPageIterator.getRevIncludeIds().size() >= includeSize) {
+            state = RenderingState.REVINCLUDES;
         }
     }
 
@@ -124,9 +148,9 @@ public abstract class AbstractFhirBundleWriteListener<T> implements WriteListene
             // initialize the cursor:
             if (includeCursor == null) {
                 var resource = toInclude.entrySet().stream().findAny();
-                if (resource.isPresent()) {
-                    includeCursor = fhirStoreService.findByIds(fhirPageIterator.searchContext().getRevision(), resource.get().getKey(), resource.get().getValue());
-                }
+                resource.ifPresent(res ->
+                        includeCursor = fhirStoreService.findByIds(fhirPageIterator.searchContext().getRevision(), res.getKey(), res.getValue())
+                );
             }// or write the response:
             if (includeCursor != null && includeCursor.hasNext()) {
                 var entry = includeCursor.next();
@@ -137,6 +161,7 @@ public abstract class AbstractFhirBundleWriteListener<T> implements WriteListene
                 if (includeCursor != null) {
                     includeCursor = null;
                 }
+                fhirPageIterator.clearIncludesTypeReference();
                 state = RenderingState.REVINCLUDES;
             }
         } else {
@@ -145,7 +170,20 @@ public abstract class AbstractFhirBundleWriteListener<T> implements WriteListene
     }
 
     private void writeRevIncludes() throws IOException {
-        state = RenderingState.FOOTER;
+        if(toRevInclude.isEmpty()) {
+            state = RenderingState.ENTRIES;
+        }
+        else {
+            List<DomainResource> revIncludes = fhirStoreService.findRevIncludes(fhirPageIterator.searchContext().getRevision(), toRevInclude, selectExpression.getRevincludes());
+            StringBuilder resourceAsByte = revIncludes.isEmpty() ? new StringBuilder() : new StringBuilder(",");
+            for(DomainResource rev: revIncludes) {
+                var bundleEntry = new FhirBundleBuilder.BundleEntry(rev.fhirType(), rev.getId(), parser.encodeResourceToString(rev));
+                resourceAsByte.append(FhirBundleBuilder.wrapBundleEntry(bundleEntry));
+            }
+            output.write(resourceAsByte.toString().getBytes(Charset.defaultCharset()));
+            fhirPageIterator.clearRevIncludeIds();
+            state = RenderingState.ENTRIES;
+        }
     }
 
 
@@ -158,7 +196,7 @@ public abstract class AbstractFhirBundleWriteListener<T> implements WriteListene
 
     @Override
     public void onError(Throwable throwable) {
-        log.debug("Error reading the request", throwable);
+        log.error("Error reading the request", throwable);
         context.complete();
     }
 

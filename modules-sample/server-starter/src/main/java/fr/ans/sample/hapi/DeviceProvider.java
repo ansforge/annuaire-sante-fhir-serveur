@@ -8,10 +8,11 @@ import ca.uhn.fhir.model.api.annotation.Description;
 import ca.uhn.fhir.rest.annotation.*;
 import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.api.server.IBundleProvider;
+import ca.uhn.fhir.rest.param.DateRangeParam;
+import ca.uhn.fhir.rest.param.ReferenceAndListParam;
 import ca.uhn.fhir.rest.param.StringAndListParam;
 import ca.uhn.fhir.rest.param.TokenAndListParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
-import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.fhir.AfasBundleProvider;
 import fr.ans.afas.fhir.TransactionalResourceProvider;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
@@ -85,12 +86,24 @@ public class DeviceProvider<T> extends TransactionalResourceProvider<T> implemen
                                           TokenAndListParam theIdentifier,
                                   @Description(shortDefinition = "The device name")
                                   @OptionalParam(name = Device.SP_DEVICE_NAME)
-                                          StringAndListParam theName) throws BadDataFormatException {
+                                          StringAndListParam theName,
+                                  @Description(shortDefinition = "The type")
+                                      @OptionalParam(name = Device.SP_TYPE)
+                                      TokenAndListParam theType,
+                                  @Description(shortDefinition = "Recherche les équipements matériels lourds rattachés à la structure sélectionnée")
+                                      @OptionalParam(name = Device.SP_ORGANIZATION)
+                                      ReferenceAndListParam theOwner,
+                                  @Description(shortDefinition = "Renvoie uniquement les ressources qui ont été mises à jour pour la dernière fois comme spécifié par la période donnée")
+                                      @OptionalParam(name = "_lastUpdated")
+                                      DateRangeParam theLastUpdated) {
 
         var selectExpression = new SelectExpression<>(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME, expressionFactory);
         selectExpression.setCount(theCount);
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path(Device.SP_IDENTIFIER).build(), theIdentifier);
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path(Device.SP_DEVICE_NAME).build(), theName);
+        selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path(Device.SP_TYPE).build(), theType);
+        selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path(Device.SP_ORGANIZATION).build(), theOwner);
+        selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME).path("_lastUpdated").build(), theLastUpdated);
         return new AfasBundleProvider<T>(fhirStoreService, selectExpression, nextUrlManager);
     }
 

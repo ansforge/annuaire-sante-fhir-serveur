@@ -5,6 +5,7 @@
 package fr.ans.afas.fhir.servlet;
 
 import ca.uhn.fhir.context.FhirContext;
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.fhir.servlet.utils.MockedFhirPageIterator;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
@@ -19,24 +20,23 @@ import fr.ans.afas.fhirserver.service.data.PagingData;
 import fr.ans.afas.fhirserver.service.exception.BadLinkException;
 import fr.ans.afas.fhirserver.service.exception.BadRequestException;
 import fr.ans.afas.servlet.ServletTestUtil;
-import org.hl7.fhir.r4.model.Bundle;
-import org.hl7.fhir.r4.model.OperationOutcome;
-import org.hl7.fhir.r4.model.Patient;
-import org.hl7.fhir.r4.model.Identifier;
-import org.hl7.fhir.r4.model.HumanName;
+import org.hl7.fhir.r4.model.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 /**
  * Test the fhir search
@@ -57,6 +57,9 @@ public class FhirSearchTest {
     @Mock
     NextUrlManager<Object> nextUrlManager;
 
+    @Mock
+    AfasConfiguration afasConfiguration;
+
     PagingData<Object> lastPagingData;
 
     List<Patient> patientList;
@@ -64,7 +67,7 @@ public class FhirSearchTest {
 
     @Before
     public void setUp() throws BadLinkException {
-        patientList = new ArrayList<Patient>();
+        patientList = new ArrayList<>();
 
         var p1 = new Patient();
         var p2 = new Patient();
@@ -74,6 +77,10 @@ public class FhirSearchTest {
         patientList.add(p2);
         patientList.add(p3);
 
+        AfasConfiguration.Fhir fhir = new AfasConfiguration.Fhir();
+        AfasConfiguration.Includes includes = new AfasConfiguration.Includes();
+        includes.setBufferSize(10);
+        fhir.setIncludes(includes);
 
         MockitoAnnotations.initMocks(this);
         Mockito.when(expressionFactory.newAndExpression()).then((a) -> new EmptyAndExpression());
@@ -84,7 +91,9 @@ public class FhirSearchTest {
                 }
         );
         Mockito.when(nextUrlManager.find(any())).then((a) -> Optional.ofNullable(this.lastPagingData));
-
+        when(afasConfiguration.getServletTimeout()).thenReturn(1000);
+        when(afasConfiguration.getPublicUrl()).thenReturn(SERVER_URL);
+        when(afasConfiguration.getFhir()).thenReturn(fhir);
     }
 
 
@@ -96,7 +105,7 @@ public class FhirSearchTest {
                 }
         );
 
-        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, SERVER_URL);
+        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, afasConfiguration, null);
         StringWriter out = ServletTestUtil.callAsyncServlet(servlet, "GET", "/fhir/v2-alpha/Patient", "/fhir/v2-alpha/", null);
 
         var parser = FhirContext.forR4().newJsonParser();
@@ -114,7 +123,7 @@ public class FhirSearchTest {
                 }
         );
 
-        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, SERVER_URL);
+        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, afasConfiguration, null);
         var out = ServletTestUtil.callAsyncServlet(servlet, "GET", "/fhir/v2-alpha/Patient?_count=2", "/fhir/v2-alpha/", null);
 
         var parser = FhirContext.forR4().newJsonParser();
@@ -134,13 +143,13 @@ public class FhirSearchTest {
 
 
     /**
-     * Test when we cant found the next page id
+     * Test when we canrt found the next page id
      */
     @Test
     public void pagingFail() throws IOException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
 
         var parser = FhirContext.forR4().newJsonParser();
-        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, SERVER_URL);
+        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, afasConfiguration, null);
 
 
         var out = ServletTestUtil.callAsyncServlet(servlet, "GET", "/fhir/v2-alpha/_page", "/fhir/v2-alpha/", null);
@@ -186,7 +195,7 @@ public class FhirSearchTest {
                 }
         );
 
-        var servlet = new FhirResourceServlet(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, SERVER_URL);
+        var servlet = new FhirResourceServlet(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, afasConfiguration, null);
         StringWriter out = ServletTestUtil.callAsyncServlet(servlet, "POST", "/fhir/v2-alpha/Patient", "/fhir/v2-alpha/", "family=Dupont");
 
         var parser = FhirContext.forR4().newJsonParser();

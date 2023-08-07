@@ -8,11 +8,11 @@
     <parent>
         <artifactId>annuaire-sante-fhir-serveur</artifactId>
         <groupId>fr.ans</groupId>
-        <version>1.23.14</version>
+        <version>1.23.21-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>afas-fhir-servlet</artifactId>
-    <version>1.23.14</version>
+    <version>1.23.21-SNAPSHOT</version>
     <name>afas-fhir-servlet</name>
     <description>
         AFAS Module for the hapi binding

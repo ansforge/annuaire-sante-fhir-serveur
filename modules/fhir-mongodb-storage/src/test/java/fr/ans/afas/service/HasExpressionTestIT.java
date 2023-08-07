@@ -265,6 +265,6 @@ public class HasExpressionTestIT {
     private void indexJoins() {
         var genericSerializer = new GenericSerializer(searchConfig, FhirContext.forR4());
         var defaultIndexService = new DefaultIndexService(mongoDbFhirService, expressionFactory, searchConfig, genericSerializer);
-        defaultIndexService.refreshIndexes();
+        defaultIndexService.refreshIndexesSync(1);
     }
 }

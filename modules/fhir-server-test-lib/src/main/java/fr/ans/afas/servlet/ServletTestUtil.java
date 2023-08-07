@@ -110,6 +110,13 @@ public class ServletTestUtil {
         }
         Mockito.when(request.getInputStream()).thenReturn(new MockedServletInputStream(new ByteArrayInputStream(b)));
 
+        // for runnable :
+        Mockito.doAnswer(invocation -> {
+            var runnable = (Runnable) invocation.getArgument(0);
+            runnable.run();
+            return null;
+        }).when(asyncContext).start(ArgumentMatchers.any(Runnable.class));
+
 
         // Choose the method based on the parameter
         Method m;

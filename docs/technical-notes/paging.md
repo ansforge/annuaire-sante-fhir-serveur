@@ -43,7 +43,7 @@ Cela permet d'effectuer une pagination sans réelle perte de performance.
 **Note sur le total:** Le système (au 2022/07/18) affiche le nombre total des ressources dans les résultats de recherche
 de la première page. Cela va causer un scan complet de la base de données. La première requête sera donc couteuse non
 pas à cause de la complexité de la requête, mais à cause du count. Le total est ensuite caché dans le contexte de la
-requête.
+requête. Il existe une exception dans le cas où le nombre d'élément est trop long à calculer. Dans ce cas le total ne sera pas affiché à l'utilisateur.
 
 ## Inconvénients
 

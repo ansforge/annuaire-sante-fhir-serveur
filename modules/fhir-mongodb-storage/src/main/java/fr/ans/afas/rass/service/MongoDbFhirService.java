@@ -106,8 +106,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
      * All fhir collections
      */
     final Set<String> fhirCollections = new HashSet<>();
-    @Value("${afas.fhir.max-include-size:5000}")
-    int maxIncludePageSize;
+
     @Value("${afas.fhir.max-count-calculation-time:1000}")
     int maxCountCalculationTime;
 
@@ -119,13 +118,11 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
             SearchConfig searchConfig,
             FhirContext fhirContext,
             HookService hookService,
-            int maxIncludePageSize,
             DatabaseService databaseService
     ) {
         this.mongoClient = mongoClient;
         this.searchConfig = searchConfig;
         this.fhirContext = fhirContext;
-        this.maxIncludePageSize = maxIncludePageSize;
         this.databaseService = databaseService;
         this.hookService = hookService;
 
@@ -517,8 +514,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
             FindIterable<Document> inclusionResult = collectionIncluded
                     .find(MongoQueryUtils.wrapQueryWithRevisionDate(
                             searchRevision,
-                            Filters.in(config.get().getIndexName() + "-reference", ids)))
-                    .limit(maxIncludePageSize);
+                            Filters.in(config.get().getIndexName() + "-reference", ids)));
 
             try (MongoCursor<Document> cursor = inclusionResult.cursor()) {
                 while (cursor.hasNext()) {
@@ -545,8 +541,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
             FindIterable<Document> inclusionResult = collectionForInclude
                     .find(MongoQueryUtils.wrapQueryWithRevisionDate(
                             searchRevision,
-                            Filters.in(StorageConstants.INDEX_T_FID, resourceTypeAndValue.getValue())))
-                    .limit(maxIncludePageSize);
+                            Filters.in(StorageConstants.INDEX_T_FID, resourceTypeAndValue.getValue())));
             try (MongoCursor<Document> cursor = inclusionResult.cursor()) {
                 while (cursor.hasNext()) {
                     var doc = cursor.next();
@@ -573,7 +568,6 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
                         MongoQueryUtils.wrapQueryWithRevisionDate(
                                 searchRevision,
                                 Filters.in(StorageConstants.INDEX_T_FID, ids)))
-                .limit(maxIncludePageSize)
                 .cursor();
         return new Iterator<>() {
             @Override

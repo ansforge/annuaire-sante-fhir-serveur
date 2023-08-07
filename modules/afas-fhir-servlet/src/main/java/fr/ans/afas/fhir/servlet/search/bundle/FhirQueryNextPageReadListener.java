@@ -4,6 +4,7 @@
 
 package fr.ans.afas.fhir.servlet.search.bundle;
 
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.fhir.servlet.error.ErrorWriter;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
@@ -25,10 +26,11 @@ import java.io.IOException;
  */
 public class FhirQueryNextPageReadListener<T> extends FhirQueryReadListener<T> {
 
-    private final String serverUrl;
     private final String pageId;
 
     private final HttpServletResponse res;
+
+    private final AfasConfiguration afasConfiguration;
 
     public FhirQueryNextPageReadListener(FhirStoreService<T> fhirStoreService,
                                          ExpressionFactory<T> expressionFactory,
@@ -38,12 +40,11 @@ public class FhirQueryNextPageReadListener<T> extends FhirQueryReadListener<T> {
                                          HttpServletResponse r,
                                          AsyncContext c,
                                          String pageId,
-                                         String serverUrl) {
+                                         AfasConfiguration afasConfiguration) {
         super(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, c, in);
         res = r;
         this.pageId = pageId;
-        this.serverUrl = serverUrl;
-
+        this.afasConfiguration = afasConfiguration;
     }
 
 
@@ -64,7 +65,7 @@ public class FhirQueryNextPageReadListener<T> extends FhirQueryReadListener<T> {
                             .getSelectExpression()).build();
             // now all data are read, set up a WriteListener to write
             var output = res.getOutputStream();
-            var writeListener = new FhirBundleNextPageWriteListener<>(fhirStoreService, nextUrlManager, output, ac, pagingData, this.serverUrl);
+            var writeListener = new FhirBundleNextPageWriteListener<>(fhirStoreService, nextUrlManager, output, ac, pagingData, afasConfiguration);
             output.setWriteListener(writeListener);
 
         } catch (BadLinkException e) {

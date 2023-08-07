@@ -5,6 +5,8 @@
 package fr.ans.afas.fhir.servlet;
 
 import ca.uhn.fhir.context.FhirContext;
+import fr.ans.afas.configuration.AfasConfiguration;
+import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
@@ -18,6 +20,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.StringWriter;
+
+import static org.mockito.Mockito.when;
 
 /**
  * Test the capability statement generation
@@ -36,16 +40,24 @@ public class CapabilityStatementTest {
     @Mock
     NextUrlManager<Object> nextUrlManager;
 
+    @Mock
+    AfasConfiguration afasConfiguration;
+
+    @Mock
+    SearchConfig searchConfig = new TestSearchConfig();
 
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
+        when(afasConfiguration.getServletTimeout()).thenReturn(1000);
+        when(afasConfiguration.getPublicUrl()).thenReturn("http://localhost:8080/fhir/");
+        when(afasConfiguration.getFhir()).thenReturn(new AfasConfiguration.Fhir());
     }
 
     @Test
     public void test() throws Exception {
 
-        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, "");
+        var servlet = new FhirResourceServlet<>(fhirStoreService, expressionFactory, new TestSearchConfig(), nextUrlManager, afasConfiguration, null);
         StringWriter out = ServletTestUtil.callAsyncServlet(servlet, "GET", "/fhir/v2-alpha/metadata", "/fhir/v2-alpha/", null);
 
         var parser = FhirContext.forR4().newJsonParser();

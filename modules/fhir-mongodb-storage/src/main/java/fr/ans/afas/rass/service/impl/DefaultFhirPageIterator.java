@@ -15,7 +15,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -47,7 +47,7 @@ public class DefaultFhirPageIterator implements FhirPageIterator {
         this.searchRevision = searchRevision;
         index = 0;
         includesTypeReference = new HashMap<>();
-        revIncludeIds = new HashSet<>();
+        revIncludeIds = new LinkedHashSet<>();
         lastId = "";
     }
 
@@ -74,7 +74,9 @@ public class DefaultFhirPageIterator implements FhirPageIterator {
         MongoQueryUtils.extractIncludeReferences(searchConfig, selectExpression.getFhirResource(), selectExpression, includesTypeReference, doc);
         // end inclusion
         // revinclude
-        revIncludeIds.add(doc.getString("t_fid"));
+        if (!selectExpression.getRevincludes().isEmpty()) {
+            revIncludeIds.add(doc.getString("t_fid"));
+        }
         // end revinclude
         lastId = ((ObjectId) doc.get(MongoQueryUtils.ID_ATTRIBUTE)).toString();
 
@@ -94,6 +96,14 @@ public class DefaultFhirPageIterator implements FhirPageIterator {
 
     public Set<String> getRevIncludeIds() {
         return revIncludeIds;
+    }
+
+    public void clearIncludesTypeReference() {
+        includesTypeReference.clear();
+    }
+
+    public void clearRevIncludeIds() {
+        revIncludeIds.clear();
     }
 
 

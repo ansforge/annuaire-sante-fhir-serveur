@@ -4,6 +4,7 @@
 
 package fr.ans.afas.fhir.servlet.search.bundle;
 
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.fhir.servlet.error.ErrorWriter;
 import fr.ans.afas.fhirserver.http.FhirRequestParser;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
@@ -24,14 +25,15 @@ import java.util.stream.Collectors;
 public class FhirQueryFirstPageReadListener<T> extends FhirQueryReadListener<T> {
 
     final String fhirPath;
-    final String serverUrl;
     private final HttpServletResponse res;
 
-    public FhirQueryFirstPageReadListener(FhirStoreService<T> fhirStoreService, ExpressionFactory<T> expressionFactory, SearchConfig searchConfig, NextUrlManager<T> nextUrlManager, ServletInputStream in, HttpServletResponse r, AsyncContext c, String fhirPath, String serverUrl) {
+    private final AfasConfiguration afasConfiguration;
+
+    public FhirQueryFirstPageReadListener(FhirStoreService<T> fhirStoreService, ExpressionFactory<T> expressionFactory, SearchConfig searchConfig, NextUrlManager<T> nextUrlManager, ServletInputStream in, HttpServletResponse r, AsyncContext c, String fhirPath, AfasConfiguration afasConfiguration) {
         super(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, c, in);
         res = r;
         this.fhirPath = fhirPath;
-        this.serverUrl = serverUrl;
+        this.afasConfiguration = afasConfiguration;
     }
 
 
@@ -43,7 +45,7 @@ public class FhirQueryFirstPageReadListener<T> extends FhirQueryReadListener<T> 
 
             // now all data are read, set up a WriteListener to write
             var output = res.getOutputStream();
-            var writeListener = new FhirBundleFirstPageWriteListener<>(fhirStoreService, nextUrlManager, output, ac, query, serverUrl);
+            var writeListener = new FhirBundleFirstPageWriteListener<>(fhirStoreService, nextUrlManager, output, ac, query, afasConfiguration);
 
             output.setWriteListener(writeListener);
 

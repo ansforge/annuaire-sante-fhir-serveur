@@ -12,22 +12,22 @@ import fr.ans.afas.fhirserver.http.FhirRequestParser;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.fhirserver.search.expression.*;
-import fr.ans.afas.fhirserver.search.expression.emptyimpl.EmptyAndExpression;
-import fr.ans.afas.fhirserver.search.expression.emptyimpl.EmptyDateExpression;
-import fr.ans.afas.fhirserver.search.expression.emptyimpl.EmptyOrExpression;
-import fr.ans.afas.fhirserver.search.expression.emptyimpl.EmptyStringExpression;
+import fr.ans.afas.fhirserver.search.expression.emptyimpl.*;
 import fr.ans.afas.utils.data.TestSearchConfig;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * Test the parsing of fhir requests
@@ -41,11 +41,11 @@ public class FhirRequestParserTest {
 
     final FhirSearchPath pathString = FhirSearchPath.builder().resource("FhirResource").path("string_path").build();
 
-    final ExpressionFactory<?> expressionFactory = Mockito.mock(ExpressionFactory.class);
+    final ExpressionFactory<?> expressionFactory = mock(ExpressionFactory.class);
     final SearchConfig searchConfig = new TestSearchConfig();
 
 
-    @Before
+    @BeforeEach
     public void init() {
         Mockito.when(expressionFactory.newAndExpression()).then((a) -> new EmptyAndExpression());
         Mockito.when(expressionFactory.newOrExpression()).then((a) -> new EmptyOrExpression());
@@ -55,19 +55,120 @@ public class FhirRequestParserTest {
         //FhirSearchPath path, Date value, TemporalPrecisionEnum precision, ParamPrefixEnum queryQualifier
         Mockito.when(expressionFactory.newDateRangeExpression(Mockito.any(), Mockito.any(Date.class), Mockito.any(TemporalPrecisionEnum.class), Mockito.any(ParamPrefixEnum.class)))
                 .then((a) -> new EmptyDateExpression(a.getArgument(0), a.getArgument(1), a.getArgument(2), a.getArgument(3)));
+
+        IncludeExpression<?> mockIncludeDevice = mock(IncludeExpression.class);
+        Mockito.when(mockIncludeDevice.getType()).thenReturn("Device");
+        Mockito.when(mockIncludeDevice.getName()).thenReturn("organization");
+
+        IncludeExpression<?> mockIncludePractitionerRoleOrganization = mock(IncludeExpression.class);
+        Mockito.when(mockIncludePractitionerRoleOrganization.getType()).thenReturn("PractitionerRole");
+        Mockito.when(mockIncludePractitionerRoleOrganization.getName()).thenReturn("organization");
+
+        IncludeExpression<?> mockIncludePractitionerRolePartof = mock(IncludeExpression.class);
+        Mockito.when(mockIncludePractitionerRolePartof.getType()).thenReturn("PractitionerRole");
+        Mockito.when(mockIncludePractitionerRolePartof.getName()).thenReturn("partof");
+
+        IncludeExpression<?> mockIncludePractitionerRolePractitioner = mock(IncludeExpression.class);
+        Mockito.when(mockIncludePractitionerRolePractitioner.getType()).thenReturn("PractitionerRole");
+        Mockito.when(mockIncludePractitionerRolePractitioner.getName()).thenReturn("practitioner");
+
+        IncludeExpression<?> mockIncludeOrganization = mock(IncludeExpression.class);
+        Mockito.when(mockIncludeOrganization.getType()).thenReturn("Organization");
+        Mockito.when(mockIncludeOrganization.getName()).thenReturn("partof");
+
+        Mockito.when(expressionFactory.newIncludeExpression("Device", "organization")).then((a) -> mockIncludeDevice);
+        Mockito.when(expressionFactory.newIncludeExpression("PractitionerRole", "organization")).then((a) -> mockIncludePractitionerRoleOrganization);
+        Mockito.when(expressionFactory.newIncludeExpression("PractitionerRole", "partof")).then((a) -> mockIncludePractitionerRolePartof);
+        Mockito.when(expressionFactory.newIncludeExpression("PractitionerRole", "practitioner")).then((a) -> mockIncludePractitionerRolePractitioner);
+        Mockito.when(expressionFactory.newIncludeExpression("Organization", "partof")).then((a) -> mockIncludeOrganization);
     }
 
     @Test
     public void testSelectExpressionParsing() throws BadSelectExpression, BadDataFormatException {
-
-
         var expression = FhirRequestParser.parseSelectExpression("FhirResource?_count=49&string_path:exact=bla,bla&string_path:exact=blo", expressionFactory, searchConfig);
-
         Assert.assertEquals("FhirResource", expression.getFhirResource());
         Assert.assertEquals(49, (int) expression.getCount());
         Assert.assertEquals(2, ((EmptyAndExpression) expression.getExpression()).getExpressions().size());
+    }
 
+    @Test
+    public void testSelectExpressionParsingIncludes() throws BadSelectExpression, BadDataFormatException {
+        var expression = FhirRequestParser.parseSelectExpression("Organization?_include=", expressionFactory, searchConfig);
+        Assert.assertEquals(0, expression.getIncludes().size());
 
+        expression = FhirRequestParser.parseSelectExpression("Organization?_include=Organization:partof", expressionFactory, searchConfig);
+        Assert.assertEquals(1, expression.getIncludes().size());
+        List<String> includes = expression.getIncludes().stream().map(i -> i.getType() + ":" + i.getName()).collect(Collectors.toList());
+        Assert.assertTrue(includes.contains("Organization:partof"));
+
+        expression = FhirRequestParser.parseSelectExpression("PractitionerRole?_include=PractitionerRole:partof&_include=PractitionerRole:organization", expressionFactory, searchConfig);
+        Assert.assertEquals(2, expression.getIncludes().size());
+        includes = expression.getIncludes().stream().map(i -> i.getType() + ":" + i.getName()).collect(Collectors.toList());
+        Assert.assertTrue(includes.contains("PractitionerRole:partof"));
+        Assert.assertTrue(includes.contains("PractitionerRole:organization"));
+
+        expression = FhirRequestParser.parseSelectExpression("PractitionerRole?_include=*", expressionFactory, searchConfig);
+        Assert.assertEquals(3, expression.getIncludes().size());
+        includes = expression.getIncludes().stream().map(i -> i.getType() + ":" + i.getName()).collect(Collectors.toList());
+        Assert.assertTrue(includes.contains("PractitionerRole:partof"));
+        Assert.assertTrue(includes.contains("PractitionerRole:organization"));
+        Assert.assertTrue(includes.contains("PractitionerRole:practitioner"));
+    }
+
+    @Test
+    public void testSelectExpressionParsingRevIncludes() throws BadSelectExpression, BadDataFormatException {
+        var expression = FhirRequestParser.parseSelectExpression("Organization?_revinclude=", expressionFactory, searchConfig);
+        Assert.assertEquals(0, expression.getIncludes().size());
+
+        expression = FhirRequestParser.parseSelectExpression("Organization?_revinclude=PractitionerRole:organization", expressionFactory, searchConfig);
+        Assert.assertEquals("Organization", expression.getFhirResource());
+        Assert.assertEquals(1, expression.getRevincludes().size());
+        List<String> includes = expression.getRevincludes().stream().map(i -> i.getType() + ":" + i.getName()).collect(Collectors.toList());
+        Assert.assertTrue(includes.contains("PractitionerRole:organization"));
+
+        expression = FhirRequestParser.parseSelectExpression("Organization?_revinclude=Device:organization", expressionFactory, searchConfig);
+        Assert.assertEquals("Organization", expression.getFhirResource());
+        Assert.assertEquals(1, expression.getRevincludes().size());
+        includes = expression.getRevincludes().stream().map(i -> i.getType() + ":" + i.getName()).collect(Collectors.toList());
+        Assert.assertTrue(includes.contains("Device:organization"));
+
+        expression = FhirRequestParser.parseSelectExpression("Organization?_revinclude=PractitionerRole:organization&_revinclude=Device:organization", expressionFactory, searchConfig);
+        Assert.assertEquals("Organization", expression.getFhirResource());
+        Assert.assertEquals(2, expression.getRevincludes().size());
+        includes = expression.getRevincludes().stream().map(i -> i.getType() + ":" + i.getName()).collect(Collectors.toList());
+        Assert.assertTrue(includes.contains("PractitionerRole:organization"));
+        Assert.assertTrue(includes.contains("Device:organization"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "Organization?_include=:partof",
+            "Organization?_include=Organization:",
+            "Organization?_include=Organization",
+            "Organization?_include=Organ",
+            "Organization?_include=Organ:partof",
+            "Organization?_include=Organization:partofs",
+            "Organization?_include=Practitioner:partof",
+            "Organization?_include=PractitionerRole:organization"
+    })
+    public void testSelectExpressionParsingIncludesThrowsException(String path) throws BadDataFormatException {
+        Assert.assertThrows(BadSelectExpression.class,
+                () -> FhirRequestParser.parseSelectExpression(path, expressionFactory, searchConfig));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "Organization?_revinclude=:organization",
+            "Organization?_revinclude=PractitionerRole:",
+            "Organization?_revinclude=PractitionerRole",
+            "Organization?_revinclude=Pract",
+            "Organization?_revinclude=Pract:organization",
+            "Organization?_revinclude=PractitionerRole:organizations",
+            "Organization?_revinclude=Practitioner:organization"
+    })
+    public void testSelectExpressionParsingRevIncludesThrowsException(String path) throws BadDataFormatException {
+        Assert.assertThrows(BadSelectExpression.class,
+                () -> FhirRequestParser.parseSelectExpression(path, expressionFactory, searchConfig));
     }
 
 
@@ -146,9 +247,10 @@ public class FhirRequestParserTest {
         Assert.assertEquals(0, ((AndExpression<?>) expression.getExpression()).getExpressions().size());
     }
 
-    @Test(expected = BadSelectExpression.class)
+    @Test
     public void testUnsupportedSearch() throws BadSelectExpression, BadDataFormatException {
-        FhirRequestParser.parseSelectExpression("FhirResource?_count=49&not_exist_path=Patient/00001", expressionFactory, searchConfig);
+        Assert.assertThrows(BadSelectExpression.class,
+                ()-> FhirRequestParser.parseSelectExpression("FhirResource?_count=49&not_exist_path=Patient/00001", expressionFactory, searchConfig));
     }
 
 }

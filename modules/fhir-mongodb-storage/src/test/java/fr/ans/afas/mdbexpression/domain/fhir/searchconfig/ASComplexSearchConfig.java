@@ -58,7 +58,7 @@ public class ASComplexSearchConfig extends ServerSearchConfig {
         var jp = new JoinPath();
         jp.setResource("Device");
         jp.setPath("organization");
-        jp.setField("owner.reference");
+        jp.setField("owner");
         organizationSearchConfig.setJoins(List.of(jp));
 
         this.getResources().add(organizationSearchConfig);

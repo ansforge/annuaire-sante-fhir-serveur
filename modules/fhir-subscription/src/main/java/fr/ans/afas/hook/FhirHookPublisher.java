@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class FhirHookPublisher {
@@ -40,7 +39,7 @@ public class FhirHookPublisher {
     public FhirHookPublisher(int timeout, SignatureService signatureService, AesEncrypter aesEncrypter) {
         this.signatureService = signatureService;
         this.timeout = timeout;
-        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        var executorService = Executors.newFixedThreadPool(5);
         this.client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(timeout))
