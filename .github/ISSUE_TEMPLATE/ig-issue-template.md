@@ -1,6 +1,6 @@
 ---
-name: IG issue template
-about: Issue template for ANS Implementation Guide
+name: Modèle d'anomalie pour Annuaire Santé
+about:  Modèle d'anomalie pour le projet annuaire-sante-fhir-serveur
 title: ''
 labels: documentation
 assignees: mchaabaoui
