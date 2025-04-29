@@ -1,11 +1,10 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir.serialization;
 
 import fr.ans.afas.exception.SerializationException;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.expression.*;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbIncludeExpression;
@@ -20,7 +19,7 @@ import java.util.regex.Pattern;
 
 public class SelectDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression<Bson> process(SearchConfig searchConfig, ExpressionFactory<Bson> expressionFactory, ExpressionSerializer<Bson> expressionDeserializer, String val) {
+    public Expression<Bson> process(SearchConfigService searchConfigService, ExpressionFactory<Bson> expressionFactory, ExpressionSerializer<Bson> expressionDeserializer, String val) {
         var parts = val.split("\\$", -1);
         if (parts.length != 6) {
             throw new SerializationException("Error during the Select deserialization. 6 parameters wanted. " + parts.length + " found. Params: " + val);
@@ -33,8 +32,8 @@ public class SelectDeserializeFunction implements DeserializeFunction<Bson> {
         var has = parts[5];
         var se = new SelectExpression<>(resourceType, expressionFactory, (ContainerExpression<Bson>) expressionDeserializer.deserialize(expression));
         se.setCount(Integer.parseInt(count));
-        se.getIncludes().addAll(deserializeInclude(searchConfig, include));
-        se.getRevincludes().addAll(deserializeInclude(searchConfig, revinclude));
+        se.getIncludes().addAll(deserializeInclude(searchConfigService, include));
+        se.getRevincludes().addAll(deserializeInclude(searchConfigService, revinclude));
 
 
         if (has.length() > 0) {
@@ -44,7 +43,7 @@ public class SelectDeserializeFunction implements DeserializeFunction<Bson> {
         return se;
     }
 
-    private Set<IncludeExpression<Bson>> deserializeInclude(SearchConfig sc, String s) {
+    private Set<IncludeExpression<Bson>> deserializeInclude(SearchConfigService sc, String s) {
         if (!StringUtils.hasLength(s)) {
             return new HashSet<>();
         }

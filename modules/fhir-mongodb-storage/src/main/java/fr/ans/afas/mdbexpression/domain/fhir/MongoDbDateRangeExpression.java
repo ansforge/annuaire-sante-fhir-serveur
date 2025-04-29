@@ -1,14 +1,13 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir;
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.param.ParamPrefixEnum;
 import com.mongodb.client.model.Filters;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.exception.BadPrecisionException;
 import fr.ans.afas.fhirserver.search.expression.DateRangeExpression;
@@ -21,6 +20,8 @@ import org.bson.conversions.Bson;
 
 import javax.validation.constraints.NotNull;
 import java.util.Date;
+
+import static ca.uhn.fhir.rest.param.ParamPrefixEnum.EQUAL;
 
 /**
  * Implementation of the date range expression for Mongodb
@@ -64,20 +65,20 @@ public class MongoDbDateRangeExpression extends DateRangeExpression<Bson> {
     /**
      * The search configuration
      */
-    final SearchConfig searchConfig;
+    final SearchConfigService searchConfigService;
 
     /**
      * Constructor
      *
-     * @param searchConfig The search configuration
-     * @param fhirPath     The fhir path where to find
-     * @param date         The date to search
-     * @param precision    The precision
-     * @param prefix       How to search (gt, lt...)
+     * @param searchConfigService The search configuration
+     * @param fhirPath            The fhir path where to find
+     * @param date                The date to search
+     * @param precision           The precision
+     * @param prefix              How to search (gt, lt...)
      */
-    public MongoDbDateRangeExpression(@NotNull SearchConfig searchConfig, @NotNull FhirSearchPath fhirPath, @NotNull Date date, @NotNull TemporalPrecisionEnum precision, @NotNull ParamPrefixEnum prefix) {
+    public MongoDbDateRangeExpression(@NotNull SearchConfigService searchConfigService, @NotNull FhirSearchPath fhirPath, @NotNull Date date, @NotNull TemporalPrecisionEnum precision, @NotNull ParamPrefixEnum prefix) {
         super(fhirPath, date, precision, prefix);
-        this.searchConfig = searchConfig;
+        this.searchConfigService = searchConfigService;
     }
 
     /**
@@ -88,21 +89,19 @@ public class MongoDbDateRangeExpression extends DateRangeExpression<Bson> {
      */
     @Override
     public Bson interpreter(ExpressionContext expressionContext) {
-        var config = searchConfig.getSearchConfigByPath(fhirPath);
+        var config = searchConfigService.getSearchConfigByPath(fhirPath);
         if (config.isEmpty()) {
             throw new BadConfigurationException("Search not supported on path: " + fhirPath);
         }
 
-        switch (this.getPrefix()) {
-            case GREATERTHAN:
-            case STARTS_AFTER:
+        switch (this.getPrefix() != null ? this.getPrefix() : EQUAL) {
+            case GREATERTHAN, STARTS_AFTER:
                 return Filters.gt(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
             case EQUAL:
                 return Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
             case GREATERTHAN_OR_EQUALS:
                 return Filters.gte(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
-            case LESSTHAN:
-            case ENDS_BEFORE:
+            case LESSTHAN, ENDS_BEFORE:
                 return Filters.lt(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));
             case LESSTHAN_OR_EQUALS:
                 return Filters.lte(expressionContext.getPrefix() + config.get().getIndexName() + getIndexSuffixFromPrecision(), getTimeInPrecision(this.date));

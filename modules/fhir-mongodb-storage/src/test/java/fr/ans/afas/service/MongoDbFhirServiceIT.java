@@ -1,14 +1,14 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.service;
 
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.param.ParamPrefixEnum;
+import fr.ans.afas.exception.ResourceNotFoundException;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
@@ -21,6 +21,7 @@ import fr.ans.afas.mdbexpression.domain.fhir.MongoDbIncludeExpression;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbStringExpression;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbTokenExpression;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.Device;
 import org.hl7.fhir.r4.model.Organization;
@@ -52,6 +53,7 @@ import java.util.List;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = TestFhirApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
+
 public class MongoDbFhirServiceIT {
 
 
@@ -67,7 +69,10 @@ public class MongoDbFhirServiceIT {
 
 
     @Inject
-    SearchConfig searchConfig;
+    SearchConfigService searchConfigService;
+
+    @Inject
+    MongoMultiTenantService multiTenantService;
 
     /**
      * Stop docker
@@ -110,13 +115,13 @@ public class MongoDbFhirServiceIT {
 
         //
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
-        selectExpression.getIncludes().add(new MongoDbIncludeExpression(searchConfig, "Device", "organization"));
+        selectExpression.getIncludes().add(new MongoDbIncludeExpression(searchConfigService, "Device", "organization"));
         selectExpression.setCount(2);
         var all = this.mongoDbFhirService.search(null, selectExpression);
         Assert.assertEquals(2, all.getPage().size());
 
         var selectExpressionRev = new SelectExpression<>("Organization", expressionFactory);
-        selectExpressionRev.getRevincludes().add(new MongoDbIncludeExpression(searchConfig, "Device", "organization"));
+        selectExpressionRev.getRevincludes().add(new MongoDbIncludeExpression(searchConfigService, "Device", "organization"));
         selectExpressionRev.setCount(2);
         var allRev = this.mongoDbFhirService.search(null, selectExpressionRev);
         Assert.assertEquals(2, allRev.getPage().size());
@@ -143,7 +148,7 @@ public class MongoDbFhirServiceIT {
         }
 
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
-        selectExpression.getExpression().addExpression(new MongoDbDateRangeExpression(searchConfig, FhirSearchPath.builder().path("_lastUpdated").resource("Device").build(), new Date(), TemporalPrecisionEnum.YEAR, ParamPrefixEnum.GREATERTHAN_OR_EQUALS));
+        selectExpression.getExpression().addExpression(new MongoDbDateRangeExpression(searchConfigService, FhirSearchPath.builder().path("_lastUpdated").resource("Device").build(), new Date(), TemporalPrecisionEnum.YEAR, ParamPrefixEnum.GREATERTHAN_OR_EQUALS));
         selectExpression.setCount(2);
         var all = this.mongoDbFhirService.search(null, selectExpression);
         Assert.assertEquals(2, all.getPage().size());
@@ -189,7 +194,7 @@ public class MongoDbFhirServiceIT {
     /**
      * Test the search of a not allowed element
      */
-    @Test(expected = BadRequestException.class)
+    @Test(expected = ResourceNotFoundException.class)
     public void testSearchNotAllowed() {
         var selectExpression = new SelectExpression<>("Patient", expressionFactory);
         selectExpression.setCount(2);
@@ -200,7 +205,7 @@ public class MongoDbFhirServiceIT {
     /**
      * Test the revinclude of a not allowed element
      */
-    @Test(expected = BadRequestException.class)
+    @Test(expected = ResourceNotFoundException.class)
     public void testSearchNotAllowedRevInclude() {
 
         var device1 = new Device();
@@ -212,7 +217,7 @@ public class MongoDbFhirServiceIT {
 
 
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
-        selectExpression.getRevincludes().add(new MongoDbIncludeExpression(searchConfig, "Patient", "not-important"));
+        selectExpression.getRevincludes().add(new MongoDbIncludeExpression(searchConfigService, "Patient", "not-important"));
         selectExpression.setCount(2);
         this.mongoDbFhirService.search(null, selectExpression);
     }
@@ -224,7 +229,7 @@ public class MongoDbFhirServiceIT {
     @Test(expected = BadConfigurationException.class)
     public void testSearchOnBadParameter() {
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
-        selectExpression.getExpression().addExpression(new MongoDbStringExpression(searchConfig, FhirSearchPath.builder().resource("Device").path("no-exist").build(), "a", StringExpression.Operator.EXACT));
+        selectExpression.getExpression().addExpression(new MongoDbStringExpression(searchConfigService, FhirSearchPath.builder().resource("Device").path("no-exist").build(), "a", StringExpression.Operator.EXACT));
         this.mongoDbFhirService.search(null, selectExpression);
     }
 
@@ -291,7 +296,7 @@ public class MongoDbFhirServiceIT {
             this.mongoDbFhirService.store(List.of(d2), true);
         }
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
-        selectExpression.getExpression().addExpression(new MongoDbTokenExpression(searchConfig, FhirSearchPath.builder().path("_id").resource("Device").build(), null, "ID1"));
+        selectExpression.getExpression().addExpression(new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().path("_id").resource("Device").build(), null, "ID1"));
         selectExpression.setCount(1);
         var fhirPageIterator = this.mongoDbFhirService.iterate(null, selectExpression);
 
@@ -303,7 +308,7 @@ public class MongoDbFhirServiceIT {
         Assert.assertEquals(1, count);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = ResourceNotFoundException.class)
     public void testSearchWithIteratorInError() {
         var selectExpression = new SelectExpression<>("DeviceNotFound", expressionFactory);
         this.mongoDbFhirService.iterate(null, selectExpression);

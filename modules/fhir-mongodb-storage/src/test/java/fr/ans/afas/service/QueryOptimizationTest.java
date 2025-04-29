@@ -1,12 +1,14 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.service;
 
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.config.CompositeSearchConfig;
-import fr.ans.afas.fhirserver.search.expression.*;
+import fr.ans.afas.fhirserver.search.config.CompositeSearchConfigService;
+import fr.ans.afas.fhirserver.search.expression.HasCondition;
+import fr.ans.afas.fhirserver.search.expression.OrExpression;
+import fr.ans.afas.fhirserver.search.expression.SelectExpression;
+import fr.ans.afas.fhirserver.search.expression.StringExpression;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbOrExpression;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbStringExpression;
@@ -30,7 +32,7 @@ public class QueryOptimizationTest {
     @Test
     public void hasOptimizationTest() {
 
-        var searchConfig = new CompositeSearchConfig(List.of(new ASComplexSearchConfig()));
+        var searchConfig = new CompositeSearchConfigService(List.of(new ASComplexSearchConfig()));
         var expressionFactory = new MongoDbExpressionFactory(searchConfig);
 
 
@@ -48,7 +50,7 @@ public class QueryOptimizationTest {
 
         Assert.assertEquals(0, selectExpression.getHasConditions().size());
 
-        var orExp = (OrExpression<Bson>) ((AndExpression<Bson>) selectExpression.getExpression()).getExpressions().get(0);
+        var orExp = (OrExpression<Bson>) selectExpression.getExpression().getExpressions().get(0);
         Assert.assertEquals(1, orExp.getExpressions().size());
         var stringExpressionFound = (StringExpression<Bson>) orExp.getExpressions().get(0);
         Assert.assertEquals("1234", stringExpressionFound.getValue());

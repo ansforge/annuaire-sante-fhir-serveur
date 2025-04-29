@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.service.audit;
 
 import fr.ans.afas.fhirserver.hook.annotations.AfasSubscribe;

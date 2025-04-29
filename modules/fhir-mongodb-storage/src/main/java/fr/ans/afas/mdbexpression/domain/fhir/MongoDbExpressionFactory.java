@@ -1,13 +1,12 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir;
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.param.ParamPrefixEnum;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.*;
 import org.bson.conversions.Bson;
@@ -31,12 +30,12 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
     /**
      * The search config
      */
-    final SearchConfig searchConfig;
+    final SearchConfigService searchConfigService;
 
 
     @Inject
-    public MongoDbExpressionFactory(SearchConfig searchConfig) {
-        this.searchConfig = searchConfig;
+    public MongoDbExpressionFactory(SearchConfigService searchConfigService) {
+        this.searchConfigService = searchConfigService;
     }
 
     /**
@@ -49,7 +48,7 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
      */
     @Override
     public QuantityExpression<Bson> newQuantityExpression(@NotNull FhirSearchPath fhirPath, @NotNull Number value, @NotNull QuantityExpression.Operator operator) {
-        return new MongoDbQuantityExpression(this.searchConfig, fhirPath, value, operator);
+        return new MongoDbQuantityExpression(this.searchConfigService, fhirPath, value, operator);
     }
 
     /**
@@ -62,7 +61,7 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
      */
     @Override
     public StringExpression<Bson> newStringExpression(FhirSearchPath fhirPath, String value, StringExpression.Operator operator) {
-        return new MongoDbStringExpression(searchConfig, fhirPath, value, operator);
+        return new MongoDbStringExpression(searchConfigService, fhirPath, value, operator);
     }
 
     /**
@@ -75,7 +74,7 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
      */
     @Override
     public TokenExpression<Bson> newTokenExpression(FhirSearchPath fhirPath, String system, String value) {
-        return new MongoDbTokenExpression(searchConfig, fhirPath, system, value);
+        return new MongoDbTokenExpression(searchConfigService, fhirPath, system, value);
     }
 
     /**
@@ -93,9 +92,9 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
             if (parts.length != 2) {
                 throw new BadConfigurationException("Bad reference format. The reference format must be <Type>/<id> or <id>");
             }
-            return new MongoDbReferenceExpression(searchConfig, fhirPath, parts[0], parts[1]);
+            return new MongoDbReferenceExpression(searchConfigService, fhirPath, parts[0], parts[1]);
         } else {
-            return new MongoDbReferenceExpression(searchConfig, fhirPath, null, reference);
+            return new MongoDbReferenceExpression(searchConfigService, fhirPath, null, reference);
         }
     }
 
@@ -128,7 +127,7 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
      */
     @Override
     public IncludeExpression<Bson> newIncludeExpression(String type, String name) {
-        return new MongoDbIncludeExpression(searchConfig, type, name);
+        return new MongoDbIncludeExpression(searchConfigService, type, name);
     }
 
     /**
@@ -142,13 +141,13 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
      */
     @Override
     public DateRangeExpression<Bson> newDateRangeExpression(FhirSearchPath path, Date value, TemporalPrecisionEnum precision, ParamPrefixEnum prefix) {
-        return new MongoDbDateRangeExpression(searchConfig, path, value, precision, prefix);
+        return new MongoDbDateRangeExpression(searchConfigService, path, value, precision, prefix);
     }
 
     @Override
     public HasCondition<Bson> newHasExpression(FhirSearchPath linkPath, FhirSearchPath paramPath, List<String> values) {
 
-        var config = searchConfig.getSearchConfigByPath(paramPath).orElseThrow(() -> new BadConfigurationException("Chained param doesn't exist: " + paramPath.getResource() + "." + paramPath.getPath()));
+        var config = searchConfigService.getSearchConfigByPath(paramPath).orElseThrow(() -> new BadConfigurationException("Chained param doesn't exist: " + paramPath.getResource() + "." + paramPath.getPath()));
 
         var hasCondition = new HasCondition<Bson>(linkPath);
         if ("string".equals(config.getSearchType())) {

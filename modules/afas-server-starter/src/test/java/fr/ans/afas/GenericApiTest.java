@@ -1,12 +1,12 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.interceptor.LoggingInterceptor;
 import ca.uhn.fhir.rest.gclient.StringClientParam;
+import fr.ans.afas.fhir.servlet.servletutils.HttpUtils;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Device;
@@ -56,7 +56,7 @@ public class GenericApiTest extends BaseTest {
      */
     @Parameterized.Parameters
     public static Iterable<String> data() {
-        return List.of("/fhir", "/fhir/v2-alpha");
+        return List.of("/fhir/v1/tenant-1", "/fhir/" + HttpUtils.SERVLET_API_PATH + "/tenant-1");
     }
 
     @AfterClass
@@ -130,21 +130,32 @@ public class GenericApiTest extends BaseTest {
      */
     @Test
     public void testDevicePagingSearch() {
+
         var bundle = (Bundle) client.search().forResource(Device.class)
                 .count(1)
                 .execute();
-        // page 1:
         Assert.assertEquals(1, bundle.getEntry().size());
-        // page 2:
-        bundle.getLink("next").setUrl(bundle.getLink("next").getUrl().replaceAll("http://localhost:8080", "http://localhost:" + this.getServerPort()));
+
+        var url = bundle.getLink("next")
+                .getUrl().replace(":8080", ":" + this.getServerPort())
+                .replace("/v1?", "/v1/tenant-1?")
+                .replace("/v2/_page?", "/v2/tenant-1/_page?");
+        bundle.getLink("next").setUrl(url);
+
         bundle = client.loadPage().next(bundle).execute();
         Assert.assertEquals(1, bundle.getEntry().size());
-        // page 3:
-        bundle.getLink("next").setUrl(bundle.getLink("next").getUrl().replaceAll("http://localhost:8080", "http://localhost:" + this.getServerPort()));
+
+
+        url = bundle.getLink("next")
+                .getUrl().replace(":8080", ":" + this.getServerPort())
+                .replace("/v1?", "/v1/tenant-1?")
+                .replace("/v2/_page?", "/v2/tenant-1/_page?");
+        bundle.getLink("next").setUrl(url);
         bundle = client.loadPage().next(bundle).execute();
         Assert.assertEquals(1, bundle.getEntry().size());
-        // page 4 doesnt exit:
+
         Assert.assertNull(bundle.getLink("next"));
+
     }
 
     /**
@@ -197,6 +208,93 @@ public class GenericApiTest extends BaseTest {
         Assert.assertEquals(2, resultName.getTotal());
 
     }
+
+    /**
+     * Test the paging
+     */
+    @Test
+    public void testDevicePagingSearchThrowException() {
+
+        var bundle = (Bundle) client.search().forResource(Device.class)
+                .count(1)
+                .execute();
+        Assert.assertEquals(1, bundle.getEntry().size());
+
+        var url = bundle.getLink("next")
+                .getUrl().replace(":8080", ":" + this.getServerPort())
+                .replace("/v1?", "/v1/tenant-1?")
+                .replace("/v2/_page?", "/v2/tenant-1/_page?");
+        bundle.getLink("next").setUrl(url);
+
+        bundle = client.loadPage().next(bundle).execute();
+        Assert.assertEquals(1, bundle.getEntry().size());
+
+
+        url = bundle.getLink("next")
+                .getUrl().replace(":8080", ":" + this.getServerPort())
+                .replace("/v1?", "/v1/tenant-1?")
+                .replace("/v2/_page?", "/v2/tenant-1/_page?");
+
+        // Encontramos la posición donde empieza "pageid="
+        int pageIdIndex = url.indexOf("page?id=");
+
+        // Verificamos si "pageid=" fue encontrado en la URL
+        if (pageIdIndex != -1) {
+            // Obtenemos la posición del primer carácter después de "pageid="
+            int charAfterPageId = pageIdIndex + "page?id=".length();
+
+            // Reemplazamos el primer carácter después de "pageid=" por 'F'
+            url = url.substring(0, charAfterPageId) + "F" + url.substring(charAfterPageId + 1);
+        }
+        bundle.getLink("next").setUrl(url);
+        try{
+            bundle = client.loadPage().next(bundle).execute();
+        }catch(Exception e){
+            Assert.assertEquals("HTTP 500 : The url can't be processed. Maybe it is too old or corrupted.", e.getMessage());
+        }
+
+    }
+    /*@Test
+    public void testTransaction() {
+        // Create a Bundle to hold the transaction
+        Bundle bundle = new Bundle();
+        bundle.setType(Bundle.BundleType.TRANSACTION);
+
+        // Add a Device resource to the Bundle
+        Device device = new Device();
+        device.setId("Device/dev1");
+        device.setModelNumber("ModelNumber1");
+        Bundle.BundleEntryComponent deviceEntry = new Bundle.BundleEntryComponent();
+        deviceEntry.setFullUrl("Device/dev1");
+        deviceEntry.setResource(device);
+        deviceEntry.getRequest().setMethod(Bundle.HTTPVerb.POST).setUrl("Device");
+        bundle.addEntry(deviceEntry);
+
+        // Add an Organization resource to the Bundle
+        Organization organization = new Organization();
+        organization.setId("Organization/org1");
+        organization.setName("OrgName1");
+        Bundle.BundleEntryComponent orgEntry = new Bundle.BundleEntryComponent();
+        orgEntry.setFullUrl("Organization/org1");
+        orgEntry.setResource(organization);
+        orgEntry.getRequest().setMethod(Bundle.HTTPVerb.POST).setUrl("Organization");
+        bundle.addEntry(orgEntry);
+
+        // Send the transaction bundle via POST
+        Bundle responseBundle = client.transaction().withBundle(bundle).execute();
+
+        // Verify the response
+        Assert.assertNotNull(responseBundle);
+        Assert.assertEquals(Bundle.BundleType.TRANSACTIONRESPONSE, responseBundle.getType());
+        Assert.assertEquals(2, responseBundle.getEntry().size());
+
+        // Verify that the resources were created
+        Device createdDevice = client.read().resource(Device.class).withId("dev1").execute();
+        Assert.assertEquals("ModelNumber1", createdDevice.getModelNumber());
+
+        Organization createdOrganization = client.read().resource(Organization.class).withId("org1").execute();
+        Assert.assertEquals("OrgName1", createdOrganization.getName());
+    }*/
 
     /**
      * Create the client with the good port and a Hapi interceptor to add the token in the headers.

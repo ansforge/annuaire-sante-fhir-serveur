@@ -1,22 +1,21 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhir.servlet.search.bundle;
 
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.fhir.servlet.error.ErrorWriter;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
-import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
-import fr.ans.afas.fhirserver.service.FhirStoreService;
-import fr.ans.afas.fhirserver.service.NextUrlManager;
+import fr.ans.afas.fhirserver.service.FhirServerContext;
 import fr.ans.afas.fhirserver.service.data.PagingData;
 import fr.ans.afas.fhirserver.service.exception.BadLinkException;
 import fr.ans.afas.fhirserver.service.exception.BadRequestException;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.context.MessageSource;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Locale;
 
 
 /**
@@ -25,33 +24,34 @@ import java.io.IOException;
  */
 public class FhirQueryNextPageReadListener<T> extends FhirQueryReadListener<T> {
 
-    private final String serverUrl;
     private final String pageId;
 
     private final HttpServletResponse res;
 
-    public FhirQueryNextPageReadListener(FhirStoreService<T> fhirStoreService,
-                                         ExpressionFactory<T> expressionFactory,
-                                         SearchConfig searchConfig,
-                                         NextUrlManager<T> nextUrlManager,
+    private final AfasConfiguration afasConfiguration;
+
+    private final MessageSource messageSource;
+
+    public FhirQueryNextPageReadListener(FhirServerContext<T> fhirServerContext,
                                          ServletInputStream in,
                                          HttpServletResponse r,
                                          AsyncContext c,
                                          String pageId,
-                                         String serverUrl) {
-        super(fhirStoreService, expressionFactory, searchConfig, nextUrlManager, c, in);
+                                         AfasConfiguration afasConfiguration,
+                                         MessageSource messageSource) {
+        super(fhirServerContext, in, c);
         res = r;
         this.pageId = pageId;
-        this.serverUrl = serverUrl;
-
+        this.afasConfiguration = afasConfiguration;
+        this.messageSource = messageSource;
     }
 
 
-    public void onAllDataRead() throws IOException {
+    public void onAllDataReadInTenant() throws IOException {
         try {
-            var url = nextUrlManager.find(pageId);
+            var url = fhirServerContext.getNextUrlManager().find(pageId);
             if (url.isEmpty()) {
-                throw new BadRequestException("Error getting the next page. Context not found");
+                throw new BadRequestException(messageSource.getMessage("error.next.page.notFound", null, Locale.getDefault()));
             }
             var pagingData = PagingData.<T>builder()
                     .pageSize(url.get().getPageSize())
@@ -60,15 +60,16 @@ public class FhirQueryNextPageReadListener<T> extends FhirQueryReadListener<T> {
                     .size(url.get().getSize())
                     .timestamp(url.get().getTimestamp())
                     .type(url.get().getType())
-                    .selectExpression(url.get()
-                            .getSelectExpression()).build();
+                    .elements(url.get().getElements())
+                    .selectExpression(url.get().getSelectExpression())
+                    .build();
             // now all data are read, set up a WriteListener to write
             var output = res.getOutputStream();
-            var writeListener = new FhirBundleNextPageWriteListener<>(fhirStoreService, nextUrlManager, output, ac, pagingData, this.serverUrl);
+            var writeListener = new FhirBundleNextPageWriteListener<>(fhirServerContext, output, ac, pagingData, afasConfiguration);
             output.setWriteListener(writeListener);
 
         } catch (BadLinkException e) {
-            ErrorWriter.writeError(e, ac);
+            ErrorWriter.writeError(e, ac, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             ac.complete();
         }
 

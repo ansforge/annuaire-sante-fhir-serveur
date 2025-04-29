@@ -5,46 +5,42 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>fr.ans</groupId>
-        <artifactId>bom-ms</artifactId>
-        <version>3.0.4</version>
-        <relativePath>..</relativePath>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.2</version>
     </parent>
+    <groupId>fr.ans</groupId>
     <artifactId>annuaire-sante-fhir-serveur</artifactId>
-    <version>1.23.14</version>
+    <version>1.24.8-SNAPSHOT</version>
     <name>annuaire-sante-fhir-serveur</name>
     <packaging>pom</packaging>
     <description>A FHIR server based on Hapi and MongoDB to expose FHIR resources.</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven-license-plugin.version>3.0</maven-license-plugin.version>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
-        <java.version>11</java.version>
-        <hapi.version>6.2.0</hapi.version>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <java.version>17</java.version>
+        <hapi.version>7.6.1</hapi.version>
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.basedir}/../../modules/project-report/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
-        <spring-boot.version>2.7.7</spring-boot.version>
-        <spring.version>5.3.21</spring.version>
-        <jackson-databind.version>2.11.3</jackson-databind.version>
-        <jackson-dataformat-csv.version>2.11.3</jackson-dataformat-csv.version>
-        <jackson-datatype-hibernate4.version>2.11.3</jackson-datatype-hibernate4.version>
-        <jackson-datatype-json-org.version>2.11.3</jackson-datatype-json-org.version>
-        <jackson.version>2.11.3</jackson.version>
-        <mongo-java-driver.version>3.11.2</mongo-java-driver.version>
-        <mongodb.version>4.1.2</mongodb.version>
-        <junit.version>4.13.1</junit.version>
-        <junit-vintage.version>5.8.2</junit-vintage.version>
-        <testcontainers.version>1.16.2</testcontainers.version>
-        <snakeyaml.version>1.27</snakeyaml.version>
-        <commons-compress.version>1.21</commons-compress.version>
-        <commons-io.version>2.11.0</commons-io.version>
+        <javax.inject.version>1</javax.inject.version>
+        <reflections.version>0.10.2</reflections.version>
+        <javax.validation-api.version>2.0.1.Final</javax.validation-api.version>
+        <testscontainers.mongodb.version>1.20.4</testscontainers.mongodb.version>
+        <jetbrains.annotations.version>17.0.0</jetbrains.annotations.version>
+        <sonar.coverage.exclusions>modules/fhir-server-test-lib/**, modules/afas-fhir-hapi/**,
+            **/AfasConfiguration.java, **/CombinedCursor.java, **/MongoIndexConfiguration.java,
+        **/FhirServerContext.java, **/MultiTenantSearchConfigService.java, **/PagingData.java,
+            modules/fhir-domain/src/main/java/fr/ans/afas/fhirserver/**, **/FhirQueryNextPageReadListener.java,
+        **/IndexResourceOperation.java, **/IndexResourceStatusOperation.java,**/FhirQueryFirstPageReadListener.java,
+        **/TransactionReadListener.java, **/FhirResourceServlet.java</sonar.coverage.exclusions>
     </properties>
     <modules>
         <module>modules/fhir-domain</module>
         <module>modules/fhir-mongodb-storage</module>
-        <module>modules/fhir-subscription</module>
         <module>modules/afas-fhir-hapi</module>
         <module>modules/afas-fhir-servlet</module>
         <module>modules/project-report</module>
@@ -55,7 +51,7 @@
     </modules>
     <scm>
         <developerConnection>${developperConnectionJenkinsfile}</developerConnection>
-        <tag>annuaire-sante-fhir-serveur-1.23.14</tag>
+        <tag>HEAD</tag>
     </scm>
     <distributionManagement>
         <repository>
@@ -63,113 +59,6 @@
             <url>${distributionRepositoryJenkinsfile}</url>
         </repository>
     </distributionManagement>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.mongodb</groupId>
-                <artifactId>mongodb-driver-sync</artifactId>
-                <version>4.1.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-data-mongodb</artifactId>
-                <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.data</groupId>
-                <artifactId>spring-data-mongodb</artifactId>
-                <version>3.3.5</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-logging</artifactId>
-                <version>${spring-boot.version}</version>
-            </dependency>
-            <!-- specific version of tomcat (CVE 2020-1938)-->
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-core</artifactId>
-                <version>9.0.64</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-el</artifactId>
-                <version>9.0.64</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-websocket</artifactId>
-                <version>9.0.64</version>
-            </dependency>
-            <!--   end of the CVE -->
-
-            <dependency>
-                <groupId>com.querydsl</groupId>
-                <artifactId>querydsl-mongodb</artifactId>
-                <version>4.4.0</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>mongo-java-driver</groupId>
-                        <artifactId>org.mongodb</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>1.18.20</version>
-                <optional>true</optional>
-            </dependency>
-            <dependency>
-                <groupId>ca.uhn.hapi.fhir</groupId>
-                <artifactId>hapi-fhir-base</artifactId>
-                <version>${hapi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ca.uhn.hapi.fhir</groupId>
-                <artifactId>hapi-fhir-client</artifactId>
-                <version>${hapi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ca.uhn.hapi.fhir</groupId>
-                <artifactId>hapi-fhir-structures-r4</artifactId>
-                <version>${hapi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ca.uhn.hapi.fhir</groupId>
-                <artifactId>hapi-fhir-validation-resources-r4</artifactId>
-                <version>${hapi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ca.uhn.hapi.fhir</groupId>
-                <artifactId>hapi-fhir-validation</artifactId>
-                <version>${hapi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ca.uhn.hapi.fhir</groupId>
-                <artifactId>hapi-fhir-server</artifactId>
-                <version>${hapi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.batch</groupId>
-                <artifactId>spring-batch-test</artifactId>
-                <version>4.3.3</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.h2database</groupId>
-                <artifactId>h2</artifactId>
-                <version>2.1.210</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>mongodb</artifactId>
-                <version>1.16.2</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
     <build>
         <pluginManagement>
             <plugins>
@@ -212,6 +101,17 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>${maven-license-plugin.version}</version>
+                <configuration>
+                    <header>licence-header.txt</header>
+                    <includes>
+                        <include>**/*.java</include>
+                    </includes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

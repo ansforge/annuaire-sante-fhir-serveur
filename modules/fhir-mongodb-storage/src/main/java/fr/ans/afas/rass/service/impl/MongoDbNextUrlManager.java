@@ -1,10 +1,8 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.rass.service.impl;
 
-import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
@@ -14,11 +12,13 @@ import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.fhirserver.service.data.CountResult;
 import fr.ans.afas.fhirserver.service.data.PagingData;
 import fr.ans.afas.fhirserver.service.exception.BadLinkException;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -44,7 +44,7 @@ public class MongoDbNextUrlManager implements NextUrlManager<Bson> {
      */
     protected final String dbName;
 
-    protected final MongoClient mongoClient;
+    protected final MongoMultiTenantService mongoMultiTenantService;
     /**
      * The expression serializer
      */
@@ -59,13 +59,13 @@ public class MongoDbNextUrlManager implements NextUrlManager<Bson> {
     /**
      * Create the service
      *
-     * @param mongoClient           the mongodb client
-     * @param maxNextUrlLength      the max size of the next url (paging data).
-     * @param expressionSerializer  The expression serializer
-     * @param serializeUrlEncrypter The url encrypter
+     * @param mongoMultiTenantService the mongoMultiTenantService
+     * @param maxNextUrlLength        the max size of the next url (paging data).
+     * @param expressionSerializer    The expression serializer
+     * @param serializeUrlEncrypter   The url encrypter
      */
-    public MongoDbNextUrlManager(MongoClient mongoClient, int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter, String dbName) {
-        this.mongoClient = mongoClient;
+    public MongoDbNextUrlManager(MongoMultiTenantService mongoMultiTenantService, int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter, String dbName) {
+        this.mongoMultiTenantService = mongoMultiTenantService;
         this.maxNextUrlLength = maxNextUrlLength;
         this.expressionSerializer = expressionSerializer;
         this.serializeUrlEncrypter = serializeUrlEncrypter;
@@ -91,7 +91,7 @@ public class MongoDbNextUrlManager implements NextUrlManager<Bson> {
             throw new BadLinkException("The url can't be processed. Maybe it is too old or corrupted.");
         }
 
-        var parts = theSearchId.split("_", 7);
+        var parts = theSearchId.split("_", 8);
 
         Long total = Long.parseLong(parts[1]);
         if (total < 0) {
@@ -105,7 +105,9 @@ public class MongoDbNextUrlManager implements NextUrlManager<Bson> {
 
         var lastId = parts[4];
         var uuid = parts[5];
-        var exp = parts[6];
+        var elements = !parts[6].isEmpty() ? Arrays.stream(parts[6].substring(1, parts[6].length() - 1).split(","))
+                .map(String::trim).collect(Collectors.toSet()) : new HashSet<String>();
+        var exp = parts[7];
 
         var selectExpression = (SelectExpression<Bson>) expressionSerializer.deserialize(exp);
 
@@ -117,6 +119,7 @@ public class MongoDbNextUrlManager implements NextUrlManager<Bson> {
                 .lastId(lastId)
                 .timestamp(timestamp)
                 .type(type)
+                .elements(elements)
                 .build());
     }
 
@@ -133,6 +136,9 @@ public class MongoDbNextUrlManager implements NextUrlManager<Bson> {
                 pagingData.getLastId() +
                 "_" +
                 pagingData.getUuid() +
+                "_" +
+                //This can be true only for V2, because V1 (Hapi) is not using this field elements
+                (pagingData.getElements() != null && !pagingData.getElements().isEmpty() ? pagingData.getElements() : "") +
                 "_" +
                 pagingData.getSelectExpression().serialize(expressionSerializer);
 
@@ -197,7 +203,7 @@ public class MongoDbNextUrlManager implements NextUrlManager<Bson> {
      * @return the collection
      */
     protected MongoCollection<Document> getCollection() {
-        return mongoClient.getDatabase(dbName).getCollection(MONGO_COLLECTION_NAME);
+        return mongoMultiTenantService.getCollection(MONGO_COLLECTION_NAME);
     }
 
 

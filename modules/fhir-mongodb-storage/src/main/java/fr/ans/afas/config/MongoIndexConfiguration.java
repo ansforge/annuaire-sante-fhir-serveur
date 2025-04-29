@@ -1,20 +1,22 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.config;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import fr.ans.afas.domain.StorageConstants;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
+import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbStringExpression;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
+import fr.ans.afas.utils.TenantUtil;
+import jakarta.annotation.PostConstruct;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Value;
-
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import java.util.Set;
 
 /**
  * Service that create Mongodb index on startup
@@ -40,32 +42,37 @@ public class MongoIndexConfiguration {
      * The search configuration
      */
     @Inject
-    SearchConfig searchConfig;
+    SearchConfigService searchConfigService;
+
+    @Inject
+    ServerSearchConfig serverSearchConfig;
+
+    @Inject
+    MongoMultiTenantService mongoMultiTenantService;
 
     /**
      * Initialization of the application. Setup indexes
      */
     @PostConstruct
     public void createIndexes() {
-        for (var resourceSearchConfig : searchConfig.getResources()) {
-            var collection = getCollection(resourceSearchConfig);
-            createGenericIndexes(collection);
-            for (var config : searchConfig.getAllByFhirResource(resourceSearchConfig)) {
-                if (config.isIndex()) {
-                    writeIndex(collection, config, "");
-                }
+        serverSearchConfig.getConfigs().forEach((k, v) -> {
+            TenantUtil.setCurrentTenant(k);
+            for (var resourceSearchConfig : searchConfigService.getResources()) {
+                Set<String> indexes = searchConfigService.getIndexesByFhirResource(resourceSearchConfig);
+                var collection = mongoMultiTenantService.getCollection(resourceSearchConfig);
+                // indexes:
+                indexes.forEach(index -> collection.createIndex(new Document(index, 1)));
+                // joins:
+                createJoins(resourceSearchConfig, collection);
             }
-
-            // joins:
-            createJoins(resourceSearchConfig, collection);
-        }
+        });
     }
 
     private void createJoins(String resourceSearchConfig, MongoCollection<Document> collection) {
-        var joins = searchConfig.getJoinsByFhirResource(resourceSearchConfig);
+        var joins = searchConfigService.getJoinsByFhirResource(resourceSearchConfig);
         if (joins != null) {
             for (var j : joins) {
-                for (var config : searchConfig.getAllByFhirResource(j.getResource())) {
+                for (var config : searchConfigService.getAllByFhirResource(j.getResource())) {
                     if (config.isIndexInSubRequest()) {
                         writeIndex(collection, config, "links." + j.getResource() + ".");
                     }
@@ -82,6 +89,7 @@ public class MongoIndexConfiguration {
      * @param prefix the prefix of the index
      * @see SearchParamConfig
      */
+    //TODO Utiliser pour les joins seulement, voir si on peut utiliser directement searchConfigService.getIndexesByFhirResource(resourceSearchConfig) lorsqu'on abordera le _has
     private void writeIndex(MongoCollection<Document> col, SearchParamConfig config, String prefix) {
         switch (config.getSearchType()) {
             case StorageConstants.INDEX_TYPE_TOKEN:
@@ -100,32 +108,5 @@ public class MongoIndexConfiguration {
                 col.createIndex(new Document(prefix + config.getIndexName() + MongoDbStringExpression.INSENSITIVE_SUFFIX, 1));
                 break;
         }
-    }
-
-    /**
-     * Create generic indexes used in each FHIR resource like metadata, ids...
-     *
-     * @param col the database collection
-     */
-    private void createGenericIndexes(MongoCollection<Document> col) {
-        col.createIndex(new Document(StorageConstants.INDEX_T_FID, 1));
-        col.createIndex(new Document(StorageConstants.INDEX_T_ID, 1));
-        col.createIndex(new Document(StorageConstants.INDEX_T_LASTUPDATED, 1));
-        col.createIndex(new Document(StorageConstants.INDEX_T_LASTUPDATED_SECOND, 1));
-        col.createIndex(new Document(StorageConstants.INDEX_T_LASTUPDATED_MINUTE, 1));
-        col.createIndex(new Document(StorageConstants.INDEX_T_LASTUPDATED_DATE, 1));
-        col.createIndex(new Document(StorageConstants.INDEX_T_LASTUPDATED_MONTH, 1));
-        col.createIndex(new Document(StorageConstants.INDEX_T_LASTUPDATED_YEAR, 1));
-    }
-
-    /**
-     * Get the mongo db collection for a type
-     *
-     * @param type the FHIR type
-     * @return the mongodb collection found
-     */
-    MongoCollection<Document> getCollection(String type) {
-        var mongoDatabase = mongoClient.getDatabase(dbName);
-        return mongoDatabase.getCollection(type);
     }
 }

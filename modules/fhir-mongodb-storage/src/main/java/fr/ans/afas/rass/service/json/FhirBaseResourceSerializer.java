@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.rass.service.json;
 
 import ca.uhn.fhir.context.FhirContext;
@@ -14,6 +13,7 @@ import fr.ans.afas.exception.BadReferenceFormat;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbStringExpression;
 import fr.ans.afas.utils.FhirDateUtils;
 import fr.ans.afas.utils.IrisFhirUtils;
+import fr.ans.afas.utils.MongoDbUtils;
 import fr.ans.afas.utils.data.ParsedReference;
 import org.hl7.fhir.r4.model.*;
 import org.slf4j.Logger;
@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
+import java.text.Normalizer;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -138,7 +139,7 @@ public abstract class FhirBaseResourceSerializer<T> extends JsonSerializer<T> {
 
             // insensitive search:
             gen.writeFieldName(property + MongoDbStringExpression.INSENSITIVE_SUFFIX);
-            var arrayI = v.stream().map(PrimitiveType::getValue).filter(Objects::nonNull).map(String::toLowerCase).toArray(String[]::new);
+            var arrayI = v.stream().map(PrimitiveType::getValue).filter(Objects::nonNull).map(MongoDbUtils::removeAccentsAndLowerCase).toArray(String[]::new);
             gen.writeArray(arrayI, 0, arrayI.length);
 
         }
@@ -251,7 +252,7 @@ public abstract class FhirBaseResourceSerializer<T> extends JsonSerializer<T> {
                     logger.error("Error persisting a reference (in an array of references) for a FHIR resource. Prefix: {}. The object is stored without the reference.", prefix);
                 }
                 return null;
-            }).filter(Objects::nonNull).collect(Collectors.toList());
+            }).filter(Objects::nonNull).toList();
 
             gen.writeFieldName(prefix + StorageConstants.REFERENCE_SUFFIX);
 
@@ -278,19 +279,19 @@ public abstract class FhirBaseResourceSerializer<T> extends JsonSerializer<T> {
      */
     protected void writeHumanNames(JsonGenerator gen, Collection<HumanName> humanNames, String prefix) throws IOException {
         if (!humanNames.isEmpty()) {
-            var array = humanNames.stream().map(HumanName::getPrefix).flatMap(List::stream).collect(Collectors.toList());
+            var array = humanNames.stream().map(HumanName::getPrefix).flatMap(List::stream).toList();
             if (!array.isEmpty()) {
                 writeMultiString(gen, array, prefix + StorageConstants.HUMAN_NAME_PREFIX_SUFFIX);
             }
-            array = humanNames.stream().map(HumanName::getSuffix).flatMap(List::stream).collect(Collectors.toList());
+            array = humanNames.stream().map(HumanName::getSuffix).flatMap(List::stream).toList();
             if (!array.isEmpty()) {
                 writeMultiString(gen, array, prefix + StorageConstants.HUMAN_NAME_SUFFIX_SUFFIX);
             }
-            array = humanNames.stream().map(HumanName::getFamilyElement).collect(Collectors.toList());
+            array = humanNames.stream().map(HumanName::getFamilyElement).toList();
             if (!array.isEmpty()) {
                 writeMultiString(gen, array, prefix + StorageConstants.HUMAN_NAME_FAMILY_SUFFIX);
             }
-            array = humanNames.stream().map(HumanName::getGiven).flatMap(List::stream).collect(Collectors.toList());
+            array = humanNames.stream().map(HumanName::getGiven).flatMap(List::stream).toList();
             if (!array.isEmpty()) {
                 writeMultiString(gen, array, prefix + StorageConstants.HUMAN_NAME_GIVEN_SUFFIX);
             }

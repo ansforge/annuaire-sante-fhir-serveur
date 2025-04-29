@@ -1,3 +1,6 @@
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
+ */
 package fr.ans.afas.utils.audit;
 
 import ch.qos.logback.classic.Logger;
@@ -9,7 +12,6 @@ import org.junit.runners.model.Statement;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class LoggerRule implements TestRule {
 
@@ -40,11 +42,11 @@ public class LoggerRule implements TestRule {
     }
 
     public List<String> getMessages() {
-        return listAppender.list.stream().map(ILoggingEvent::getMessage).collect(Collectors.toList());
+        return listAppender.list.stream().map(ILoggingEvent::getMessage).toList();
     }
 
     public List<String> getFormattedMessages() {
-        return listAppender.list.stream().map(ILoggingEvent::getFormattedMessage).collect(Collectors.toList());
+        return listAppender.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
     }
 
 }

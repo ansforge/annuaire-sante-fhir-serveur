@@ -1,14 +1,13 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.service;
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
 import ca.uhn.fhir.rest.param.ParamPrefixEnum;
 import com.mongodb.client.MongoClient;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
 import fr.ans.afas.fhirserver.service.data.CountResult;
@@ -17,6 +16,7 @@ import fr.ans.afas.fhirserver.service.exception.BadLinkException;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbDateRangeExpression;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
 import org.bson.BsonDocument;
 import org.bson.conversions.Bson;
@@ -47,6 +47,7 @@ import static org.awaitility.Awaitility.await;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = TestFhirApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
+
 public class PagingTestIT {
 
 
@@ -71,7 +72,7 @@ public class PagingTestIT {
 
 
     @Inject
-    SearchConfig searchConfig;
+    SearchConfigService searchConfigService;
     /**
      * Service to access fhir data
      */
@@ -87,6 +88,9 @@ public class PagingTestIT {
 
     @Inject
     MongoDbNextUrlManager mongoDbNextUrlManager;
+
+    @Inject
+    MongoMultiTenantService multiTenantService;
 
     @Before
     public void init() {
@@ -105,7 +109,7 @@ public class PagingTestIT {
             this.mongoDbNextUrlManager.setMaxNextUrlLength(i);
 
             var selectExpression = new SelectExpression<>(TYPE, expressionFactory);
-            selectExpression.getExpression().addExpression(new MongoDbDateRangeExpression(searchConfig, FhirSearchPath.builder().path("_lastUpdated").resource(TYPE).build(), new Date(), TemporalPrecisionEnum.YEAR, ParamPrefixEnum.GREATERTHAN_OR_EQUALS));
+            selectExpression.getExpression().addExpression(new MongoDbDateRangeExpression(searchConfigService, FhirSearchPath.builder().path("_lastUpdated").resource(TYPE).build(), new Date(), TemporalPrecisionEnum.YEAR, ParamPrefixEnum.GREATERTHAN_OR_EQUALS));
             selectExpression.setCount(2);
 
 
@@ -114,7 +118,6 @@ public class PagingTestIT {
             var stored = mongoDbNextUrlManager.store(pd(selectExpression, date1));
             var found = mongoDbNextUrlManager.find(stored);
 
-            //Assert.assertEquals(UUID_1,  found.get().getUuid());
             Assert.assertEquals(TYPE, found.get().getType());
             Assert.assertEquals(SIZE_1, found.get().getPageSize());
             Assert.assertEquals(LAST_ID_1, found.get().getLastId());
@@ -134,7 +137,7 @@ public class PagingTestIT {
 
         clearMongoDb();
         var selectExpression = new SelectExpression<>(TYPE, expressionFactory);
-        selectExpression.getExpression().addExpression(new MongoDbDateRangeExpression(searchConfig, FhirSearchPath.builder().path("_lastUpdated").resource(TYPE).build(), new Date(), TemporalPrecisionEnum.YEAR, ParamPrefixEnum.GREATERTHAN_OR_EQUALS));
+        selectExpression.getExpression().addExpression(new MongoDbDateRangeExpression(searchConfigService, FhirSearchPath.builder().path("_lastUpdated").resource(TYPE).build(), new Date(), TemporalPrecisionEnum.YEAR, ParamPrefixEnum.GREATERTHAN_OR_EQUALS));
         selectExpression.setCount(2);
 
 
@@ -165,11 +168,11 @@ public class PagingTestIT {
 
     @Test
     public void testDbOrSelfContained() throws BadLinkException {
-        var colNextUrls = mongoClient.getDatabase(dbName).getCollection(MongoDbNextUrlManager.MONGO_COLLECTION_NAME);
+        var colNextUrls = multiTenantService.getCollection(MongoDbNextUrlManager.MONGO_COLLECTION_NAME);
         clearMongoDb();
 
         var selectExpression = new SelectExpression<>(TYPE, expressionFactory);
-        selectExpression.getExpression().addExpression(new MongoDbDateRangeExpression(searchConfig, FhirSearchPath.builder().path("_lastUpdated").resource(TYPE).build(), new Date(), TemporalPrecisionEnum.YEAR, ParamPrefixEnum.GREATERTHAN_OR_EQUALS));
+        selectExpression.getExpression().addExpression(new MongoDbDateRangeExpression(searchConfigService, FhirSearchPath.builder().path("_lastUpdated").resource(TYPE).build(), new Date(), TemporalPrecisionEnum.YEAR, ParamPrefixEnum.GREATERTHAN_OR_EQUALS));
         selectExpression.setCount(2);
 
 

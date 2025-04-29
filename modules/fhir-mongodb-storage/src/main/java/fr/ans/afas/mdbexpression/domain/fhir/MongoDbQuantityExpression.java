@@ -1,12 +1,11 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir;
 
 import com.mongodb.client.model.Filters;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
@@ -27,19 +26,19 @@ import javax.validation.constraints.NotNull;
 public class MongoDbQuantityExpression extends QuantityExpression<Bson> {
 
 
-    final SearchConfig searchConfig;
+    final SearchConfigService searchConfigService;
 
     /**
      * Create a mongo db quantity expression
      *
-     * @param searchConfig the search config
-     * @param fhirPath     the fhir path
-     * @param value        the value to check
-     * @param operator     the operator
+     * @param searchConfigService the search config
+     * @param fhirPath            the fhir path
+     * @param value               the value to check
+     * @param operator            the operator
      */
-    public MongoDbQuantityExpression(@NotNull SearchConfig searchConfig, @NotNull FhirSearchPath fhirPath, @NotNull Number value, @NotNull Operator operator) {
+    public MongoDbQuantityExpression(@NotNull SearchConfigService searchConfigService, @NotNull FhirSearchPath fhirPath, @NotNull Number value, @NotNull Operator operator) {
         super(fhirPath, value, operator);
-        this.searchConfig = searchConfig;
+        this.searchConfigService = searchConfigService;
     }
 
     /**
@@ -50,7 +49,7 @@ public class MongoDbQuantityExpression extends QuantityExpression<Bson> {
      */
     @Override
     public Bson interpreter(ExpressionContext expressionContext) {
-        var config = searchConfig.getSearchConfigByPath(fhirPath);
+        var config = searchConfigService.getSearchConfigByPath(fhirPath);
         if (config.isEmpty()) {
             throw new BadConfigurationException("Search not supported on path: " + fhirPath);
         }

@@ -1,31 +1,35 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.service;
 
 import ca.uhn.fhir.context.FhirContext;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import fr.ans.afas.config.CleanRevisionDataConfiguration;
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.fhirserver.hook.exception.BadHookConfiguration;
 import fr.ans.afas.fhirserver.hook.service.HookService;
-import fr.ans.afas.fhirserver.search.config.CompositeSearchConfig;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.CompositeSearchConfigService;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
+import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.serialization.DefaultSerializeUrlEncrypter;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.SerializeUrlEncrypter;
+import fr.ans.afas.fhirserver.service.FhirStoreService;
+import fr.ans.afas.fhirserver.service.IndexService;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
 import fr.ans.afas.mdbexpression.domain.fhir.searchconfig.ASComplexSearchConfig;
 import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
-import fr.ans.afas.rass.service.DatabaseService;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
+import fr.ans.afas.rass.service.impl.DefaultIndexService;
 import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
-import fr.ans.afas.rass.service.impl.SimpleDatabaseService;
 import fr.ans.afas.rass.service.json.FhirBaseResourceDeSerializer;
 import fr.ans.afas.rass.service.json.GenericSerializer;
+import fr.ans.afas.utils.TenantUtil;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -39,6 +43,7 @@ import org.springframework.context.annotation.Import;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Base of the spring boot test application
@@ -53,6 +58,9 @@ import java.util.List;
 })
 @Import(CleanRevisionDataConfiguration.class)
 public class TestFhirApplication {
+
+    private static final String DEMO_TENANT = "tenant-1";
+
     /**
      * Launch the service
      *
@@ -77,31 +85,27 @@ public class TestFhirApplication {
     @Inject
     @Bean
     public MongoDbFhirService fhirService(FhirContext fhirContext,
-                                          MongoClient mongoClient,
-                                          SearchConfig searchConfig,
+                                          SearchConfigService searchConfigService,
                                           ApplicationContext context,
-                                          @Value("${afas.fhir.max-include-size:5000}") int maxIncludePageSize,
-                                          DatabaseService databaseService
+                                          MongoMultiTenantService mongoMultiTenantService
     ) throws BadHookConfiguration {
-        return new MongoDbFhirService(List.of(new GenericSerializer(searchConfig, fhirContext)),
+        var ms = new MongoDbFhirService(List.of(new GenericSerializer(searchConfigService, fhirContext)),
                 new FhirBaseResourceDeSerializer(fhirContext),
-                mongoClient,
-                searchConfig,
+                searchConfigService,
                 fhirContext,
                 new HookService(context),
-                maxIncludePageSize,
-                databaseService
+                mongoMultiTenantService
         );
+        TenantUtil.setCurrentTenant(DEMO_TENANT);
+        return ms;
     }
 
 
-    /**
-     * The name of the mongodb database
-     */
     @Bean
-    DatabaseService databaseService(@Value("${afas.mongodb.dbname}") String name) {
-        return new SimpleDatabaseService(name);
+    AfasConfiguration afasConfiguration() {
+        return new AfasConfiguration();
     }
+
 
     /**
      * The fhir context
@@ -116,17 +120,22 @@ public class TestFhirApplication {
     /**
      * The expression factory
      *
-     * @param searchConfig the search config
+     * @param searchConfigService the search config
      * @return the expression factory
      */
     @Bean
-    public ExpressionFactory<Bson> expressionFactory(SearchConfig searchConfig) {
-        return new MongoDbExpressionFactory(searchConfig);
+    public ExpressionFactory<Bson> expressionFactory(SearchConfigService searchConfigService) {
+        return new MongoDbExpressionFactory(searchConfigService);
     }
 
     @Bean
-    public SearchConfig searchConfig() {
-        return new CompositeSearchConfig(List.of(new ASComplexSearchConfig()));
+    public SearchConfigService searchConfig() {
+        return new CompositeSearchConfigService(List.of(new ASComplexSearchConfig()));
+    }
+
+    @Bean
+    public ServerSearchConfig serverSearchConfig() {
+        return new ServerSearchConfig(Map.of(DEMO_TENANT, new ASComplexSearchConfig()));
     }
 
     /**
@@ -146,16 +155,35 @@ public class TestFhirApplication {
      */
     @Bean
     @Inject
-    ExpressionSerializer<Bson> expressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
-        return new MongoDbExpressionSerializer(expressionFactory, searchConfig);
+    ExpressionSerializer<Bson> expressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfigService searchConfigService) {
+        return new MongoDbExpressionSerializer(expressionFactory, searchConfigService);
     }
 
     @Bean
     @Inject
-    NextUrlManager<Bson> nextUrlManager(MongoClient mongoClient, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter,
+    NextUrlManager<Bson> nextUrlManager(MongoMultiTenantService mongoMultiTenantService, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter,
                                         @Value("${spring.data.mongodb.database}") String dbName
     ) {
-        return new MongoDbNextUrlManager(mongoClient, maxNextUrlLength, expressionSerializer, serializeUrlEncrypter, dbName);
+        return new MongoDbNextUrlManager(mongoMultiTenantService, maxNextUrlLength, expressionSerializer, serializeUrlEncrypter, dbName);
+    }
+
+
+    @Bean
+    @Inject
+    GenericSerializer genericSerializer(SearchConfigService searchConfigService, FhirContext fhirContext) {
+        return new GenericSerializer(searchConfigService, fhirContext);
+    }
+
+    @Bean
+    @Inject
+    IndexService indexService(FhirStoreService<Bson> fhirStoreService, ExpressionFactory<Bson> expressionFactory, SearchConfigService searchConfigService, GenericSerializer genericSerializer) {
+        return new DefaultIndexService(fhirStoreService, expressionFactory, searchConfigService, genericSerializer);
+    }
+
+
+    @Bean
+    MongoMultiTenantService multiTenantService() {
+        return new MongoMultiTenantService();
     }
 
 }

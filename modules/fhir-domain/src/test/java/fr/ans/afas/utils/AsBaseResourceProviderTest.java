@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.utils;
 
 
@@ -95,7 +94,7 @@ public class AsBaseResourceProviderTest {
         protected SomeAsBaseResourceProvider() {
             super(service);
 
-            Mockito.when(service.store(Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean())).then((a) -> {
+            Mockito.when(service.store(Mockito.any(), Mockito.anyBoolean(), Mockito.anyBoolean())).then(a -> {
                 if (updateOk) {
                     var ret = new ArrayList<IIdType>();
                     var id = new IdType("Device", "01");
@@ -107,7 +106,7 @@ public class AsBaseResourceProviderTest {
                 }
             });
 
-            Mockito.when(service.delete(Mockito.any(), Mockito.any())).then((a) -> deleteOk);
+            Mockito.when(service.delete(Mockito.any(), Mockito.any())).then(a -> deleteOk);
 
 
         }

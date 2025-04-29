@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhir.servlet.utils;
 
 import ca.uhn.fhir.context.FhirContext;
@@ -25,6 +24,8 @@ public class MockedFhirPageIterator implements FhirPageIterator {
     String lastId = "";
     int index = 0;
     int count = 0;
+
+    Set<String> elements = new HashSet<>();
 
     boolean hasNextPage = false;
 
@@ -75,8 +76,21 @@ public class MockedFhirPageIterator implements FhirPageIterator {
     }
 
     @Override
+    public void clearIncludesTypeReference() {
+    }
+
+    @Override
     public Set<String> getRevIncludeIds() {
-        return null;
+        return new HashSet<>();
+    }
+
+    @Override
+    public void clearRevIncludeIds() {
+    }
+
+    @Override
+    public Set<String> getElements() {
+        return elements;
     }
 
     @Override

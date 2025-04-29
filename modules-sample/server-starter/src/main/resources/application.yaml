@@ -8,6 +8,8 @@ project:
 
 afas:
   fhir:
+    includes:
+      buffer-size: 100
     audit:
       enabled: true
       read: true

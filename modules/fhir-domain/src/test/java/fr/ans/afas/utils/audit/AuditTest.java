@@ -1,3 +1,6 @@
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
+ */
 package fr.ans.afas.utils.audit;
 
 import fr.ans.afas.audit.AuditFilter;
@@ -5,6 +8,10 @@ import fr.ans.afas.audit.AuditUtils;
 import fr.ans.afas.fhirserver.hook.event.*;
 import fr.ans.afas.fhirserver.hook.service.HookService;
 import fr.ans.afas.utils.MinimalSbApplication;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.hl7.fhir.r4.model.Device;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Patient;
@@ -17,10 +24,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.inject.Inject;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.ArrayDeque;
 

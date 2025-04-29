@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.service;
 
 import fr.ans.afas.fhirserver.search.data.TotalMode;
@@ -12,6 +11,7 @@ import fr.ans.afas.fhirserver.search.expression.SelectExpression;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.Device;
 import org.junit.AfterClass;
@@ -37,6 +37,7 @@ import java.util.List;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = TestFhirApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "afas.fhir.max-count-calculation-time=1")
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
+
 public class CountModeBestEffortIT {
 
 
@@ -49,6 +50,9 @@ public class CountModeBestEffortIT {
      */
     @Inject
     ExpressionFactory<Bson> expressionFactory;
+
+    @Inject
+    MongoMultiTenantService multiTenantService;
 
     /**
      * Stop docker

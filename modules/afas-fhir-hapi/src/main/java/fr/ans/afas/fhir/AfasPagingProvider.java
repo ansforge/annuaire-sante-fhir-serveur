@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhir;
 
 import ca.uhn.fhir.rest.api.server.IBundleProvider;
@@ -58,6 +57,7 @@ public class AfasPagingProvider<T> implements IPagingProvider {
      */
     @Inject
     NextUrlManager<T> nextUrlManager;
+
 
     @Override
     public int getDefaultPageSize() {

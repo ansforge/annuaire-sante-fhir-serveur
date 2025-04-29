@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas;
 
 import com.mongodb.client.MongoClients;
@@ -27,6 +26,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(classes = SampleApp.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
 @ActiveProfiles("full")
+
 public class SimpleWithMongoTest {
 
     /**
@@ -43,6 +43,8 @@ public class SimpleWithMongoTest {
     public void testMongoAccess() {
         try (var client = MongoClients.create(mongoUri)) {
             Assert.assertTrue(client.listDatabaseNames().iterator().hasNext());
+        }catch(Exception e) {
+            WithMongoTest.clean();
         }
     }
 

@@ -1,13 +1,13 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.service;
 
 import com.mongodb.client.MongoClient;
 import fr.ans.afas.config.CleanRevisionDataConfiguration;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import org.hl7.fhir.r4.model.Device;
 import org.junit.Assert;
 import org.junit.Before;
@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = TestFhirApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
+
 public class DeleteOldRevisionsIT {
 
 
@@ -61,6 +62,9 @@ public class DeleteOldRevisionsIT {
     @Inject
     MongoClient mongoClient;
 
+    @Inject
+    MongoMultiTenantService multiTenantService;
+
     @Before
     public void init() {
         mongoDbFhirService.deleteAll();
@@ -82,7 +86,7 @@ public class DeleteOldRevisionsIT {
         d.setLotNumber("Lot " + i);
         mongoDbFhirService.store(List.of(d), true);
 
-        var deviceCollection = mongoClient.getDatabase(dbName).getCollection("Device");
+        var deviceCollection = multiTenantService.getCollection("Device");
         var countAll = deviceCollection.countDocuments();
         Assert.assertEquals(2, countAll);
 

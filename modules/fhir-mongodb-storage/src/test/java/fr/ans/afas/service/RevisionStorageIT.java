@@ -1,13 +1,13 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.service;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoClient;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import fr.ans.afas.rass.service.impl.MongoQueryUtils;
 import org.hl7.fhir.r4.model.Device;
 import org.hl7.fhir.r4.model.IdType;
@@ -38,6 +38,7 @@ import static org.awaitility.Awaitility.await;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = TestFhirApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
+
 public class RevisionStorageIT {
 
     /**
@@ -51,6 +52,9 @@ public class RevisionStorageIT {
      */
     @Inject
     MongoClient mongoClient;
+
+    @Inject
+    MongoMultiTenantService multiTenantService;
 
     /**
      * The name of the mongodb database
@@ -170,7 +174,7 @@ public class RevisionStorageIT {
         d.setId("123idupdate");
         d.setLotNumber("Lot 1");
         var t1 = new Date().getTime();
-        var collection = mongoClient.getDatabase(dbName).getCollection("Device");
+        var collection = multiTenantService.getCollection("Device");
 
         await().atLeast(10, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 20);
         // create

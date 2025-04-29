@@ -1,22 +1,18 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhir.servlet.read;
 
-import ca.uhn.fhir.context.FhirContext;
+import fr.ans.afas.exception.ResourceNotFoundException;
 import fr.ans.afas.fhir.servlet.error.ErrorWriter;
-import fr.ans.afas.fhir.servlet.exception.ResourceNotFoundException;
-import fr.ans.afas.fhirserver.service.FhirStoreService;
-import lombok.RequiredArgsConstructor;
+import fr.ans.afas.fhir.servlet.servletutils.DefaultWriteListener;
+import fr.ans.afas.fhirserver.service.FhirServerContext;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.IdType;
-
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import java.nio.charset.Charset;
-
 
 /**
  * Write a resource
@@ -24,49 +20,44 @@ import java.nio.charset.Charset;
  * @param <T>
  */
 @Slf4j
-@RequiredArgsConstructor
-public class ReadResourceWriteListener<T> implements WriteListener {
+public class ReadResourceWriteListener<T> extends DefaultWriteListener {
+
+    private final FhirServerContext<T> fhirServerContext;
 
     /**
      * The servlet output stream
      */
     private final ServletOutputStream sos;
 
-    /**
-     * The async context
-     */
-    private final AsyncContext context;
-
-    /**
-     * The fhir store service
-     */
-    private final FhirStoreService<T> fhirStoreService;
 
     /**
      * Parameters of the read operation
      */
     private final ReadSearchParams readSearchParams;
 
-    /**
-     * The fhir context
-     */
-    private final FhirContext fhirContext;
 
+    public ReadResourceWriteListener(FhirServerContext<T> fhirServerContext, ServletOutputStream sos, AsyncContext context, ReadSearchParams readSearchParams) {
+        super(context);
+        this.sos = sos;
+        this.fhirServerContext = fhirServerContext;
+        this.readSearchParams = readSearchParams;
+    }
 
     @Override
-    public void onWritePossible() {
+    public void onWritePossibleInTenant() {
         try {
-            var found = fhirStoreService.findById(this.readSearchParams.getResource(), new IdType(this.readSearchParams.getId()));
+            var found = fhirServerContext.getFhirStoreService().findById(this.readSearchParams.getResource(), new IdType(this.readSearchParams.getId()));
             if (found == null) {
                 throw new ResourceNotFoundException("Resource not found with id: " + this.readSearchParams.getId());
             }
-            sos.write(fhirContext.newJsonParser().encodeResourceToString(found).getBytes(Charset.defaultCharset()));
+            sos.write(fhirServerContext.getFhirContext().newJsonParser().encodeResourceToString(found).getBytes(Charset.defaultCharset()));
             context.complete();
         } catch (ResourceNotFoundException resourceNotFoundException) {
-            ErrorWriter.writeError(resourceNotFoundException, context);
+            ErrorWriter.writeError(resourceNotFoundException, context, HttpServletResponse.SC_NOT_FOUND);
             context.complete();
         } catch (Exception e) {
             log.debug("Error writing the request", e);
+            ErrorWriter.writeError("Unexpected error", context, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             context.complete();
         }
     }
@@ -75,6 +66,7 @@ public class ReadResourceWriteListener<T> implements WriteListener {
     @Override
     public void onError(Throwable throwable) {
         log.debug("Error writing the request", throwable);
+        ErrorWriter.writeError("Unexpected error", context, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         context.complete();
     }
 }

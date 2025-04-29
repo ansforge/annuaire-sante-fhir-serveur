@@ -1,10 +1,9 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir;
 
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
@@ -25,18 +24,18 @@ public class MongoDbIncludeExpression extends IncludeExpression<Bson> {
     /**
      * The search configuration
      */
-    final SearchConfig searchConfig;
+    final SearchConfigService searchConfigService;
 
     /**
      * Create a new include expression
      *
-     * @param searchConfig The search configuration
-     * @param type         the fhir type
-     * @param name         the name of the element to include
+     * @param searchConfigService The search configuration
+     * @param type                the fhir type
+     * @param name                the name of the element to include
      */
-    public MongoDbIncludeExpression(@NotNull SearchConfig searchConfig, @NotNull String type, @NotNull String name) {
+    public MongoDbIncludeExpression(@NotNull SearchConfigService searchConfigService, @NotNull String type, @NotNull String name) {
         super(type, name);
-        this.searchConfig = searchConfig;
+        this.searchConfigService = searchConfigService;
     }
 
 
@@ -48,7 +47,7 @@ public class MongoDbIncludeExpression extends IncludeExpression<Bson> {
      */
     @Override
     public Bson interpreter(ExpressionContext expressionContext) {
-        var config = searchConfig.getSearchConfigByResourceAndParamName(type, name);
+        var config = searchConfigService.getSearchConfigByResourceAndParamName(type, name);
         if (config.isEmpty()) {
             throw new BadConfigurationException("Search not supported on path: " + type + "." + name);
         }

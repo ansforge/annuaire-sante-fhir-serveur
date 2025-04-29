@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.search.expression;
 
 import java.util.ArrayList;
@@ -55,16 +54,6 @@ public abstract class AndExpression<T> implements ContainerExpression<T> {
 
     @Override
     public String toString() {
-        var sb = new StringBuilder();
-        var i = 0;
-        sb.append("(");
-        for (var e : this.expressions) {
-            if (i++ > 0) {
-                sb.append(" AND ");
-            }
-            sb.append(e);
-        }
-        sb.append(")");
-        return sb.toString();
+        return toString(this.expressions, " AND ");
     }
 }

@@ -1,10 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
- */
-
 package fr.ans.afas.fhirserver.provider;
 
 import ca.uhn.fhir.rest.annotation.IdParam;

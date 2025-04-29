@@ -1,17 +1,19 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhir.servlet.error;
 
+import ca.uhn.fhir.context.ConfigurationException;
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.parser.DataFormatException;
 import fr.ans.afas.fhirserver.service.exception.PublicException;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r4.model.OperationOutcome;
 
-import javax.servlet.AsyncContext;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -25,28 +27,41 @@ import java.io.PrintWriter;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ErrorWriter {
 
+
+    /**
+     * Write an OperationOutcome to an async context from a message.
+     *
+     * @param message the message of the operation outcome
+     * @param context the async context
+     */
+    public static void writeError(String message, AsyncContext context, int status) {
+        var operationOutcome = new OperationOutcome();
+        var operationOutcomeIssueComponent = operationOutcome.addIssue();
+        operationOutcomeIssueComponent.setCode(OperationOutcome.IssueType.EXCEPTION);
+        operationOutcomeIssueComponent.setSeverity(OperationOutcome.IssueSeverity.ERROR);
+        operationOutcomeIssueComponent.setDiagnostics(message);
+        HttpServletResponse response = (HttpServletResponse) context.getResponse();
+        response.setStatus(status);
+
+        try {
+            var writer = new PrintWriter(response.getOutputStream());
+            FhirContext.forR4().newJsonParser().encodeResourceToWriter(operationOutcome, writer);
+        } catch (IOException ex) {
+            log.debug("Error writing the error", ex);
+        }
+    }
+
     /**
      * Write an error as an OperationOutcome to an async context.
      *
      * @param e       the exception
      * @param context the async context
      */
-    public static void writeError(Exception e, AsyncContext context) {
-        var operationOutcome = new OperationOutcome();
-        var operationOutcomeIssueComponent = operationOutcome.addIssue();
-        operationOutcomeIssueComponent.setCode(OperationOutcome.IssueType.EXCEPTION);
-        operationOutcomeIssueComponent.setSeverity(OperationOutcome.IssueSeverity.ERROR);
-        if (e instanceof PublicException) {
-            operationOutcomeIssueComponent.setDiagnostics(e.getMessage());
+    public static void writeError(Exception e, AsyncContext context, int status) {
+        if (e instanceof PublicException || e instanceof DataFormatException || e instanceof ConfigurationException) {
+            ErrorWriter.writeError(e.getMessage(), context, status);
         } else {
-            operationOutcomeIssueComponent.setDiagnostics("Unknown error");
+            ErrorWriter.writeError("Unknown error", context, status);
         }
-        try {
-            var writer = new PrintWriter(context.getResponse().getOutputStream());
-            FhirContext.forR4().newJsonParser().encodeResourceToWriter(operationOutcome, writer);
-        } catch (IOException ex) {
-            log.debug("Error writing the error", e);
-        }
-
     }
 }

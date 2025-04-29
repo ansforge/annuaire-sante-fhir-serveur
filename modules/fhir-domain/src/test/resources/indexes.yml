@@ -1,10 +1,15 @@
 fhir:
   validationMode: strict
+  tenantConfig:
+    name: a
+    path: a
+    suffixCollection: a
   resources:
     - name: Patient
       profile: http://hl7.org/fhir/StructureDefinition/Patient
       searchParams:
         - name: _id
+          indexName: t_id
           urlParameter: _id
           searchType: token
           description: The device id
@@ -18,6 +23,7 @@ fhir:
             - path: active
           indexName: t_active
         - name: address
+          indexName: t_address
           urlParameter: address
           searchType: string
           description: A server defined search that may match any of the string fields in the Address, including line, city, district, state, country, postalCode, and/or text
@@ -40,6 +46,7 @@ fhir:
           field: managingOrganization.reference
       searchParams:
         - name: _id
+          indexName: t_id
           urlParameter: _id
           searchType: token
           description: The device id

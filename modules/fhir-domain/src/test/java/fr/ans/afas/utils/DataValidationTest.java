@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.utils;
 
 import fr.ans.afas.exception.BadDataFormatException;
@@ -26,7 +25,6 @@ public class DataValidationTest {
         DataValidationUtils.validateString("è^%\\//");
 
         // utf8
-        var a = "\u62FF\u4E23";
         DataValidationUtils.validateString("\u009a\u0084");
 
         var invalid = "\u0010";
@@ -42,7 +40,7 @@ public class DataValidationTest {
         DataValidationUtils.validateString(validSpecialChar13);
 
         // Too long string
-        var longString = IntStream.range(0, 1024 * 1024).mapToObj((b) -> "a").collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+        var longString = IntStream.range(0, 1024 * 1024).mapToObj(b -> "a").collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
                 .toString();
         DataValidationUtils.validateString(longString);
         Assert.assertThrows(BadDataFormatException.class, () -> DataValidationUtils.validateString(longString + "a"));
@@ -109,7 +107,7 @@ public class DataValidationTest {
         Assert.assertThrows(BadDataFormatException.class, () -> DataValidationUtils.validateIncludeParameter("Pr", "44568A "));
 
 
-        var longString = IntStream.range(0, 1024 * 1024).mapToObj((b) -> "a").collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+        var longString = IntStream.range(0, 1024 * 1024).mapToObj(b -> "a").collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
                 .toString();
         Assert.assertThrows(BadDataFormatException.class, () -> DataValidationUtils.validateIncludeParameter("Pr", longString));
         Assert.assertThrows(BadDataFormatException.class, () -> DataValidationUtils.validateIncludeParameter(longString, "ids"));

@@ -1,11 +1,14 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas;
 
+import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+import java.util.Map;
 
 /**
  * Sample application to test the test classes
@@ -20,5 +23,11 @@ public class SampleApp {
         SpringApplication.run(SampleApp.class, args);
     }
 
+    @Bean
+    ServerSearchConfig ServerSearchConfig() {
+        return ServerSearchConfig.builder()
+                .configs(Map.of())
+                .build();
+    }
 
 }

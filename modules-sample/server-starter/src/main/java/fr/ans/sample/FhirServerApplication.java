@@ -1,14 +1,16 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.sample;
 
 import fr.ans.afas.AfasServerConfigurerAdapter;
+import fr.ans.afas.fhir.servlet.service.FhirOperationFactory;
 import fr.ans.afas.fhirserver.search.config.SearchConfig;
 import fr.ans.afas.servlet.FhirServlet;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.context.annotation.Bean;
 
 /**
  * A sample application that expose a FHIR device endpoint with 2 search parameters.
@@ -40,6 +42,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * You can extend {@link AfasServerConfigurerAdapter} like this sample to configure some server information like the Hapi servlet.
  * @since 1.0.0
  */
+@ConfigurationPropertiesScan(basePackageClasses = fr.ans.afas.configuration.AfasConfiguration.class)
 @SpringBootApplication
 public class FhirServerApplication extends AfasServerConfigurerAdapter {
 
@@ -61,5 +64,13 @@ public class FhirServerApplication extends AfasServerConfigurerAdapter {
     @Override
     public void configureHapiServlet(FhirServlet fhirServlet) {
         fhirServlet.setServerName("My FHIR server");
+    }
+
+
+
+    // FIXME remove
+    @Bean
+    public FhirOperationFactory fhirOperationFactory() {
+        return new FhirOperationFactory();
     }
 }

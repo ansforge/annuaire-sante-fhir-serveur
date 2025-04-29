@@ -1,17 +1,17 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.utils;
 
-import fr.ans.afas.fhirserver.search.config.yaml.YamlSearchConfig;
-import org.junit.Assert;
+import fr.ans.afas.fhirserver.search.config.yaml.MultiConfigLoader;
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.inject.Inject;
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 /**
  * Test the property service for yaml configuration
@@ -23,36 +23,26 @@ import javax.inject.Inject;
 @SpringBootTest
 public class ConfigYamlTest {
 
-    @Inject
-    private YamlSearchConfig yamlSearchConfig;
 
     /**
-     * Test the nominal case
+     * Test the loading of multiple configs
      */
     @Test
-    public void testConfigOnly() {
-        var configs = yamlSearchConfig.getResources().iterator();
-        var patientConfig = configs.next();
-        Assert.assertEquals("Patient", patientConfig.getName());
-        Assert.assertEquals("http://hl7.org/fhir/StructureDefinition/Patient", patientConfig.getProfile());
-        var orgP1 = patientConfig.getSearchParams().get(1);
-        Assert.assertEquals("active", orgP1.getName());
-        Assert.assertEquals("active", orgP1.getUrlParameter());
-        Assert.assertEquals("token", orgP1.getSearchType());
-        Assert.assertEquals("Whether the patient record is active", orgP1.getDescription());
-        Assert.assertEquals("t_active", orgP1.getIndexName());
-        Assert.assertEquals(1, orgP1.getResourcePaths().size());
-        var rp = orgP1.getResourcePaths();
-        Assert.assertEquals("active", rp.get(0).getPath());
-        Assert.assertEquals("address.city", patientConfig.getSearchParams().get(2).getResourcePaths().get(1).getPath());
+    public void testMultipleConfigs() throws URISyntaxException, IOException {
 
-        var organizationConfig = configs.next();
-        Assert.assertEquals("Organization", organizationConfig.getName());
-        Assert.assertEquals(1, organizationConfig.getJoins().size());
-        Assert.assertEquals("Patient", organizationConfig.getJoins().get(0).getResource());
-        Assert.assertEquals("managingOrganization", organizationConfig.getJoins().get(0).getPath());
+        var m = new MultiConfigLoader();
+        var cs = m.loadConfigs("indexes/");
 
+        Assertions.assertEquals(2, cs.size());
 
+        var c1 = cs.get(0);
+        Assertions.assertNull(c1.getCopyright());
+        Assertions.assertEquals(1, c1.getResources().size());
+        Assertions.assertEquals("Patient", c1.getResources().iterator().next().getName());
+
+        var c2 = cs.get(1);
+        Assertions.assertEquals("Device", c2.getResources().iterator().next().getName());
     }
+
 
 }

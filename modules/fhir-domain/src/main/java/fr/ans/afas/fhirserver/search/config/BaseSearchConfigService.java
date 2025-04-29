@@ -1,25 +1,25 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.search.config;
 
+import fr.ans.afas.domain.StorageConstants;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.JoinPath;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
-import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
+import fr.ans.afas.fhirserver.search.config.domain.TenantSearchConfig;
 
 import java.util.*;
 
 /**
  * Base class for a search config service.
- * Implements {@link SearchConfig} methods based on a config passed into the constructor
+ * Implements {@link SearchConfigService} methods based on a config passed into the constructor
  *
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public abstract class BaseSearchConfigService implements SearchConfig {
+public abstract class BaseSearchConfigService implements SearchConfigService {
 
 
     /**
@@ -27,14 +27,14 @@ public abstract class BaseSearchConfigService implements SearchConfig {
      */
     protected final Map<String, FhirResourceSearchConfig> configs;
 
-    protected final ServerSearchConfig serverSearchConfig;
+    protected final TenantSearchConfig serverSearchConfig;
 
     /**
      * Construct the search config
      *
      * @param serverSearchConfig the configuration
      */
-    protected BaseSearchConfigService(ServerSearchConfig serverSearchConfig) {
+    protected BaseSearchConfigService(TenantSearchConfig serverSearchConfig) {
         this.serverSearchConfig = serverSearchConfig;
         this.configs = new HashMap<>();
         for (var r : serverSearchConfig.getResources()) {
@@ -91,14 +91,10 @@ public abstract class BaseSearchConfigService implements SearchConfig {
                     .getSearchParams()
                     .stream()
                     .filter(conf -> conf.getUrlParameter().equals(parts[2]))
-                    .map(p -> {
-                        var r = new SearchParamConfig();
-                        r.setName(r.getName());
-                        r.setIndexName(parts[0] + "." + parts[1] + "." + p.getIndexName());
-                        r.setResourcePaths(p.getResourcePaths());
-                        r.setUrlParameter(p.getUrlParameter());
-                        return r;
-                    })
+                    .map(p -> SearchParamConfig.builder()
+                            .name(p.getName())
+                            .indexName(parts[0] + "." + parts[1] + "." + p.getIndexName())
+                            .resourcePaths(p.getResourcePaths()).urlParameter(p.getUrlParameter()).searchType("string").build())
                     .findAny();
 
         } else {
@@ -116,8 +112,7 @@ public abstract class BaseSearchConfigService implements SearchConfig {
     }
 
     @Override
-    public ServerSearchConfig getServerSearchConfig() {
-        this.serverSearchConfig.setResources(configs.values());
+    public TenantSearchConfig getServerSearchConfig() {
         return this.serverSearchConfig;
     }
 
@@ -130,5 +125,44 @@ public abstract class BaseSearchConfigService implements SearchConfig {
                 .getJoins();
     }
 
+    @Override
+    public Set<String> getIndexesByFhirResource(String fhirResource) {
+        Set<String> indexes = new HashSet<>(getGenericIndexes());
 
+        for (var config : getAllByFhirResource(fhirResource)) {
+            if (config.isIndex()) {
+                switch (config.getSearchType()) {
+                    case StorageConstants.INDEX_TYPE_TOKEN -> {
+                        indexes.add(config.getIndexName() + StorageConstants.SYSTEM_SUFFIX);
+                        indexes.add(config.getIndexName() + StorageConstants.VALUE_SUFFIX);
+                        indexes.add(config.getIndexName() + StorageConstants.SYSVAL_SUFFIX);
+                    }
+                    case StorageConstants.INDEX_TYPE_REFERENCE -> {
+                        indexes.add(config.getIndexName() + StorageConstants.REFERENCE_SUFFIX);
+                        indexes.add(config.getIndexName() + StorageConstants.TYPE_SUFFIX);
+                        indexes.add(config.getIndexName() + StorageConstants.ID_SUFFIX);
+                    }
+                    default -> {
+                        indexes.add(config.getIndexName());
+                        indexes.add(config.getIndexName() + StorageConstants.INSENSITIVE_SUFFIX);
+                    }
+                }
+            }
+        }
+
+        return indexes;
+    }
+
+    private static List<String> getGenericIndexes() {
+        return Arrays.asList(
+                StorageConstants.INDEX_T_FID,
+                StorageConstants.INDEX_T_ID,
+                StorageConstants.INDEX_T_LASTUPDATED,
+                StorageConstants.INDEX_T_LASTUPDATED_SECOND,
+                StorageConstants.INDEX_T_LASTUPDATED_MINUTE,
+                StorageConstants.INDEX_T_LASTUPDATED_DATE,
+                StorageConstants.INDEX_T_LASTUPDATED_MONTH,
+                StorageConstants.INDEX_T_LASTUPDATED_YEAR
+        );
+    }
 }

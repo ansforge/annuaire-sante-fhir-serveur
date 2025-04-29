@@ -1,26 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~ (c) Copyright 1998-2023, ANS. All rights reserved.
-  -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>annuaire-sante-fhir-serveur</artifactId>
         <groupId>fr.ans</groupId>
-        <version>1.23.14</version>
+        <version>1.24.8-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>fhir-domain</artifactId>
-    <version>1.23.14</version>
+    <version>1.24.8-SNAPSHOT</version>
     <name>fhir-domain</name>
 
     <properties>
-        <java.version>11</java.version>
+        <java.version>17</java.version>
     </properties>
     <scm>
         <developerConnection>${developperConnectionJenkinsfile}</developerConnection>
-        <tag>annuaire-sante-fhir-serveur-1.23.14</tag>
+        <tag>HEAD</tag>
     </scm>
     <distributionManagement>
         <repository>
@@ -40,15 +36,21 @@
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>
             <artifactId>hapi-fhir-structures-r4</artifactId>
+            <version>${hapi.version}</version>
         </dependency>
         <dependency>
             <groupId>ca.uhn.hapi.fhir</groupId>
             <artifactId>hapi-fhir-validation-resources-r4</artifactId>
+            <version>${hapi.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
-            <version>2.0.0.Final</version>
+            <version>${javax.validation-api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -57,12 +59,12 @@
         <dependency>
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
-            <version>0.10.2</version>
+            <version>${reflections.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
-            <version>1</version>
+            <version>${javax.inject.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -72,9 +74,12 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <scope>test</scope>
-        </dependency>
 
+        </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -98,6 +103,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+        </dependency>
 
     </dependencies>
+
 </project>

@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir.searchconfig;
 
 import fr.ans.afas.domain.StorageConstants;
@@ -21,7 +20,7 @@ import java.util.List;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class ASComplexSearchConfig extends ServerSearchConfig {
+public class ASComplexSearchConfig extends TenantSearchConfig {
 
     public ASComplexSearchConfig() {
         var organizationSearchConfig = FhirResourceSearchConfig.builder().name("Organization").profile("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Organization").build();
@@ -58,7 +57,7 @@ public class ASComplexSearchConfig extends ServerSearchConfig {
         var jp = new JoinPath();
         jp.setResource("Device");
         jp.setPath("organization");
-        jp.setField("owner.reference");
+        jp.setField("owner");
         organizationSearchConfig.setJoins(List.of(jp));
 
         this.getResources().add(organizationSearchConfig);
@@ -99,6 +98,15 @@ public class ASComplexSearchConfig extends ServerSearchConfig {
         practitionerRoleSearchConfig.setSearchParams(practitionerRoleParams);
         this.getResources().add(practitionerRoleSearchConfig);
 
+
+        // add default tenant:
+        var tenant = new Tenant();
+        tenant.setName("tenant-1");
+        tenant.setPath("/t1");
+        tenant.setDbname("afastest");
+        tenant.setSuffixCollection("_0.1");
+
+        this.tenantConfig = tenant;
 
     }
 }

@@ -1,13 +1,13 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.servlet;
 
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
 import org.springframework.util.Assert;
 
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -42,7 +42,7 @@ public class MockedServletInputStream extends ServletInputStream {
     @Override
     public int available() throws IOException {
         int available = this.sourceStream.available();
-        if(available > 0) {
+        if (available > 0 && readListener != null) {
             readListener.onDataAvailable();
         }
         return available;
