@@ -70,11 +70,12 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
      * @param fhirPath path on which the expression applies
      * @param system   the system of the token
      * @param value    the value of the token
+     * @param operator the operator to use for the token expression
      * @return the expression
      */
     @Override
-    public TokenExpression<Bson> newTokenExpression(FhirSearchPath fhirPath, String system, String value) {
-        return new MongoDbTokenExpression(searchConfigService, fhirPath, system, value);
+    public TokenExpression<Bson> newTokenExpression(FhirSearchPath fhirPath, String system, String value, TokenExpression.Operator operator) {
+        return new MongoDbTokenExpression(searchConfigService, fhirPath, system, value, operator);
     }
 
     /**
@@ -189,7 +190,7 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
         } else {
             valueToUse = value;
         }
-        return this.newTokenExpression(paramPath, systemToUse, valueToUse);
+        return this.newTokenExpression(paramPath, systemToUse, valueToUse, TokenExpression.Operator.EQUALS);
     }
 
     private void newStringHasCondition(FhirSearchPath paramPath, List<String> values, HasCondition<Bson> hasCondition) {

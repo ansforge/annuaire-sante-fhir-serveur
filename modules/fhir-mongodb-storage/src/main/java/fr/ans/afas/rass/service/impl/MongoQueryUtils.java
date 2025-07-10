@@ -15,7 +15,6 @@ import com.mongodb.client.model.Sorts;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.config.domain.JoinPath;
-import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import fr.ans.afas.fhirserver.search.data.SearchContext;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.*;
@@ -26,7 +25,7 @@ import fr.ans.afas.rass.service.MongoMultiTenantService;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.*;
+import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
@@ -368,7 +367,7 @@ public class MongoQueryUtils {
     }
 
     private static Document generateProjection(SearchConfigService searchConfigService, String fhirResourceName, Set<String> elements) {
-        if(elements != null && !elements.isEmpty()) {
+        if (elements != null && !elements.isEmpty()) {
             Document document = new Document();
 
             // INTERN FIELDS OR REQUIRED
@@ -384,7 +383,7 @@ public class MongoQueryUtils {
 
             // COMPULSORY AND MODIFIERS FIELDS, fields that are compusory (cardinality min=1) or modifier (?!) in interop profile have to be included
             searchConfigService.getAllByFhirResource(fhirResourceName)
-                    .stream().filter(s-> s.getIsCompulsoryOrModifierElementsParam()!= null && s.getIsCompulsoryOrModifierElementsParam())
+                    .stream().filter(s -> s.getIsCompulsoryOrModifierElementsParam() != null && s.getIsCompulsoryOrModifierElementsParam())
                     .forEach(i -> document.append("fhir.".concat(i.getName()), 1));
 
             // ELEMENTS FIELDS (from search param _elements)

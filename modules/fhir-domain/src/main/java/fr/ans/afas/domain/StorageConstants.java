@@ -96,6 +96,7 @@ public final class StorageConstants {
     public static final String INDEX_PRACTITIONER_ROLE_FAMILY = "t_family";
     public static final String INDEX_PRACTITIONER_ROLE_GIVEN = "t_given";
     public static final String INDEX_PRACTITIONER_ROLE_ROLE = "t_role";
+    public static final String INDEX_ORGANIZATION_ADDRESS_LINE = "t_address-line";
 
 
     private StorageConstants() {

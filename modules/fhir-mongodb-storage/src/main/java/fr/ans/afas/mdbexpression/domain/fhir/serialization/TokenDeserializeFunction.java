@@ -7,6 +7,7 @@ import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
+import fr.ans.afas.fhirserver.search.expression.TokenExpression;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbTokenExpression;
 import org.bson.conversions.Bson;
@@ -29,7 +30,8 @@ public class TokenDeserializeFunction implements DeserializeFunction<Bson> {
         var valueData = URLDecoder.decode(parts[1], StandardCharsets.UTF_8);
         var resource = parts[2];
         var path = parts[3];
+        var operator = TokenExpression.Operator.values()[Integer.parseInt(parts[4])];
         var fhirSearchPath = FhirSearchPath.builder().resource(resource).path(path).build();
-        return new MongoDbTokenExpression(searchConfigService, fhirSearchPath, system, valueData);
+        return new MongoDbTokenExpression(searchConfigService, fhirSearchPath, system, valueData,operator);
     }
 }

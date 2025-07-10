@@ -3,16 +3,17 @@
   ~ (c) Copyright 1998-2023, ANS. All rights reserved.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>annuaire-sante-fhir-serveur</artifactId>
         <groupId>fr.ans</groupId>
-        <version>1.24.8-SNAPSHOT</version>
+        <version>1.25.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>afas-fhir-servlet</artifactId>
-    <version>1.24.8-SNAPSHOT</version>
+    <version>1.25.0-SNAPSHOT</version>
     <name>afas-fhir-servlet</name>
     <description>
         AFAS Module for the hapi binding

@@ -13,7 +13,7 @@ import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
 import fr.ans.afas.fhirserver.search.expression.StringExpression;
-import fr.ans.afas.fhirserver.service.exception.BadRequestException;
+import fr.ans.afas.fhirserver.search.expression.TokenExpression;
 import fr.ans.afas.fhirserver.service.exception.CantWriteFhirResource;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbDateRangeExpression;
@@ -296,7 +296,7 @@ public class MongoDbFhirServiceIT {
             this.mongoDbFhirService.store(List.of(d2), true);
         }
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
-        selectExpression.getExpression().addExpression(new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().path("_id").resource("Device").build(), null, "ID1"));
+        selectExpression.getExpression().addExpression(new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().path("_id").resource("Device").build(), null, "ID1", TokenExpression.Operator.EQUALS));
         selectExpression.setCount(1);
         var fhirPageIterator = this.mongoDbFhirService.iterate(null, selectExpression);
 

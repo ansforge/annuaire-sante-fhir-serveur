@@ -7,7 +7,7 @@ Ce guide vous permet de contribuer au développement de l'application.
 * Maven 3
 * git
 * docker/docker-compose (ou mongodb)
-* java 11 (openjdk)
+* java 17 (openjdk)
 
 ## Démarrage pour le développeur
 

@@ -49,9 +49,10 @@ public class MongoDbTokenExpression extends TokenExpression<Bson> {
      * @param fhirPath            the fhir path
      * @param system              the system
      * @param value               the value
+     * @param operator            the operator
      */
-    public MongoDbTokenExpression(@NotNull SearchConfigService searchConfigService, @NotNull FhirSearchPath fhirPath, String system, String value) {
-        super(fhirPath, system, value);
+    public MongoDbTokenExpression(@NotNull SearchConfigService searchConfigService, @NotNull FhirSearchPath fhirPath, String system, String value, @NotNull Operator operator) {
+        super(fhirPath, system, value, operator);
         this.searchConfigService = searchConfigService;
     }
 
@@ -62,13 +63,16 @@ public class MongoDbTokenExpression extends TokenExpression<Bson> {
             throw new BadConfigurationException("Search not supported on path: " + fhirPath);
         }
         Bson ret = null;
-        if (StringUtils.hasText(this.system) && StringUtils.hasLength(this.value)) {
+        if (operator.equals(Operator.NOT)) {
+            ret = Filters.not(Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_VALUE, value));
+        } else if (StringUtils.hasText(this.system) && StringUtils.hasLength(this.value)) {
             ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSVAL, system + "|" + value);
         } else if (!StringUtils.hasLength(this.system)) {
             ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_VALUE, value);
         } else if (!StringUtils.hasLength(this.value)) {
             ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSTEM, system);
         }
+
         return ret;
     }
 

@@ -185,6 +185,10 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
         sb.append(tokenExpression.getFhirPath().getResource());
         sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
         sb.append(tokenExpression.getFhirPath().getPath());
+
+        sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+        sb.append(tokenExpression.getOperator().ordinal());
+
         return sb.toString();
     }
 

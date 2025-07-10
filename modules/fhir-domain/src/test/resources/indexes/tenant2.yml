@@ -1,0 +1,12 @@
+fhir:
+  validationMode: strict
+  resources:
+    - name: Device
+      profile: http://hl7.org/fhir/StructureDefinition/Device
+      searchParams:
+        - name: _id
+          urlParameter: _id
+          searchType: token
+          description: The device id
+          resourcePaths:
+            - path: id

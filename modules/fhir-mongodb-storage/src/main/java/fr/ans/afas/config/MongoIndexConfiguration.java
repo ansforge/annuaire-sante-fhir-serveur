@@ -15,6 +15,7 @@ import fr.ans.afas.utils.TenantUtil;
 import jakarta.annotation.PostConstruct;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Value;
+
 import javax.inject.Inject;
 import java.util.Set;
 

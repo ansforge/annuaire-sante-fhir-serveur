@@ -46,9 +46,9 @@ public class CapabilityStatementReadListener<T> implements ReadListener {
 
     @Override
     public void onAllDataRead() throws IOException {
-            var output = response.getOutputStream();
-            var writeListener = new CapabilityStatementWriteListener<>(fhirServerContext, output, asyncContext);
-            output.setWriteListener(writeListener);
+        var output = response.getOutputStream();
+        var writeListener = new CapabilityStatementWriteListener<>(fhirServerContext, output, asyncContext);
+        output.setWriteListener(writeListener);
     }
 
     @Override

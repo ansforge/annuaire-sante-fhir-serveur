@@ -21,6 +21,7 @@ import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Iterator;
@@ -224,7 +225,6 @@ public abstract class AbstractFhirBundleWriteListener<T> extends DefaultWriteLis
         log.error("Error reading the request", throwable);
         context.complete();
     }
-
 
 
     enum RenderingState {

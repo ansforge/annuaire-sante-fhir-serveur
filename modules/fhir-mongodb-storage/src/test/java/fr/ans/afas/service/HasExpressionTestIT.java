@@ -9,10 +9,7 @@ import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
-import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
-import fr.ans.afas.fhirserver.search.expression.HasCondition;
-import fr.ans.afas.fhirserver.search.expression.SelectExpression;
-import fr.ans.afas.fhirserver.search.expression.StringExpression;
+import fr.ans.afas.fhirserver.search.expression.*;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbOrExpression;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbStringExpression;
@@ -122,7 +119,7 @@ public class HasExpressionTestIT {
 
         // the has expression for practitionerRole:
         var orPr = new MongoDbOrExpression();
-        var tokenExpressionPr = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code1");
+        var tokenExpressionPr = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code1",TokenExpression.Operator.EQUALS);
         orPr.addExpression(tokenExpressionPr);
         var hasConditionPr = new HasCondition<Bson>(FhirSearchPath.builder().resource("PractitionerRole").path("organization").build());
         hasConditionPr.addExpression(orPr);
@@ -136,7 +133,7 @@ public class HasExpressionTestIT {
 
         // one condition is ko:
         var orPrKo = new MongoDbOrExpression();
-        var tokenExpressionPrKo = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code2");
+        var tokenExpressionPrKo = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code2",TokenExpression.Operator.EQUALS);
         orPrKo.addExpression(tokenExpressionPrKo);
         var hasConditionPrKo = new HasCondition<Bson>(FhirSearchPath.builder().resource("PractitionerRole").path("organization").build());
         hasConditionPrKo.addExpression(orPrKo);
@@ -153,8 +150,8 @@ public class HasExpressionTestIT {
         var selectExpression = new SelectExpression<>("Practitioner", expressionFactory);
         // the has expression:
         var or = new MongoDbOrExpression();
-        var stringExpression = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code1");
-        var stringExpressio2n = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code2");
+        var stringExpression = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code1",TokenExpression.Operator.EQUALS);
+        var stringExpressio2n = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code2", TokenExpression.Operator.EQUALS);
         or.addExpression(stringExpression);
         or.addExpression(stringExpressio2n);
         var hasCondition = new HasCondition<Bson>(FhirSearchPath.builder().resource("PractitionerRole").path("practitioner").build());

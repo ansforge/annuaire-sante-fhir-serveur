@@ -2,7 +2,8 @@
 <!--
   ~ (c) Copyright 1998-2023, ANS. All rights reserved.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -11,10 +12,10 @@
     </parent>
     <groupId>fr.ans</groupId>
     <artifactId>annuaire-sante-fhir-serveur</artifactId>
-    <version>1.24.8-SNAPSHOT</version>
+    <version>1.25.0-SNAPSHOT</version>
     <name>annuaire-sante-fhir-serveur</name>
     <packaging>pom</packaging>
-    <description>A FHIR server based on Hapi and MongoDB to expose FHIR resources.</description>
+    <description>A FHIR server</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-license-plugin.version>3.0</maven-license-plugin.version>
@@ -33,10 +34,11 @@
         <jetbrains.annotations.version>17.0.0</jetbrains.annotations.version>
         <sonar.coverage.exclusions>modules/fhir-server-test-lib/**, modules/afas-fhir-hapi/**,
             **/AfasConfiguration.java, **/CombinedCursor.java, **/MongoIndexConfiguration.java,
-        **/FhirServerContext.java, **/MultiTenantSearchConfigService.java, **/PagingData.java,
+            **/FhirServerContext.java, **/MultiTenantSearchConfigService.java, **/PagingData.java,
             modules/fhir-domain/src/main/java/fr/ans/afas/fhirserver/**, **/FhirQueryNextPageReadListener.java,
-        **/IndexResourceOperation.java, **/IndexResourceStatusOperation.java,**/FhirQueryFirstPageReadListener.java,
-        **/TransactionReadListener.java, **/FhirResourceServlet.java</sonar.coverage.exclusions>
+            **/IndexResourceOperation.java, **/IndexResourceStatusOperation.java,**/FhirQueryFirstPageReadListener.java,
+            **/TransactionReadListener.java, **/FhirResourceServlet.java
+        </sonar.coverage.exclusions>
     </properties>
     <modules>
         <module>modules/fhir-domain</module>

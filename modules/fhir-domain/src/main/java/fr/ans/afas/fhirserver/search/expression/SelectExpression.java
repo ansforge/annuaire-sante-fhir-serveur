@@ -17,6 +17,7 @@ import fr.ans.afas.utils.SelectExpressionMatching;
 import fr.ans.afas.validation.DataValidationUtils;
 import lombok.Getter;
 import org.springframework.util.Assert;
+
 import javax.validation.constraints.NotNull;
 import java.util.*;
 
@@ -113,7 +114,7 @@ public class SelectExpression<T> implements Expression<T> {
                     String value = Optional.ofNullable(tokenParam.getValue()).map(String::trim).filter(s -> !s.isEmpty()).orElse(null);
                     DataValidationUtils.validateTokenParameter(system);
                     DataValidationUtils.validateTokenParameter(value);
-                    return orExpression.or(expressionFactory.newTokenExpression(path, system, value));
+                    return orExpression.or(expressionFactory.newTokenExpression(path, system, value, resolveOperatorToken(tokenParam)));
                 })
                 .orWhen(StringParam.class::equals, (OrExpression<T> orExpression, FhirSearchPath path, Object param) -> {
                     var stringParam = (StringParam) param;
@@ -241,7 +242,7 @@ public class SelectExpression<T> implements Expression<T> {
      * Convert the operator from Hapi
      *
      * @param param the Hapi param
-     * @return the operator of the spring expression
+     * @return the operator of the string expression
      */
     private StringExpression.Operator resolveOperator(StringParam param) {
         StringExpression.Operator operator;
@@ -252,6 +253,25 @@ public class SelectExpression<T> implements Expression<T> {
         } else {
             operator = StringExpression.Operator.EQUALS;
         }
+        return operator;
+    }
+
+    /**
+     * Convert the operator from Hapi
+     *
+     * @param param the Hapi param
+     * @return the operator of the token expression
+     */
+    private TokenExpression.Operator resolveOperatorToken(TokenParam param) {
+        TokenExpression.Operator operator;
+
+        if (param.getModifier() != null && param.getModifier().isNegative()) {
+            operator = TokenExpression.Operator.NOT;
+        } else {
+            operator = TokenExpression.Operator.EQUALS;
+
+        }
+
         return operator;
     }
 

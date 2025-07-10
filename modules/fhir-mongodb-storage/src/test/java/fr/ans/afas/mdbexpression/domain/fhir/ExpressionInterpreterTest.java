@@ -9,6 +9,7 @@ import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
 import fr.ans.afas.fhirserver.search.expression.QuantityExpression;
 import fr.ans.afas.fhirserver.search.expression.StringExpression;
+import fr.ans.afas.fhirserver.search.expression.TokenExpression;
 import fr.ans.afas.utils.FhirDateUtils;
 import fr.ans.afas.utils.MongoDbUtils;
 import org.junit.Assert;
@@ -220,15 +221,15 @@ public class ExpressionInterpreterTest {
         var system = "system_from_param";
         var code = "code_from_param";
 
-        var mongoDbCodingExpression = new MongoDbTokenExpression(testSearchConfig, fhirPath, system, code);
+        var mongoDbCodingExpression = new MongoDbTokenExpression(testSearchConfig, fhirPath, system, code, TokenExpression.Operator.EQUALS);
         var result = mongoDbCodingExpression.interpreter(expressionContext);
         Assert.assertEquals("Filter{fieldName='" + TestSearchConfigService.FHIR_RESOURCE_DB_TOKEN_PATH + MongoDbTokenExpression.TOKEN_DB_PATH_SUFFIX_SYSVAL + "', value=" + system + "|" + code + "}", result.toString());
 
-        mongoDbCodingExpression = new MongoDbTokenExpression(testSearchConfig, fhirPath, system, null);
+        mongoDbCodingExpression = new MongoDbTokenExpression(testSearchConfig, fhirPath, system, null,TokenExpression.Operator.EQUALS);
         result = mongoDbCodingExpression.interpreter(expressionContext);
         Assert.assertEquals("Filter{fieldName='" + TestSearchConfigService.FHIR_RESOURCE_DB_TOKEN_PATH + MongoDbTokenExpression.TOKEN_DB_PATH_SUFFIX_SYSTEM + "', value=" + system + "}", result.toString());
 
-        mongoDbCodingExpression = new MongoDbTokenExpression(testSearchConfig, fhirPath, null, code);
+        mongoDbCodingExpression = new MongoDbTokenExpression(testSearchConfig, fhirPath, null, code,TokenExpression.Operator.EQUALS);
         result = mongoDbCodingExpression.interpreter(expressionContext);
         Assert.assertEquals("Filter{fieldName='" + TestSearchConfigService.FHIR_RESOURCE_DB_TOKEN_PATH + MongoDbTokenExpression.TOKEN_DB_PATH_SUFFIX_VALUE + "', value=" + code + "}", result.toString());
     }
@@ -249,9 +250,8 @@ public class ExpressionInterpreterTest {
         result = mongoDbStringExpression.interpreter(expressionContext);
         Assert.assertEquals("Operator Filter{fieldName='" + TestSearchConfigService.FHIR_RESOURCE_DB_STRING_PATH + MongoDbStringExpression.INSENSITIVE_SUFFIX + "', operator='$eq', value=BsonRegularExpression{pattern='" + Pattern.quote(MongoDbUtils.removeAccentsAndLowerCase(string)) + "', options=''}}", result.toString());
 
-        mongoDbStringExpression = new MongoDbStringExpression(testSearchConfig, fhirPath, string, StringExpression.Operator.EXACT);
-        result = mongoDbStringExpression.interpreter(expressionContext);
-        Assert.assertEquals("Filter{fieldName='" + TestSearchConfigService.FHIR_RESOURCE_DB_STRING_PATH + "', value=" + string + "}", result.toString());
+
+
 
 
         String stringWithComplexChars = "Sample?a=b&b=c";

@@ -130,6 +130,9 @@ public class FhirRequestParser {
         var tokenOrListParam = new TokenOrListParam();
         for (var oneVal : parsedParam.getParamValues()) {
             var tp = new TokenParam();
+            if ("not".equals(parsedParam.getModifier())) {
+                tp.setModifier(TokenParamModifier.forValue(":not"));
+            }
             var indexSplitToken = oneVal.indexOf('|');
             if (indexSplitToken >= 0) {
                 var system = oneVal.substring(0, indexSplitToken);

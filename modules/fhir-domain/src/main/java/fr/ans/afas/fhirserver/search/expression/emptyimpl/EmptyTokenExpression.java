@@ -6,6 +6,7 @@ package fr.ans.afas.fhirserver.search.expression.emptyimpl;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
+import fr.ans.afas.fhirserver.search.expression.StringExpression;
 import fr.ans.afas.fhirserver.search.expression.TokenExpression;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 
@@ -17,8 +18,8 @@ public class EmptyTokenExpression extends TokenExpression<String> {
      * @param system   The system
      * @param code     The code
      */
-    public EmptyTokenExpression(FhirSearchPath fhirPath, String system, String code) {
-        super(fhirPath, system, code);
+    public EmptyTokenExpression(FhirSearchPath fhirPath, String system, String code, Operator operator) {
+        super(fhirPath, system, code,operator);
     }
 
     @Override

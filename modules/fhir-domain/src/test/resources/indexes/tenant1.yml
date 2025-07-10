@@ -1,0 +1,12 @@
+fhir:
+  validationMode: strict
+  resources:
+    - name: Patient
+      profile: http://hl7.org/fhir/StructureDefinition/Patient
+      searchParams:
+        - name: _id
+          urlParameter: _id
+          searchType: token
+          description: The device id
+          resourcePaths:
+            - path: id

@@ -48,7 +48,7 @@ public interface ExpressionFactory<T> {
      * @param value    the value of the token
      * @return the expression
      */
-    TokenExpression<T> newTokenExpression(FhirSearchPath fhirPath, String system, String value);
+    TokenExpression<T> newTokenExpression(FhirSearchPath fhirPath, String system, String value,TokenExpression.Operator operator);
 
     /**
      * Create a new reference expression

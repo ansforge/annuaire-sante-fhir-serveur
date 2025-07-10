@@ -22,7 +22,6 @@ import fr.ans.afas.fhirserver.hook.event.*;
 import fr.ans.afas.fhirserver.hook.service.HookService;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.SearchConfigService;
-import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import fr.ans.afas.fhirserver.search.data.SearchContext;
 import fr.ans.afas.fhirserver.search.expression.IncludeExpression;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
@@ -49,6 +48,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -488,7 +488,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
     }
 
     /**
-     * @deprecated (Used for version HAPI (V1))
+     * @deprecated (Used for version HAPI ( V1))
      */
     @Deprecated(forRemoval = true)
     @NotNull

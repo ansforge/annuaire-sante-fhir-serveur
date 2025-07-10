@@ -9,10 +9,7 @@ import ca.uhn.fhir.rest.param.ParamPrefixEnum;
 import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.FhirServerConstants;
-import fr.ans.afas.fhirserver.search.expression.AndExpression;
-import fr.ans.afas.fhirserver.search.expression.QuantityExpression;
-import fr.ans.afas.fhirserver.search.expression.SelectExpression;
-import fr.ans.afas.fhirserver.search.expression.StringExpression;
+import fr.ans.afas.fhirserver.search.expression.*;
 import fr.ans.afas.fhirserver.service.exception.ReferenceTypeNotFoundException;
 import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
 import org.bson.conversions.Bson;
@@ -25,7 +22,6 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertThrows;
-import static org.mockito.Mockito.doThrow;
 
 /**
  * Test the serialization of Expression for MongoDB
@@ -59,7 +55,7 @@ public class ExpressionSerializationTest {
     final MongoDbReferenceExpression mongoDbReferenceExpression = new MongoDbReferenceExpression(testSearchConfig, referenceFhirPath, TestSearchConfigService.REFERENCE_PATH_REFERENCE_TYPE, sampleId);
     final MongoDbReferenceExpression mongoDbReferenceExpressionWithoutReferenceType = new MongoDbReferenceExpression(new TestSearchConfigService().applyTestSearchConfigReferencePathWithoutReferenceType(), referenceFhirPath, null, sampleId);
     final MongoDbQuantityExpression mongoDbQuantityExpression = new MongoDbQuantityExpression(testSearchConfig, quantityFhirPath, quantity, QuantityExpression.Operator.EQUALS);
-    final MongoDbTokenExpression mongoDbTokenExpression = new MongoDbTokenExpression(testSearchConfig, tokenFhirPath, system, code);
+    final MongoDbTokenExpression mongoDbTokenExpression = new MongoDbTokenExpression(testSearchConfig, tokenFhirPath, system, code, TokenExpression.Operator.EQUALS);
     final MongoDbStringExpression mongoDbStringExpression = new MongoDbStringExpression(testSearchConfig, stringFhirPath, string, StringExpression.Operator.EQUALS);
     final MongoDbStringExpression mongoDbStringExpression2 = new MongoDbStringExpression(testSearchConfig, stringFhirPath2, string2, StringExpression.Operator.CONTAINS);
 
