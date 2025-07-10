@@ -1,3 +1,7 @@
+> ⚠️ **Attention** : La documentation n'est pas encore à jour.  
+> Elle sera prochainement mise à jour pour refléter les dernières évolutions.  
+> ✅ Le code source, en revanche, est **synchronisé avec la dernière version** de l'annuaire santé.
+
 # Serveur FHIR de l'annuaire santé IRIS DP - code source
 
 
