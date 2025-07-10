@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.provider;
 
 import ca.uhn.fhir.context.FhirContext;
@@ -59,25 +58,27 @@ public class DeviceProvider<T> extends AsBaseResourceProvider<T> implements IRes
         this.nextUrlManager = nextUrlManager;
     }
 
+    // The number of parameters is due to the Hapi framework
+    @SuppressWarnings("java:S107")
     @Search()
     public IBundleProvider search(@Count Integer theCount,
                                   @OptionalParam(name = Device.SP_IDENTIFIER)
-                                          TokenAndListParam theIdentifier,
+                                  TokenAndListParam theIdentifier,
                                   @OptionalParam(name = Device.SP_DEVICE_NAME)
-                                              StringAndListParam theName,
+                                      StringAndListParam theName,
                                   @OptionalParam(name = Device.SP_ORGANIZATION)
-                                              ReferenceAndListParam theOwner,
+                                      ReferenceAndListParam theOwner,
                                   @Description(shortDefinition = "Recherche sur le type de l'équipement matériel lourd")
                                       @OptionalParam(name = Device.SP_TYPE)
-                                              TokenAndListParam theType,
+                                      TokenAndListParam theType,
                                   @OptionalParam(name = "_lastUpdated")
-                                              DateRangeParam theLastUpdated,
+                                      DateRangeParam theLastUpdated,
                                   @IncludeParam(reverse = true)
-                                              Set<Include> theRevIncludes,
+                                      Set<Include> theRevIncludes,
                                   @IncludeParam(allow = {
                                           "Device:organization", "*"
                                   })
-                                              Set<Include> theIncludes
+                                      Set<Include> theIncludes
     ) throws BadDataFormatException {//
         var selectExpression = new SelectExpression<>(FhirServerConstants.DEVICE_FHIR_RESOURCE_NAME, expressionFactory);
         selectExpression.setCount(theCount);

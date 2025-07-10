@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.service;
 
 
@@ -115,6 +114,17 @@ public interface FhirStoreService<T> {
      */
     boolean delete(String type, IIdType theId);
 
+
+    /**
+     * Delete an element for users. This delete will not impact user that are currently paging resources.
+     * The resource is marked as not valid from the current date.
+     *
+     * @param type  the type of the element
+     * @param theId the id of the element
+     * @return true if an element was deleted
+     */
+    boolean businessDelete(String type, IIdType theId);
+
     /**
      * Find all resources by id as a cursor
      *
@@ -133,6 +143,6 @@ public interface FhirStoreService<T> {
      * @param ids            id of the main request
      * @param includes       include expressions
      */
-    List<DomainResource> findRevIncludes(long searchRevision, Set<String> ids, Set<IncludeExpression<T>> includes);
+    List<FhirBundleBuilder.BundleEntry> findRevIncludes(long searchRevision, Set<String> ids, Set<IncludeExpression<T>> includes);
 
 }

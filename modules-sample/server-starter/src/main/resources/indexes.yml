@@ -31,9 +31,30 @@ fhir:
           resourcePaths:
             - path: deviceName|name
           indexName: t_name
+        - name: type
+          urlParameter: type
+          searchType: token
+          description: The type
+          resourcePaths:
+            - path: type
+          indexName: t_type
+        - name: organization
+          urlParameter: organization
+          searchType: reference
+          description: The organization reference
+          resourcePaths:
+            - path: owner|reference
+          indexName: t_owner
     - name: PractitionerRole
       profile: http://hl7.org/fhir/StructureDefinition/PractitionerRole
       searchParams:
+        - name: organization
+          urlParameter: organization
+          searchType: reference
+          description: The organization reference
+          resourcePaths:
+            - path: organization|reference
+          indexName: t_organization
     - name: Practitioner
       profile: http://hl7.org/fhir/StructureDefinition/Practitioner
       searchParams:
@@ -43,3 +64,27 @@ fhir:
     - name: Organization
       profile: http://hl7.org/fhir/StructureDefinition/Organizationx
       searchParams:
+        - name: _id
+          urlParameter: _id
+          searchType: token
+          description: The device id
+          resourcePaths:
+            - path: id
+          indexName: t_id
+        - name: partof
+          urlParameter: partof
+          searchType: reference
+          description: The partof reference
+          resourcePaths:
+            - path: partOf|reference
+          indexName: t_partof
+    - name: HealthcareService
+      profile: http://hl7.org/fhir/StructureDefinition/HealthcareService
+      searchParams:
+        - name: _profile
+          urlParameter: _profile
+          searchType: uri
+          description: The profile
+          resourcePaths:
+            - path: _profile
+          indexName: t_profile

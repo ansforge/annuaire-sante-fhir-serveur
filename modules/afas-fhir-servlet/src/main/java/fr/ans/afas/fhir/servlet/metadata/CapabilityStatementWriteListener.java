@@ -1,13 +1,16 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhir.servlet.metadata;
 
-import ca.uhn.fhir.context.FhirContext;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhir.servlet.error.ErrorWriter;
+import fr.ans.afas.fhir.servlet.servletutils.DefaultWriteListener;
 import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
-import lombok.RequiredArgsConstructor;
+import fr.ans.afas.fhirserver.service.FhirServerContext;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.hl7.fhir.r4.model.CanonicalType;
@@ -15,9 +18,7 @@ import org.hl7.fhir.r4.model.CapabilityStatement;
 import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.Enumerations;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,28 +30,20 @@ import java.util.List;
  * @since 1.0.0
  */
 @Slf4j
-@RequiredArgsConstructor
-public class CapabilityStatementWriteListener implements WriteListener {
+public class CapabilityStatementWriteListener<T> extends DefaultWriteListener {
 
+    private final FhirServerContext<T> fhirServerContext;
     /**
      * The servlet output stream
      */
     private final ServletOutputStream sos;
 
-    /**
-     * The async context
-     */
-    private final AsyncContext context;
 
-    /**
-     * The search config
-     */
-    private final SearchConfig searchConfig;
-
-    /**
-     * The fhir context
-     */
-    private final FhirContext fhirContext = FhirContext.forR4();
+    public CapabilityStatementWriteListener(FhirServerContext<T> fhirServerContext, ServletOutputStream sos, AsyncContext context) {
+        super(context);
+        this.sos = sos;
+        this.fhirServerContext = fhirServerContext;
+    }
 
     /**
      * Add interactions to the capability statement for a resource
@@ -58,7 +51,7 @@ public class CapabilityStatementWriteListener implements WriteListener {
      * @param config   the config
      * @param resource the capability statement component
      */
-    private static void addInteractions(FhirResourceSearchConfig config, CapabilityStatement.CapabilityStatementRestResourceComponent resource) {
+    public static void addInteractions(FhirResourceSearchConfig config, CapabilityStatement.CapabilityStatementRestResourceComponent resource) {
         if (config.isCanDelete()) {
             resource.addInteraction().setCode(CapabilityStatement.TypeRestfulInteraction.DELETE);
         }
@@ -73,17 +66,14 @@ public class CapabilityStatementWriteListener implements WriteListener {
     }
 
     @Override
-    public void onWritePossible() {
-        try {
+    public void onWritePossibleInTenant() throws IOException {
+
             var cs = new CapabilityStatement();
             writeMeta(cs);
             cs.setRest(buildServer());
-            sos.write(fhirContext.newJsonParser().encodeResourceToString(cs).getBytes(Charset.defaultCharset()));
+            sos.write(this.fhirServerContext.getFhirContext().newJsonParser().encodeResourceToString(cs).getBytes(Charset.defaultCharset()));
             context.complete();
-        } catch (Exception e) {
-            log.debug("Error writing the request", e);
-            context.complete();
-        }
+
     }
 
     /**
@@ -92,11 +82,12 @@ public class CapabilityStatementWriteListener implements WriteListener {
      * @param cs the capability statement
      */
     private void writeMeta(CapabilityStatement cs) {
-        if (StringUtils.isNotBlank(searchConfig.getServerSearchConfig().getCopyright())) {
-            cs.setCopyright(searchConfig.getServerSearchConfig().getCopyright());
+        var searchConfigService = this.fhirServerContext.getSearchConfigService();
+        if (StringUtils.isNotBlank(searchConfigService.getServerSearchConfig().getCopyright())) {
+            cs.setCopyright(searchConfigService.getServerSearchConfig().getCopyright());
         }
-        if (StringUtils.isNotBlank(searchConfig.getServerSearchConfig().getImplementationGuideUrl())) {
-            cs.setImplementationGuide(List.of(new CanonicalType(searchConfig.getServerSearchConfig().getImplementationGuideUrl())));
+        if (StringUtils.isNotBlank(searchConfigService.getServerSearchConfig().getImplementationGuideUrl())) {
+            cs.setImplementationGuide(List.of(new CanonicalType(searchConfigService.getServerSearchConfig().getImplementationGuideUrl())));
         }
         cs.setStatus(Enumerations.PublicationStatus.ACTIVE);
         cs.setFhirVersion(Enumerations.FHIRVersion._4_0_1);
@@ -107,6 +98,7 @@ public class CapabilityStatementWriteListener implements WriteListener {
     @Override
     public void onError(Throwable throwable) {
         log.debug("Error writing the request", throwable);
+        ErrorWriter.writeError("Unexpected error", context, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         context.complete();
     }
 
@@ -119,18 +111,22 @@ public class CapabilityStatementWriteListener implements WriteListener {
         var serverComponents = new ArrayList<CapabilityStatement.CapabilityStatementRestComponent>();
         var serverComponent = new CapabilityStatement.CapabilityStatementRestComponent();
         serverComponents.add(serverComponent);
-        for (var config : searchConfig.getServerSearchConfig().getResources()) {
+        for (var config : this.fhirServerContext.getSearchConfigService().getServerSearchConfig().getResources()) {
             var resource = serverComponent.addResource();
             resource.setProfile(config.getProfile());
             resource.setType(config.getName());
 
             addInteractions(config, resource);
 
+            resource.setSearchInclude(config.getSearchIncludes());
+            resource.setSearchRevInclude(config.getSearchRevIncludes());
+
             for (var p : config.getSearchParams()) {
                 var sp = resource.addSearchParam();
                 sp.setName(p.getName());
                 sp.setType(Enumerations.SearchParamType.fromCode(p.getSearchType()));
                 sp.setDocumentation(p.getDescription());
+                sp.setDefinition(p.getDefinition());
             }
         }
         return serverComponents;

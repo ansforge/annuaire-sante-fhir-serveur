@@ -1,46 +1,44 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.server.IPagingProvider;
-import com.mongodb.client.MongoClient;
 import fr.ans.afas.audit.AuditFilter;
 import fr.ans.afas.config.MongoIndexConfiguration;
+import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.domain.ResourceAndSubResources;
 import fr.ans.afas.fhir.AfasPagingProvider;
 import fr.ans.afas.fhir.TransactionalResourceProvider;
 import fr.ans.afas.fhirserver.hook.exception.BadHookConfiguration;
 import fr.ans.afas.fhirserver.hook.service.HookService;
-import fr.ans.afas.fhirserver.search.config.CompositeSearchConfig;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.MultiTenantSearchConfigService;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
-import fr.ans.afas.fhirserver.search.config.yaml.YamlSearchConfig;
+import fr.ans.afas.fhirserver.search.config.domain.TenantSearchConfig;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.serialization.DefaultSerializeUrlEncrypter;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.fhirserver.search.expression.serialization.SerializeUrlEncrypter;
-import fr.ans.afas.fhirserver.service.FhirStoreService;
-import fr.ans.afas.fhirserver.service.NextUrlManager;
+import fr.ans.afas.fhirserver.service.*;
 import fr.ans.afas.fhirserver.service.audit.DefaultReadAuditService;
 import fr.ans.afas.fhirserver.service.audit.DefaultWriteAuditService;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
 import fr.ans.afas.mdbexpression.domain.fhir.serialization.MongoDbExpressionSerializer;
-import fr.ans.afas.rass.service.DatabaseService;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
+import fr.ans.afas.rass.service.impl.DefaultIndexService;
 import fr.ans.afas.rass.service.impl.MongoDbNextUrlManager;
-import fr.ans.afas.rass.service.impl.SimpleDatabaseService;
 import fr.ans.afas.rass.service.json.FhirBaseResourceDeSerializer;
 import fr.ans.afas.rass.service.json.FhirBaseResourceSerializer;
 import fr.ans.afas.rass.service.json.GenericSerializer;
-import fr.ans.afas.subscription.SubscriptionConfiguration;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -48,7 +46,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Autoconfiguration of the fhir server.
@@ -58,9 +59,10 @@ import java.util.List;
  * @since 1.0.0
  */
 @Configuration
-@Import({MongoConfig.class, YamlSearchConfig.class, SubscriptionConfiguration.class})
+@Import({MongoConfig.class})
 @ServletComponentScan
-public class AfasServerAutoConfiguration {
+@ConfigurationPropertiesScan
+public class AfasServerAutoConfiguration<T> {
 
     @ConditionalOnMissingBean
     @Bean
@@ -71,14 +73,14 @@ public class AfasServerAutoConfiguration {
 
     /***
      * The expression factory for MongoDB
-     * @param searchConfig the search config
+     * @param searchConfigService the search config
      * @return the expression factory
      */
     @ConditionalOnMissingBean
     @Bean
     @Inject
-    public ExpressionFactory<Bson> expressionFactory(SearchConfig searchConfig) {
-        return new MongoDbExpressionFactory(searchConfig);
+    public ExpressionFactory<Bson> expressionFactory(SearchConfigService searchConfigService) {
+        return new MongoDbExpressionFactory(searchConfigService);
     }
 
 
@@ -101,8 +103,8 @@ public class AfasServerAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean
     @Inject
-    ExpressionSerializer<Bson> expressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
-        return new MongoDbExpressionSerializer(expressionFactory, searchConfig);
+    ExpressionSerializer<Bson> expressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfigService searchConfigService) {
+        return new MongoDbExpressionSerializer(expressionFactory, searchConfigService);
     }
 
     /**
@@ -113,8 +115,8 @@ public class AfasServerAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean
     @Inject
-    NextUrlManager<Bson> nextUrlManager(MongoClient mongoClient, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter, @Value("${spring.data.mongodb.database}") String dbName) {
-        return new MongoDbNextUrlManager(mongoClient, maxNextUrlLength, expressionSerializer, serializeUrlEncrypter, dbName);
+    NextUrlManager<Bson> nextUrlManager(MongoMultiTenantService mongoMultiTenantService, @Value("${afas.fhir.next-url-max-size:500}") int maxNextUrlLength, ExpressionSerializer<Bson> expressionSerializer, SerializeUrlEncrypter serializeUrlEncrypter, @Value("${spring.data.mongodb.database}") String dbName) {
+        return new MongoDbNextUrlManager(mongoMultiTenantService, maxNextUrlLength, expressionSerializer, serializeUrlEncrypter, dbName);
 
     }
 
@@ -148,32 +150,19 @@ public class AfasServerAutoConfiguration {
     FhirStoreService<Bson> fhirStoreService(
             List<FhirBaseResourceSerializer<ResourceAndSubResources>> serializers,
             FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer,
-            MongoClient mongoClient,
-            SearchConfig searchConfig,
+            SearchConfigService searchConfigService,
             FhirContext fhirContext,
             ApplicationContext context,
-            @Value("${afas.fhir.max-include-size:5000}")
-                    int maxIncludePageSize,
-            DatabaseService databaseService) throws BadHookConfiguration {
+            MongoMultiTenantService mongoMultiTenantService) throws BadHookConfiguration {
         return new MongoDbFhirService(
                 serializers,
                 fhirBaseResourceDeSerializer,
-                mongoClient,
-                searchConfig,
+                searchConfigService,
                 fhirContext,
                 new HookService(context),
-                maxIncludePageSize,
-                databaseService
+                mongoMultiTenantService
         );
     }
-
-
-    @ConditionalOnMissingBean
-    @Bean
-    DatabaseService databaseService(@Value("${afas.mongodb.dbname}") String dbName) {
-        return new SimpleDatabaseService(dbName);
-    }
-
 
     @ConditionalOnMissingBean
     @Bean
@@ -181,11 +170,37 @@ public class AfasServerAutoConfiguration {
         return new AfasServerConfigurerAdapter();
     }
 
+    @Bean
+    @ConditionalOnMissingBean(name = "securityService")
+    SecurityService securityService() {
+        return new EmptySecurityService();
+    }
+
     @ConditionalOnMissingBean
     @Bean
     @Inject
-    public SearchConfig searchConfigService(List<ServerSearchConfig> searchConfigs) {
-        return new CompositeSearchConfig(searchConfigs);
+    public SearchConfigService searchConfigService(ServerSearchConfig serverSearchConfig) {
+        return new MultiTenantSearchConfigService(serverSearchConfig);
+    }
+
+
+    @ConditionalOnMissingBean
+    @Bean
+    @Inject
+    public ServerSearchConfig simpleSearchConfigMultiTenant(List<TenantSearchConfig> tenantSearchConfig) {
+        var mapOfConfigs = new HashMap<String, List<TenantSearchConfig>>();
+        for (var tsc : tenantSearchConfig) {
+            var name = tsc.getTenantConfig().getName();
+            mapOfConfigs.computeIfAbsent(name, a -> new ArrayList<>());
+            mapOfConfigs.get(name).add(tsc);
+        }
+
+
+        Map<String, TenantSearchConfig> configs = new HashMap<>();
+        for (var es : mapOfConfigs.entrySet()) {
+            configs.put(es.getKey(), es.getValue().get(0));
+        }
+        return new ServerSearchConfig(configs);
     }
 
 
@@ -209,8 +224,8 @@ public class AfasServerAutoConfiguration {
     @ConditionalOnMissingBean
     @Inject
     @Bean
-    public GenericSerializer genericSerializer(SearchConfig searchConfig, FhirContext fhirContext) {
-        return new GenericSerializer(searchConfig, fhirContext);
+    public GenericSerializer genericSerializer(SearchConfigService searchConfigService, FhirContext fhirContext) {
+        return new GenericSerializer(searchConfigService, fhirContext);
     }
 
 
@@ -261,11 +276,42 @@ public class AfasServerAutoConfiguration {
 
     /**
      * Default audit listener for write operations
+     */
+    @ConditionalOnMissingBean
+    @Inject
+    @Bean
+    DefaultIndexService defaultIndexService(FhirStoreService<Bson> fhirStoreService, ExpressionFactory<Bson> expressionFactory, SearchConfigService searchConfigService, GenericSerializer genericSerializer) {
+        return new DefaultIndexService(fhirStoreService, expressionFactory, searchConfigService, genericSerializer);
+    }
 
-     @ConditionalOnMissingBean
-     @Inject
-     @Bean DefaultIndexService defaultIndexService(FhirStoreService<Bson> fhirStoreService, ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig, GenericSerializer genericSerializer) {
-     return new DefaultIndexService(fhirStoreService, expressionFactory, searchConfig, genericSerializer);
-     }  */
 
+    /**
+     * The server configuration from the property file
+     *
+     * @return
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    AfasConfiguration afasConfiguration() {
+        return new AfasConfiguration();
+    }
+
+
+    /**
+     * The multi tenant service
+     *
+     * @return the multi tenant service
+     */
+    @ConditionalOnMissingBean
+    @Bean
+    MongoMultiTenantService multiTenantService() {
+        return new MongoMultiTenantService();
+    }
+
+
+    @ConditionalOnMissingBean
+    @Bean
+    FhirServerContext<T> fhirServerContext(FhirStoreService<T> fhirStoreService, MultiTenantService multiTenantService, ExpressionFactory<T> expressionFactory, SearchConfigService searchConfigService, NextUrlManager<T> nextUrlManager, SecurityService securityService) {
+        return new FhirServerContext(fhirStoreService, multiTenantService, expressionFactory, searchConfigService, nextUrlManager, securityService);
+    }
 }

@@ -1,17 +1,17 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.rass.service.impl;
 
 import com.mongodb.client.model.Filters;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionContext;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -37,7 +37,7 @@ public class AggregationUtils {
     private AggregationUtils() {
     }
 
-    public static List<Document> generateAggregation(SearchConfig config, SelectExpression<Bson> selectExpression, Long searchRevision, String lastId) {
+    public static List<Document> generateAggregation(SearchConfigService config, SelectExpression<Bson> selectExpression, Long searchRevision, String lastId, MongoMultiTenantService mongoMultiTenantService) {
         var aggrs = new ArrayList<Document>();
         // the main query:
         var interpreted = selectExpression.interpreter(new ExpressionContext(null));
@@ -66,7 +66,7 @@ public class AggregationUtils {
             var aggregation = new ArrayList<Document>();
             var subObjName = "sub_r_" + fhirPath.getResource() + "_" + sc.getName();
             aggregation.add(new Document(MONGO_LOOKUP,
-                    new Document("from", fhirPath.getResource())
+                    new Document("from", mongoMultiTenantService.getCollectionName(fhirPath.getResource()))
                             .append("localField", "t_id")
                             .append("foreignField", sc.getIndexName() + "-id")
                             .append("as", subObjName)));
@@ -87,9 +87,7 @@ public class AggregationUtils {
         var allHas = selectExpression.getHasConditions();
         for (var has : allHas) {
             var resource = has.getFhirPath();
-            if (!aggregations.containsKey(resource)) {
-                aggregations.put(resource, new ArrayList<>());
-            }
+            aggregations.computeIfAbsent(resource, k -> new ArrayList<>());
             aggregations.get(resource).addAll(has.getExpressions());
         }
         return aggregations;

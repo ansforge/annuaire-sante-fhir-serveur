@@ -1,11 +1,12 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.config;
 
+import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.utils.TenantUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,22 +36,20 @@ public class CleanRevisionDataConfiguration {
      */
     @Inject
     NextUrlManager<?> nextUrlManager;
-
-
     @Value("${afas.fhir.max-revision-duration}")
     long validityMs;
+    @Inject
+    private ServerSearchConfig serverSearchConfig;
 
     /**
      * Clean revisions older than a timestamp
      */
     @Scheduled(fixedDelay = 3600000)
     public void cleanOldRevision() {
-
-        mongoDbFhirService.deleteOldRevisions(new Date().getTime() - validityMs);
-
-
-        nextUrlManager.cleanOldPagingData(new Date().getTime() - validityMs);
+        serverSearchConfig.getConfigs().forEach((key, value) -> {
+            TenantUtil.setCurrentTenant(key);
+            mongoDbFhirService.deleteOldRevisions(new Date().getTime() - validityMs);
+            nextUrlManager.cleanOldPagingData(new Date().getTime() - validityMs);
+        });
     }
-
-
 }

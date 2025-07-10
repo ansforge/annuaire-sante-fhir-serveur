@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.service;
 
 import ca.uhn.fhir.context.FhirContext;
@@ -11,11 +10,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import fr.ans.afas.domain.ResourceAndSubResources;
 import fr.ans.afas.domain.StorageConstants;
 import fr.ans.afas.fhirserver.search.config.BaseSearchConfigService;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
-import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
-import fr.ans.afas.fhirserver.search.config.domain.ResourcePathConfig;
-import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
-import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
+import fr.ans.afas.fhirserver.search.config.domain.*;
 import fr.ans.afas.rass.service.json.GenericSerializer;
 import org.bson.Document;
 import org.hl7.fhir.instance.model.api.IAnyResource;
@@ -53,7 +49,7 @@ public class GenericSerializerTest {
         om.registerModule(module);
     }
 
-    static SearchConfig fhirResourceConfig() {
+    static SearchConfigService fhirResourceConfig() {
         var config = new HashMap<String, FhirResourceSearchConfig>();
 
         config.put("Device", FhirResourceSearchConfig.builder()
@@ -87,7 +83,8 @@ public class GenericSerializerTest {
                 .name("Organization")
                 .profile("http://hl7.org/fhir/StructureDefinition/Organization")
                 .searchParams(List.of(
-                        SearchParamConfig.builder().name(IAnyResource.SP_RES_ID).urlParameter(IAnyResource.SP_RES_ID).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_T_ID).resourcePaths(List.of(ResourcePathConfig.builder().path("id").build())).build()
+                        SearchParamConfig.builder().name(IAnyResource.SP_RES_ID).urlParameter(IAnyResource.SP_RES_ID).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_T_ID).resourcePaths(List.of(ResourcePathConfig.builder().path("id").build())).build(),
+                        SearchParamConfig.builder().name("mail").urlParameter("mail").resourcePaths(List.of(ResourcePathConfig.builder().path("telecom.?[#this.system.toCode()=='email']|value").build())).indexName("t_mail").searchType(StorageConstants.INDEX_TYPE_STRING).build()
                 )).build());
 
         config.put("PractitionerRole", FhirResourceSearchConfig.builder()
@@ -98,7 +95,8 @@ public class GenericSerializerTest {
                 )).build());
 
 
-        return new BaseSearchConfigService(ServerSearchConfig.builder()
+        return new BaseSearchConfigService(TenantSearchConfig.builder()
+                .tenantConfig(new Tenant())
                 .resources(config.values())
                 .build()) {
         };
@@ -110,7 +108,7 @@ public class GenericSerializerTest {
     @Test
     public void testValueExtractor() {
 
-        var genericSerializer = new GenericSerializer(null, null) {
+        var gs = new GenericSerializer(null, null) {
             @Override
             public Collection<Object> extractValues(Object value, String stringPath) {
                 return super.extractValues(value, stringPath);
@@ -118,13 +116,13 @@ public class GenericSerializerTest {
         };
 
         var device = generateDeviceWithArray();
-        var result = genericSerializer.extractValues(device, "identifier");
+        var result = gs.extractValues(device, "identifier");
         Assert.assertEquals(2, result.size());
         var i = result.stream().iterator();
         Assert.assertEquals(Identifier.class, i.next().getClass());
         Assert.assertEquals(Identifier.class, i.next().getClass());
 
-        var result2 = genericSerializer.extractValues(device, "deviceName|name");
+        var result2 = gs.extractValues(device, "deviceName|name");
         Assert.assertEquals(2, result2.size());
         var i2 = result2.stream().iterator();
         Assert.assertEquals(String.class, i2.next().getClass());
@@ -285,6 +283,25 @@ public class GenericSerializerTest {
 
     }
 
+
+    /**
+     * Test a complexe case with a filtering and the use of a function
+     */
+    @Test
+    public void complexObjectSerializationTest() throws JsonProcessingException {
+        var org1 = new Organization();
+        org1.addTelecom().setSystem(ContactPoint.ContactPointSystem.PHONE).setValue("06");
+        org1.addTelecom().setSystem(ContactPoint.ContactPointSystem.EMAIL).setValue("j@f.fr");
+        var writer = om.writer();
+        var json = writer.writeValueAsString(
+                ResourceAndSubResources.builder()
+                        .resource(org1)
+                        .build());
+        var doc = Document.parse(json);
+        Assert.assertEquals(1, ((List<String>) doc.get("t_mail")).size());
+        Assert.assertEquals("j@f.fr", ((List<String>) doc.get("t_mail")).get(0));
+        Assert.assertEquals("j@f.fr", ((List<String>) doc.get("t_mail-i")).get(0));
+    }
 
     /**
      * Generate a simple device

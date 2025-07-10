@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.service.audit;
 
 import fr.ans.afas.audit.AuditUtils;
@@ -43,11 +42,9 @@ public class BaseAuditService {
     protected String formatObject(Object o) {
         if (o == null) {
             return "null";
-        } else if (o instanceof DomainResource) {
-            var dr = ((DomainResource) o);
+        } else if (o instanceof DomainResource dr) {
             return dr.getResourceType() + "/" + dr.getId();
-        } else if (o instanceof IdType) {
-            var drId = ((IdType) o);
+        } else if (o instanceof IdType drId) {
             return drId.toString();
         } else {
             return o.toString();

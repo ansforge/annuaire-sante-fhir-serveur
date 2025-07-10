@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas;
 
 import ca.uhn.fhir.model.api.Include;
@@ -33,6 +32,7 @@ import java.util.Set;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = SimpleTestApp.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
+
 public class GenericServiceTest extends BaseTest {
 
 

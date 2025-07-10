@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir.searchconfig;
 
 import fr.ans.afas.domain.StorageConstants;
@@ -21,7 +20,7 @@ import java.util.List;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class ASComplexSearchConfig extends ServerSearchConfig {
+public class ASComplexSearchConfig extends TenantSearchConfig {
 
     public ASComplexSearchConfig() {
         var organizationSearchConfig = FhirResourceSearchConfig.builder().name("Organization").profile("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Organization").build();
@@ -49,6 +48,7 @@ public class ASComplexSearchConfig extends ServerSearchConfig {
         params.add(SearchParamConfig.builder().name("_lastUpdated").urlParameter("_lastUpdated").searchType(StorageConstants.INDEX_TYPE_DATE_RANGE).description("").indexName(StorageConstants.INDEX_T_LASTUPDATED).resourcePaths(List.of(ResourcePathConfig.builder().path("meta|lastUpdated").build())).build());
         params.add(SearchParamConfig.builder().name("pharmacy-licence").urlParameter("pharmacy-licence").searchType(StorageConstants.INDEX_TYPE_STRING).description("").indexName("t_pharmacy-licence").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='https://annuaire.sante.gouv.fr/fhir/StructureDefinition/Organization-PharmacyLicence']|value").build())).build());
         params.add(SearchParamConfig.builder().name("mailbox-mss").urlParameter("mailbox-mss").searchType(StorageConstants.INDEX_TYPE_STRING).description("").indexName(StorageConstants.INDEX_ORGANIZATION_MAILBOX_MSS).resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='https://annuaire.sante.gouv.fr/fhir/StructureDefinition/MailboxMSS']|extension.?[#this.url=='value']|value").build())).build());
+        params.add(SearchParamConfig.builder().name("address-line").urlParameter("address-line").searchType(StorageConstants.INDEX_TYPE_STRING).description("").indexName(StorageConstants.INDEX_ORGANIZATION_ADDRESS_LINE).resourcePaths(List.of(ResourcePathConfig.builder().path("address|line").build())).build());
 
         // fake case to test human names;
         params.add(SearchParamConfig.builder().name("contact-hn").urlParameter("contact-hn").searchType(StorageConstants.INDEX_TYPE_STRING).description("").indexName("_contact-hn").resourcePaths(List.of(ResourcePathConfig.builder().path("contact|name").build())).build());
@@ -58,7 +58,7 @@ public class ASComplexSearchConfig extends ServerSearchConfig {
         var jp = new JoinPath();
         jp.setResource("Device");
         jp.setPath("organization");
-        jp.setField("owner.reference");
+        jp.setField("owner");
         organizationSearchConfig.setJoins(List.of(jp));
 
         this.getResources().add(organizationSearchConfig);
@@ -99,6 +99,15 @@ public class ASComplexSearchConfig extends ServerSearchConfig {
         practitionerRoleSearchConfig.setSearchParams(practitionerRoleParams);
         this.getResources().add(practitionerRoleSearchConfig);
 
+
+        // add default tenant:
+        var tenant = new Tenant();
+        tenant.setName("tenant-1");
+        tenant.setPath("/t1");
+        tenant.setDbname("afastest");
+        tenant.setSuffixCollection("_0.1");
+
+        this.tenantConfig = tenant;
 
     }
 }

@@ -1,12 +1,13 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.search.data;
 
 
 import lombok.Builder;
 import lombok.Getter;
+
+import java.util.Set;
 
 /**
  * Hold information on the search
@@ -32,4 +33,6 @@ public class SearchContext {
      * The number of element found for this query
      */
     private final Long total;
+
+    private final Set<String> elements;
 }

@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.hook.service;
 
 import fr.ans.afas.fhirserver.hook.annotations.AfasSubscribe;
@@ -12,7 +11,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.util.ReflectionUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class HookService {
 
@@ -36,7 +34,7 @@ public class HookService {
                     Arrays.stream(ReflectionUtils.getDeclaredMethods(val.getClass()))
                             .filter(method -> method.getAnnotation(AfasSubscribe.class) != null)
                             .map(method -> EventHandler.builder().method(method).instance(val).build())
-                            .collect(Collectors.toList()));
+                            .toList());
         }
 
         for (var eventHandler : eventHandlersObjects) {

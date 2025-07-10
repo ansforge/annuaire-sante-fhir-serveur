@@ -1,16 +1,16 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhir.servlet.metadata;
 
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhir.servlet.exception.BadRequestException;
+import fr.ans.afas.fhirserver.service.FhirServerContext;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.ReadListener;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 
@@ -20,9 +20,12 @@ import java.io.IOException;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
+// TODO, refactor, ici on est pas lié au tenant
 @Slf4j
 @RequiredArgsConstructor
-public class CapabilityStatementReadListener implements ReadListener {
+public class CapabilityStatementReadListener<T> implements ReadListener {
+
+    private final FhirServerContext<T> fhirServerContext;
 
     /**
      * The servlet response
@@ -33,20 +36,18 @@ public class CapabilityStatementReadListener implements ReadListener {
      * The context
      */
     private final AsyncContext asyncContext;
-    /**
-     * The search configuration
-     */
-    private final SearchConfig searchConfig;
+
 
     @Override
     public void onDataAvailable() {
         // no data for the capability statement
+        throw new BadRequestException("This endpoint doens't support body");
     }
 
     @Override
     public void onAllDataRead() throws IOException {
         var output = response.getOutputStream();
-        var writeListener = new CapabilityStatementWriteListener(output, asyncContext, searchConfig);
+        var writeListener = new CapabilityStatementWriteListener<>(fhirServerContext, output, asyncContext);
         output.setWriteListener(writeListener);
     }
 

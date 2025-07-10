@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir;
 
 import com.mongodb.client.model.Filters;
@@ -12,7 +11,6 @@ import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializ
 import org.bson.conversions.Bson;
 
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of the or expression for Mongodb
@@ -33,7 +31,7 @@ public class MongoDbOrExpression extends OrExpression<Bson> {
         var expressionsBson = expressions.stream()
                 .map(e -> e.interpreter(expressionContext))
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
 
         if (!expressionsBson.isEmpty()) {
             if (expressionsBson.size() == 1) {

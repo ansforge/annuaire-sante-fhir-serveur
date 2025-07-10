@@ -1,24 +1,21 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.service;
 
 
 import ca.uhn.fhir.context.FhirContext;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
-import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
-import fr.ans.afas.fhirserver.search.expression.HasCondition;
-import fr.ans.afas.fhirserver.search.expression.SelectExpression;
-import fr.ans.afas.fhirserver.search.expression.StringExpression;
+import fr.ans.afas.fhirserver.search.expression.*;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbOrExpression;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbStringExpression;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbTokenExpression;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import fr.ans.afas.rass.service.impl.DefaultIndexService;
 import fr.ans.afas.rass.service.json.GenericSerializer;
 import org.bson.conversions.Bson;
@@ -47,6 +44,7 @@ import java.util.List;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = TestFhirApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
+
 public class HasExpressionTestIT {
 
     @Inject
@@ -61,7 +59,10 @@ public class HasExpressionTestIT {
 
 
     @Inject
-    SearchConfig searchConfig;
+    SearchConfigService searchConfigService;
+
+    @Inject
+    MongoMultiTenantService multiTenantService;
 
     /**
      * Stop docker
@@ -84,7 +85,7 @@ public class HasExpressionTestIT {
 
         // the has expression:
         var or = new MongoDbOrExpression();
-        var stringExpression = new MongoDbStringExpression(searchConfig, FhirSearchPath.builder().resource("Device").path("device-name").build(), "1234", StringExpression.Operator.EQUALS);
+        var stringExpression = new MongoDbStringExpression(searchConfigService, FhirSearchPath.builder().resource("Device").path("device-name").build(), "1234", StringExpression.Operator.EQUALS);
         or.addExpression(stringExpression);
         var hasCondition = new HasCondition<Bson>(FhirSearchPath.builder().resource("Device").path("organization").build());
         hasCondition.addExpression(or);
@@ -110,7 +111,7 @@ public class HasExpressionTestIT {
 
         // the has expression for device:
         var or = new MongoDbOrExpression();
-        var stringExpression = new MongoDbStringExpression(searchConfig, FhirSearchPath.builder().resource("Device").path("device-name").build(), "1234", StringExpression.Operator.EQUALS);
+        var stringExpression = new MongoDbStringExpression(searchConfigService, FhirSearchPath.builder().resource("Device").path("device-name").build(), "1234", StringExpression.Operator.EQUALS);
         or.addExpression(stringExpression);
         var hasCondition = new HasCondition<Bson>(FhirSearchPath.builder().resource("Device").path("organization").build());
         hasCondition.addExpression(or);
@@ -118,7 +119,7 @@ public class HasExpressionTestIT {
 
         // the has expression for practitionerRole:
         var orPr = new MongoDbOrExpression();
-        var tokenExpressionPr = new MongoDbTokenExpression(searchConfig, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code1");
+        var tokenExpressionPr = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code1",TokenExpression.Operator.EQUALS);
         orPr.addExpression(tokenExpressionPr);
         var hasConditionPr = new HasCondition<Bson>(FhirSearchPath.builder().resource("PractitionerRole").path("organization").build());
         hasConditionPr.addExpression(orPr);
@@ -132,7 +133,7 @@ public class HasExpressionTestIT {
 
         // one condition is ko:
         var orPrKo = new MongoDbOrExpression();
-        var tokenExpressionPrKo = new MongoDbTokenExpression(searchConfig, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code2");
+        var tokenExpressionPrKo = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code2",TokenExpression.Operator.EQUALS);
         orPrKo.addExpression(tokenExpressionPrKo);
         var hasConditionPrKo = new HasCondition<Bson>(FhirSearchPath.builder().resource("PractitionerRole").path("organization").build());
         hasConditionPrKo.addExpression(orPrKo);
@@ -149,8 +150,8 @@ public class HasExpressionTestIT {
         var selectExpression = new SelectExpression<>("Practitioner", expressionFactory);
         // the has expression:
         var or = new MongoDbOrExpression();
-        var stringExpression = new MongoDbTokenExpression(searchConfig, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code1");
-        var stringExpressio2n = new MongoDbTokenExpression(searchConfig, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code2");
+        var stringExpression = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code1",TokenExpression.Operator.EQUALS);
+        var stringExpressio2n = new MongoDbTokenExpression(searchConfigService, FhirSearchPath.builder().resource("PractitionerRole").path("role").build(), null, "code2", TokenExpression.Operator.EQUALS);
         or.addExpression(stringExpression);
         or.addExpression(stringExpressio2n);
         var hasCondition = new HasCondition<Bson>(FhirSearchPath.builder().resource("PractitionerRole").path("practitioner").build());
@@ -174,7 +175,7 @@ public class HasExpressionTestIT {
         var selectExpression = new SelectExpression<>("Organization", expressionFactory);
         // the has expression:
         var or = new MongoDbOrExpression();
-        var stringExpression = new MongoDbStringExpression(searchConfig, FhirSearchPath.builder().resource("Device").path("device-name").build(), "1234", StringExpression.Operator.EQUALS);
+        var stringExpression = new MongoDbStringExpression(searchConfigService, FhirSearchPath.builder().resource("Device").path("device-name").build(), "1234", StringExpression.Operator.EQUALS);
         or.addExpression(stringExpression);
         var hasCondition = new HasCondition<Bson>(FhirSearchPath.builder().resource("Device").path("error").build());
         hasCondition.addExpression(or);
@@ -188,7 +189,7 @@ public class HasExpressionTestIT {
         selectExpression = new SelectExpression<>("Organization", expressionFactory);
         // the has expression:
         or = new MongoDbOrExpression();
-        stringExpression = new MongoDbStringExpression(searchConfig, FhirSearchPath.builder().resource("Device").path("device-name").build(), "1234", StringExpression.Operator.EQUALS);
+        stringExpression = new MongoDbStringExpression(searchConfigService, FhirSearchPath.builder().resource("Device").path("device-name").build(), "1234", StringExpression.Operator.EQUALS);
         or.addExpression(stringExpression);
         hasCondition = new HasCondition<>(FhirSearchPath.builder().resource("Device").path("device-name").build());
         hasCondition.addExpression(or);
@@ -263,8 +264,8 @@ public class HasExpressionTestIT {
      * Trigger the join indexation
      */
     private void indexJoins() {
-        var genericSerializer = new GenericSerializer(searchConfig, FhirContext.forR4());
-        var defaultIndexService = new DefaultIndexService(mongoDbFhirService, expressionFactory, searchConfig, genericSerializer);
-        defaultIndexService.refreshIndexes();
+        var genericSerializer = new GenericSerializer(searchConfigService, FhirContext.forR4());
+        var defaultIndexService = new DefaultIndexService(mongoDbFhirService, expressionFactory, searchConfigService, genericSerializer);
+        defaultIndexService.refreshIndexesSync(1);
     }
 }

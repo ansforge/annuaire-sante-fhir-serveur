@@ -1,10 +1,15 @@
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
+ */
 package fr.ans.afas.service;
 
 
+import fr.ans.afas.fhirserver.search.data.TotalMode;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.Device;
 import org.junit.AfterClass;
@@ -15,6 +20,7 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.inject.Inject;
@@ -31,6 +37,8 @@ import java.util.List;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = TestFhirApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
+@TestPropertySource(properties = "afas.fhir-clean-old-data.cron=0 0 0 29 2 4")// disable cron
+
 public class SinceSearchIT {
 
 
@@ -43,6 +51,9 @@ public class SinceSearchIT {
      */
     @Inject
     ExpressionFactory<Bson> expressionFactory;
+
+    @Inject
+    MongoMultiTenantService multiTenantService;
 
     /**
      * Stop docker
@@ -130,6 +141,7 @@ public class SinceSearchIT {
         var selectExpression = new SelectExpression<>("Device", expressionFactory);
         selectExpression.setSince(dt);
         selectExpression.setCount(2);
+        selectExpression.setTotalMode(TotalMode.ALWAYS);
         var all = this.mongoDbFhirService.search(null, selectExpression);
         Assert.assertEquals(2, all.getPage().size());
 

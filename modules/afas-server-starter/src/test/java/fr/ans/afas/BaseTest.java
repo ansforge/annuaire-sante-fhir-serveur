@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas;
 
 import ca.uhn.fhir.context.FhirContext;
@@ -9,6 +8,7 @@ import fr.ans.afas.fhir.TransactionalResourceProvider;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
+import fr.ans.afas.utils.TenantUtil;
 import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.*;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -28,6 +28,7 @@ public abstract class BaseTest {
      * The Fhir context
      */
     protected static final FhirContext ctx = FhirContext.forR4();
+    private static final String TEST_TENANT_1 = "tenant-1";
     /**
      * Date formater to use dates in tests
      */
@@ -50,6 +51,7 @@ public abstract class BaseTest {
     int port;
 
     protected List<DomainResource> createSampleData(FhirStoreService<Bson> fhirStoreService, boolean store, boolean createOrganization) {
+        TenantUtil.setCurrentTenant(TEST_TENANT_1);
         var extArhgos = "https://annuaire.sante.gouv.fr/fhir/StructureDefinition/Device-NumberAuthorizationARHGOS";
         var rassDevice1 = new Device();
         String DEVICE_ID_1 = "device1";

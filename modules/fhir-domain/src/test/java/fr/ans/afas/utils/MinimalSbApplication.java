@@ -1,18 +1,15 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.utils;
 
 import fr.ans.afas.fhirserver.hook.exception.BadHookConfiguration;
 import fr.ans.afas.fhirserver.hook.service.HookService;
-import fr.ans.afas.fhirserver.search.config.yaml.YamlSearchConfig;
 import fr.ans.afas.fhirserver.service.audit.DefaultReadAuditService;
 import fr.ans.afas.fhirserver.service.audit.DefaultWriteAuditService;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 
 import javax.inject.Inject;
 
@@ -24,7 +21,6 @@ import javax.inject.Inject;
  * @since 1.0.0
  */
 @SpringBootApplication
-@Import(YamlSearchConfig.class)
 public class MinimalSbApplication {
 
     @Bean

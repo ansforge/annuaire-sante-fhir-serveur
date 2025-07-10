@@ -1,15 +1,11 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.search.config.domain;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Map;
 
 /**
  * The search config of the server
@@ -19,19 +15,13 @@ import java.util.Collection;
  */
 @Getter
 @Setter
+@NoArgsConstructor
 public class ServerSearchConfig {
-    private String validationMode;
-    private String implementationGuideUrl;
-    private String copyright;
-    private Collection<FhirResourceSearchConfig> resources;
 
-    public ServerSearchConfig() {
-        this.resources = new ArrayList<>();
-    }
+    private Map<String, TenantSearchConfig> configs;
 
     @Builder
-    public ServerSearchConfig(String validationMode, Collection<FhirResourceSearchConfig> resources) {
-        this.validationMode = validationMode;
-        this.resources = resources == null ? new ArrayList<>() : resources;
+    public ServerSearchConfig(@NonNull Map<String, TenantSearchConfig> configs) {
+        this.configs = configs;
     }
 }

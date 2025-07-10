@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.search.expression;
 
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
@@ -30,6 +29,10 @@ public abstract class TokenExpression<T> implements ElementExpression<T> {
      * The fhir path where to find
      */
     protected FhirSearchPath fhirPath;
+    /**
+     * The operator
+     */
+    protected final Operator operator;
 
     /**
      * Construct a token expression
@@ -38,10 +41,11 @@ public abstract class TokenExpression<T> implements ElementExpression<T> {
      * @param system   the system of the token
      * @param value    the value of the token
      */
-    protected TokenExpression(@NotNull FhirSearchPath fhirPath, String system, String value) {
+    protected TokenExpression(@NotNull FhirSearchPath fhirPath, String system, String value,@NotNull Operator operator) {
         this.fhirPath = fhirPath;
         this.system = system;
         this.value = value;
+        this.operator = operator;
     }
 
     @Override
@@ -56,5 +60,21 @@ public abstract class TokenExpression<T> implements ElementExpression<T> {
     @Override
     public void setFhirPath(FhirSearchPath path) {
         this.fhirPath = path;
+    }
+
+    /**
+     * Operator for Token expressions
+     */
+    public enum Operator {
+
+        /**
+         * NOT
+         */
+        NOT,
+        /**
+         * EQUALS
+         */
+        EQUALS,
+
     }
 }

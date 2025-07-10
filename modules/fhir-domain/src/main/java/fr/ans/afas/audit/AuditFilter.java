@@ -1,22 +1,16 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.audit;
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
- */
 
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 
 
-public class AuditFilter implements javax.servlet.Filter {
+public class AuditFilter implements Filter {
 
     public static final String ALREADY_FILTERED = "AFAS_ALREADY_FILTERED";
 

@@ -1,11 +1,10 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir.serialization;
 
 import fr.ans.afas.exception.SerializationException;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.expression.*;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import fr.ans.afas.utils.ExpressionSerializationUtils;
@@ -36,12 +35,12 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
     /**
      * The search config
      */
-    final SearchConfig searchConfig;
+    final SearchConfigService searchConfigService;
 
     @Inject
-    public MongoDbExpressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfig searchConfig) {
+    public MongoDbExpressionSerializer(ExpressionFactory<Bson> expressionFactory, SearchConfigService searchConfigService) {
         this.expressionFactory = expressionFactory;
-        this.searchConfig = searchConfig;
+        this.searchConfigService = searchConfigService;
     }
 
 
@@ -186,6 +185,10 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
         sb.append(tokenExpression.getFhirPath().getResource());
         sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
         sb.append(tokenExpression.getFhirPath().getPath());
+
+        sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+        sb.append(tokenExpression.getOperator().ordinal());
+
         return sb.toString();
     }
 
@@ -221,15 +224,15 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
         var classFound = ExpressionSerializationUtils.getClassForCode(type);
         var deserializeChooser = PatternMatching
                 .<Class<? extends Expression<Bson>>, Expression<Bson>>
-                        when(SelectExpression.class::equals, x -> new SelectDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
-                .orWhen(AndExpression.class::equals, x -> new AndDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
-                .orWhen(OrExpression.class::equals, x -> new OrDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
-                .orWhen(DateRangeExpression.class::equals, x -> new DateRangeDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
-                .orWhen(QuantityExpression.class::equals, x -> new QuantityDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
-                .orWhen(TokenExpression.class::equals, x -> new TokenDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
-                .orWhen(ReferenceExpression.class::equals, x -> new ReferenceDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
-                .orWhen(StringExpression.class::equals, x -> new StringDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal))
-                .orWhen(HasCondition.class::equals, x -> new HasDeserializeFunction().process(searchConfig, expressionFactory, this, valueFinal));
+                        when(SelectExpression.class::equals, x -> new SelectDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
+                .orWhen(AndExpression.class::equals, x -> new AndDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
+                .orWhen(OrExpression.class::equals, x -> new OrDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
+                .orWhen(DateRangeExpression.class::equals, x -> new DateRangeDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
+                .orWhen(QuantityExpression.class::equals, x -> new QuantityDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
+                .orWhen(TokenExpression.class::equals, x -> new TokenDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
+                .orWhen(ReferenceExpression.class::equals, x -> new ReferenceDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
+                .orWhen(StringExpression.class::equals, x -> new StringDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
+                .orWhen(HasCondition.class::equals, x -> new HasDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal));
 
         return deserializeChooser.matches((Class<? extends Expression<Bson>>) classFound).orElseThrow();
     }

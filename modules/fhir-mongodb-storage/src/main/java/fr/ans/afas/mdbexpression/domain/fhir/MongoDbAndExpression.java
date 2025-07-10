@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir;
 
 import com.mongodb.client.model.Filters;
@@ -13,7 +12,6 @@ import org.bson.conversions.Bson;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of the And operation for Mongodb
@@ -36,7 +34,7 @@ public class MongoDbAndExpression extends AndExpression<Bson> {
         List<Bson> expressionsBson = expressions.stream()
                 .map(e -> e.interpreter(expressionContext))
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
 
         if (!expressionsBson.isEmpty()) {
             if (expressionsBson.size() == 1) {

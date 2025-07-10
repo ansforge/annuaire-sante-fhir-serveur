@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.search.expression;
 
 import ca.uhn.fhir.model.api.TemporalPrecisionEnum;
@@ -49,7 +48,7 @@ public interface ExpressionFactory<T> {
      * @param value    the value of the token
      * @return the expression
      */
-    TokenExpression<T> newTokenExpression(FhirSearchPath fhirPath, String system, String value);
+    TokenExpression<T> newTokenExpression(FhirSearchPath fhirPath, String system, String value,TokenExpression.Operator operator);
 
     /**
      * Create a new reference expression

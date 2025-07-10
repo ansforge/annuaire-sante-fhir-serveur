@@ -1,14 +1,13 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.provider;
 
 import fr.ans.afas.domain.StorageConstants;
 import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.ResourcePathConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
-import fr.ans.afas.fhirserver.search.config.domain.ServerSearchConfig;
+import fr.ans.afas.fhirserver.search.config.domain.TenantSearchConfig;
 import org.hl7.fhir.instance.model.api.IAnyResource;
 import org.hl7.fhir.r4.model.Device;
 import org.hl7.fhir.r4.model.Organization;
@@ -22,13 +21,33 @@ import java.util.List;
  * @author Guillaume Poulériguen
  * @since 1.0.0
  */
-public class ASComplexSearchConfig extends ServerSearchConfig {
+public class ASComplexSearchConfig extends TenantSearchConfig {
 
     public static final String LAST_UPDATED = "_lastUpdated";
+    public static final String INCLUDE_ALL = "*";
+    public static final String INCLUDE_HEALTHCARESERVICE_ORGANIZATION = "HealthcareService:organization";
+    public static final String INCLUDE_PRACTITIONERROLE_PARTOF = "PractitionerRole:partof";
+    public static final String REVINCLUDE_DEVICE_ORGANIZATION = "Device:organization";
+    public static final String REVINCLUDE_HEALTHCARESERVICE_ORGANIZATION = "HealthcareService:organization";
+    public static final String REVINCLUDE_ORGANIZATION_ENDPOINT = "Organization:endpoint";
+    public static final String REVINCLUDE_ORGANIZATION_PARTOF = "Organization:partof";
+    public static final String REVINCLUDE_PRACTITIONERROLE_ORGANIZATION = "PractitionerRole:organization";
+    public static final String REVINCLUDE_PRACTITIONERROLE_PRACTITIONER = "PractitionerRole:practitioner";
 
     public ASComplexSearchConfig() {
         var organizationSearchConfig = FhirResourceSearchConfig.builder().name("Organization").profile("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Organization").build();
 
+        organizationSearchConfig.setSearchIncludes(
+                INCLUDE_ALL,
+                REVINCLUDE_DEVICE_ORGANIZATION);
+        organizationSearchConfig.setSearchRevIncludes(
+                REVINCLUDE_DEVICE_ORGANIZATION,
+                INCLUDE_HEALTHCARESERVICE_ORGANIZATION,
+                REVINCLUDE_ORGANIZATION_ENDPOINT,
+                REVINCLUDE_ORGANIZATION_PARTOF,
+                REVINCLUDE_PRACTITIONERROLE_ORGANIZATION,
+                REVINCLUDE_PRACTITIONERROLE_PRACTITIONER
+        );
         var params = new ArrayList<SearchParamConfig>();
         params.add(SearchParamConfig.builder().name(IAnyResource.SP_RES_ID).urlParameter(IAnyResource.SP_RES_ID).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_T_ID).resourcePaths(List.of(ResourcePathConfig.builder().path("id").build())).build());
         params.add(SearchParamConfig.builder().name(Organization.SP_ACTIVE).urlParameter(Organization.SP_ACTIVE).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_ORGANIZATION_ACTIVE).resourcePaths(List.of(ResourcePathConfig.builder().path("active").build())).build());
@@ -53,11 +72,24 @@ public class ASComplexSearchConfig extends ServerSearchConfig {
         params.add(SearchParamConfig.builder().name(LAST_UPDATED).urlParameter(LAST_UPDATED).searchType(StorageConstants.INDEX_TYPE_DATE_RANGE).description("").indexName(StorageConstants.INDEX_T_LASTUPDATED).resourcePaths(List.of(ResourcePathConfig.builder().path("meta|lastUpdated").build())).build());
         params.add(SearchParamConfig.builder().name("pharmacy-licence").urlParameter("pharmacy-licence").searchType(StorageConstants.INDEX_TYPE_STRING).description("").indexName("t_pharmacy-licence").resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='https://annuaire.sante.gouv.fr/fhir/StructureDefinition/Organization-PharmacyLicence']|value").build())).build());
         params.add(SearchParamConfig.builder().name("mailbox-mss").urlParameter("mailbox-mss").searchType(StorageConstants.INDEX_TYPE_STRING).description("").indexName(StorageConstants.INDEX_ORGANIZATION_MAILBOX_MSS).resourcePaths(List.of(ResourcePathConfig.builder().path("extension.?[#this.url=='https://annuaire.sante.gouv.fr/fhir/StructureDefinition/MailboxMSS']|extension.?[#this.url=='value']|value").build())).build());
+        params.add(SearchParamConfig.builder().name("address-line").urlParameter("address-line").searchType(StorageConstants.INDEX_TYPE_STRING).description("").indexName(StorageConstants.INDEX_ORGANIZATION_ADDRESS_LINE).resourcePaths(List.of(ResourcePathConfig.builder().path("address|line").build())).build());
         organizationSearchConfig.setSearchParams(params);
         this.getResources().add(organizationSearchConfig);
 
 
         var deviceSearchConfig = FhirResourceSearchConfig.builder().name("Device").profile("https://annuaire.sante.gouv.fr/fhir/StructureDefinition/AS-Device").build();
+        deviceSearchConfig.setSearchIncludes(
+                INCLUDE_ALL,
+                REVINCLUDE_HEALTHCARESERVICE_ORGANIZATION
+        );
+        deviceSearchConfig.setSearchRevIncludes(
+                REVINCLUDE_DEVICE_ORGANIZATION,
+                REVINCLUDE_HEALTHCARESERVICE_ORGANIZATION,
+                REVINCLUDE_ORGANIZATION_ENDPOINT,
+                REVINCLUDE_ORGANIZATION_PARTOF,
+                REVINCLUDE_PRACTITIONERROLE_ORGANIZATION,
+                REVINCLUDE_PRACTITIONERROLE_PRACTITIONER
+        );
 
         var deviceParams = new ArrayList<SearchParamConfig>();
         deviceParams.add(SearchParamConfig.builder().name(IAnyResource.SP_RES_ID).urlParameter(IAnyResource.SP_RES_ID).searchType(StorageConstants.INDEX_TYPE_TOKEN).description("").indexName(StorageConstants.INDEX_T_ID).resourcePaths(List.of(ResourcePathConfig.builder().path("id").build())).build());

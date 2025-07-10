@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.domain;
 
 /**
@@ -15,7 +14,7 @@ public final class StorageConstants {
     public static final String INDEX_TYPE_TOKEN = "token";
     public static final String INDEX_TYPE_STRING = "string";
     public static final String INDEX_TYPE_REFERENCE = "reference";
-    public static final String INDEX_TYPE_DATE_RANGE = "daterange";
+    public static final String INDEX_TYPE_DATE_RANGE = "date";
     public static final String INDEX_T_ID = "t_id";
     public static final String INDEX_T_FID = "t_fid";
     public static final String INDEX_T_PROFILE = "t_profile";
@@ -29,6 +28,7 @@ public final class StorageConstants {
     public static final String VALUE_SUFFIX = "-value";
     public static final String SYSTEM_SUFFIX = "-system";
     public static final String SYSVAL_SUFFIX = "-sysval";
+    public static final String INSENSITIVE_SUFFIX = "-i";
     public static final String ID_SUFFIX = "-id";
     public static final String REFERENCE_SUFFIX = "-reference";
     public static final String TYPE_SUFFIX = "-type";
@@ -96,6 +96,7 @@ public final class StorageConstants {
     public static final String INDEX_PRACTITIONER_ROLE_FAMILY = "t_family";
     public static final String INDEX_PRACTITIONER_ROLE_GIVEN = "t_given";
     public static final String INDEX_PRACTITIONER_ROLE_ROLE = "t_role";
+    public static final String INDEX_ORGANIZATION_ADDRESS_LINE = "t_address-line";
 
 
     private StorageConstants() {

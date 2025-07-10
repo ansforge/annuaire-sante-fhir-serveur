@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.rass.service.json;
 
 import ca.uhn.fhir.context.FhirContext;
@@ -9,11 +8,14 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.google.common.collect.Lists;
 import fr.ans.afas.domain.ResourceAndSubResources;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import org.hl7.fhir.r4.model.*;
+import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.SpelCompilerMode;
+import org.springframework.expression.spel.SpelParserConfiguration;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.StringUtils;
@@ -24,7 +26,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * An automatic serializer that can serialize fhir objects with a {@link SearchConfig}
+ * An automatic serializer that can serialize fhir objects with a {@link SearchConfigService}
  * <p>
  * This serializer use the config path to find objects in the fhir resource. The path definition follow the Spel spring language
  * (<a href="https://docs.spring.io/spring-framework/docs/4.3.10.RELEASE/spring-framework-reference/html/expressions.html">...</a>)
@@ -38,14 +40,24 @@ public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSub
     /**
      * The search configuration
      */
-    final SearchConfig searchConfig;
+    final SearchConfigService searchConfigService;
 
-    final ExpressionParser expressionParser = new SpelExpressionParser();
+    SpelParserConfiguration config = new SpelParserConfiguration(SpelCompilerMode.IMMEDIATE,
+            this.getClass().getClassLoader());
+
+    final ExpressionParser expressionParser = new SpelExpressionParser(config);
+
+
+    /**
+     * Used to cache spring spel expressions (they are compiled)
+     */
+    Map<String, Expression> cachedExpression = new HashMap<>();
+
 
     @Inject
-    public GenericSerializer(SearchConfig searchConfig, FhirContext fhirContext) {
+    public GenericSerializer(SearchConfigService searchConfigService, FhirContext fhirContext) {
         super(fhirContext);
-        this.searchConfig = searchConfig;
+        this.searchConfigService = searchConfigService;
 
     }
 
@@ -56,7 +68,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSub
 
     public void serialize(ResourceAndSubResources valueAndSubValues, JsonGenerator gen, SerializerProvider provider, boolean onlyIndexes) throws IOException {
         var value = valueAndSubValues.getResource();
-        var configs = searchConfig.getAllByFhirResource(value.fhirType());
+        var configs = searchConfigService.getAllByFhirResource(value.fhirType());
         if (configs == null) {
             if (logger.isErrorEnabled()) {
                 logger.error("Can't write {} resource. If you want to support this type, considère adding a specific configuration for this type.", value.fhirType());
@@ -69,12 +81,12 @@ public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSub
 
         var internalIndexes = Set.of("_lastUpdated", "_id");
 
-        for (var config : configs) {
+        for (var oneConfig : configs) {
             // we don't process internal indexes, they are already processed:
-            if (!internalIndexes.contains(config.getName())) {
+            if (!internalIndexes.contains(oneConfig.getName())) {
                 var extracts = new ArrayList<>();
                 // serialize paths:
-                for (var path : config.getResourcePaths()) {
+                for (var path : oneConfig.getResourcePaths()) {
                     var stringPath = path.getPath();
                     extracts.addAll(extractValues(value, stringPath));
                 }
@@ -91,7 +103,7 @@ public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSub
                 }
 
                 var theType = types.stream().iterator().next();
-                writeValue(value, gen, config, extracts, theType);
+                writeValue(value, gen, oneConfig, extracts, theType);
             }
 
         }
@@ -124,26 +136,26 @@ public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSub
     private void writeValue(DomainResource value, JsonGenerator gen, SearchParamConfig config, ArrayList<Object> extracts, Class<?> theType) throws IOException {
         if (theType.equals(String.class)) {
             if (config.getSearchType().equals("token")) {
-                this.writeMultiString(gen, extracts.stream().map(e -> new StringType((String) e)).collect(Collectors.toList()), config.getIndexName() + "-value");
+                this.writeMultiString(gen, extracts.stream().map(e -> new StringType((String) e)).toList(), config.getIndexName() + "-value");
             } else {
-                this.writeMultiString(gen, extracts.stream().map(e -> new StringType((String) e)).collect(Collectors.toList()), config.getIndexName());
+                this.writeMultiString(gen, extracts.stream().map(e -> new StringType((String) e)).toList(), config.getIndexName());
             }
         } else if (theType.equals(StringType.class)) {
-            this.writeMultiString(gen, extracts.stream().map(StringType.class::cast).collect(Collectors.toList()), config.getIndexName());
+            this.writeMultiString(gen, extracts.stream().map(StringType.class::cast).toList(), config.getIndexName());
         } else if (theType.equals(CodeType.class)) {
-            this.writeCodeTypes(gen, extracts.stream().map(CodeType.class::cast).collect(Collectors.toList()), config.getIndexName());
+            this.writeCodeTypes(gen, extracts.stream().map(CodeType.class::cast).toList(), config.getIndexName());
         } else if (theType.equals(Identifier.class)) {
-            this.writeIdentifiers(gen, extracts.stream().map(Identifier.class::cast).collect(Collectors.toList()), config.getIndexName());
+            this.writeIdentifiers(gen, extracts.stream().map(Identifier.class::cast).toList(), config.getIndexName());
         } else if (theType.equals(Reference.class)) {
-            this.writeMultiReferences(gen, extracts.stream().map(Reference.class::cast).collect(Collectors.toList()), config.getIndexName());
+            this.writeMultiReferences(gen, extracts.stream().map(Reference.class::cast).toList(), config.getIndexName());
         } else if (theType.equals(CodeableConcept.class)) {
-            this.writeCodeableConcepts(gen, extracts.stream().map(CodeableConcept.class::cast).collect(Collectors.toList()), config.getIndexName());
+            this.writeCodeableConcepts(gen, extracts.stream().map(CodeableConcept.class::cast).toList(), config.getIndexName());
         } else if (theType.equals(Boolean.class)) {
-            this.writeBooleansInProperty(gen, extracts.stream().map(e -> new BooleanType((Boolean) e)).collect(Collectors.toList()), config.getIndexName());
+            this.writeBooleansInProperty(gen, extracts.stream().map(e -> new BooleanType((Boolean) e)).toList(), config.getIndexName());
         } else if (theType.equals(CanonicalType.class)) {
-            this.writeMultiString(gen, extracts.stream().map(e -> new StringType(((CanonicalType) e).getValue())).collect(Collectors.toList()), config.getIndexName());
+            this.writeMultiString(gen, extracts.stream().map(e -> new StringType(((CanonicalType) e).getValue())).toList(), config.getIndexName());
         } else if (theType.equals(HumanName.class)) {
-            this.writeHumanNames(gen, extracts.stream().map(HumanName.class::cast).collect(Collectors.toList()), config.getIndexName());
+            this.writeHumanNames(gen, extracts.stream().map(HumanName.class::cast).toList(), config.getIndexName());
         } else {
             throw new BadConfigurationException("Error during the serialization of the field: " + config.getName() + " for the resource " + value.fhirType() + ". Type of the field " + theType + " not supported. Please refer to the documentation to see supported types.");
         }
@@ -168,7 +180,15 @@ public class GenericSerializer extends FhirBaseResourceSerializer<ResourceAndSub
      * @return extracted values
      */
     protected Collection<Object> extractValuesInternal(Collection<Object> values, Deque<String> stringPath) {
-        var expression = expressionParser.parseExpression(stringPath.getFirst());
+        var elem = values.stream().findAny();
+        if (elem.isEmpty()) {
+            return List.of();
+        }
+        var cacheKey = elem.get().getClass() + "_" + stringPath.getFirst();
+
+
+        cachedExpression.computeIfAbsent(cacheKey, k -> expressionParser.parseExpression(stringPath.getFirst()));
+        var expression = cachedExpression.get(cacheKey);
 
         var results = new ArrayList<>();
         for (var eachValue : values) {

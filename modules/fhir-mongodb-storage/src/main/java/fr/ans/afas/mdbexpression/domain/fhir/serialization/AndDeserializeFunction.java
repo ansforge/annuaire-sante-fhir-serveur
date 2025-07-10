@@ -1,10 +1,9 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.mdbexpression.domain.fhir.serialization;
 
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.expression.Expression;
 import fr.ans.afas.fhirserver.search.expression.ExpressionFactory;
 import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
@@ -20,7 +19,7 @@ import org.springframework.util.StringUtils;
  */
 public class AndDeserializeFunction implements DeserializeFunction<Bson> {
     @Override
-    public Expression<Bson> process(SearchConfig searchConfig, ExpressionFactory<Bson> expressionFactory, ExpressionSerializer<Bson> expressionDeserializer, String val) {
+    public Expression<Bson> process(SearchConfigService searchConfigService, ExpressionFactory<Bson> expressionFactory, ExpressionSerializer<Bson> expressionDeserializer, String val) {
         var mongoDbAndExpression = new MongoDbAndExpression();
         if (StringUtils.hasLength(val)) {
             var parts = val.split("\\" + Expression.SERIALIZE_SEPARATOR);

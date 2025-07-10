@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.validation;
 
 import fr.ans.afas.exception.BadDataFormatException;
@@ -31,13 +30,13 @@ public class DataValidationUtils {
     /**
      * Hl7 Fhir regex for decimal
      */
-    static final Predicate<String> patternDecimal = compile("^-?(0|[1-9][0-9]{0,17})(\\.[0-9]{1,17})?([eE][+-]?[0-9]{1,9}})?$").asPredicate();
+    static final Predicate<String> patternDecimal = compile("^-?(0|[1-9]\\d{0,17})(\\.\\d{1,17})?([eE][+-]?\\d{1,9}})?$").asPredicate();
     /**
      * Hl7 Fhir regex for date time
      * The original one is : ^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1])(T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]{1,9})?)?)?(Z|(\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00)?)?)?$
      * But is too complex so we use a simplified one
      */
-    static final Predicate<String> patternDateTime = compile("^[0-9]{4}(-[0-9]{2})?(-[0-9]{2})?(T[0-9]{2})?[-+0-9:.]{0,18}$").asPredicate();
+    static final Predicate<String> patternDateTime = compile("^\\d{4}(-\\d{2})?(-\\d{2})?(T\\d{2})?[-+0-9:.]{0,18}$").asPredicate();
     /**
      * A regex to validate parameters
      */
@@ -87,7 +86,7 @@ public class DataValidationUtils {
      */
     public static void validateString(String value) throws BadDataFormatException {
         assertNotNull(value);
-        if (value.length() == 0) {
+        if (value.isEmpty()) {
             throw new BadDataFormatException("String should contain non-whitespace content.");
         }
         if (value.length() > 1_048_576) {

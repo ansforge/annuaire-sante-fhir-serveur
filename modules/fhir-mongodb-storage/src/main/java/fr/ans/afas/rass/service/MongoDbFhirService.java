@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.rass.service;
 
 import ca.uhn.fhir.context.FhirContext;
@@ -10,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.CountOptions;
@@ -19,10 +17,11 @@ import com.mongodb.client.model.ReplaceOneModel;
 import fr.ans.afas.domain.FhirBundleBuilder;
 import fr.ans.afas.domain.ResourceAndSubResources;
 import fr.ans.afas.domain.StorageConstants;
+import fr.ans.afas.exception.ResourceNotFoundException;
 import fr.ans.afas.fhirserver.hook.event.*;
 import fr.ans.afas.fhirserver.hook.service.HookService;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.data.SearchContext;
 import fr.ans.afas.fhirserver.search.expression.IncludeExpression;
 import fr.ans.afas.fhirserver.search.expression.SelectExpression;
@@ -30,7 +29,6 @@ import fr.ans.afas.fhirserver.service.FhirPage;
 import fr.ans.afas.fhirserver.service.FhirPageIterator;
 import fr.ans.afas.fhirserver.service.FhirStoreService;
 import fr.ans.afas.fhirserver.service.data.CountResult;
-import fr.ans.afas.fhirserver.service.exception.BadRequestException;
 import fr.ans.afas.fhirserver.service.exception.CantReadFhirResource;
 import fr.ans.afas.fhirserver.service.exception.CantWriteFhirResource;
 import fr.ans.afas.fhirserver.service.exception.TooManyElementToDeleteException;
@@ -68,7 +66,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
     /**
      * When the request is not supported
      */
-    public static final String CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED = "Can't process the request. Resource type not supported";
+    public static final String CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED = "Can't process the request. Resource type not supported. Server knows how to handle: [Device, HealthcareService, Organization, Practitioner, PractitionerRole]";
     public static final float MAX_OLD_REVISION_DELETION_PERCENT = 0.15f;
 
 
@@ -88,26 +86,18 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
     /**
      * Service to access the database
      */
-    final DatabaseService databaseService;
+    final MongoMultiTenantService mongoMultiTenantService;
     /**
      * The fhir context
      */
     final FhirContext fhirContext;
     /**
-     * The mongodb client
-     */
-    final MongoClient mongoClient;
-    /**
      * The search configuration
      */
 
-    final SearchConfig searchConfig;
-    /**
-     * All fhir collections
-     */
-    final Set<String> fhirCollections = new HashSet<>();
-    @Value("${afas.fhir.max-include-size:5000}")
-    int maxIncludePageSize;
+    final SearchConfigService searchConfigService;
+
+
     @Value("${afas.fhir.max-count-calculation-time:1000}")
     int maxCountCalculationTime;
 
@@ -115,18 +105,14 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
     public MongoDbFhirService(
             List<FhirBaseResourceSerializer<ResourceAndSubResources>> serializers,
             FhirBaseResourceDeSerializer fhirBaseResourceDeSerializer,
-            MongoClient mongoClient,
-            SearchConfig searchConfig,
+            SearchConfigService searchConfigService,
             FhirContext fhirContext,
             HookService hookService,
-            int maxIncludePageSize,
-            DatabaseService databaseService
+            MongoMultiTenantService mongoMultiTenantService
     ) {
-        this.mongoClient = mongoClient;
-        this.searchConfig = searchConfig;
+        this.searchConfigService = searchConfigService;
         this.fhirContext = fhirContext;
-        this.maxIncludePageSize = maxIncludePageSize;
-        this.databaseService = databaseService;
+        this.mongoMultiTenantService = mongoMultiTenantService;
         this.hookService = hookService;
 
         var module = new SimpleModule();
@@ -135,18 +121,17 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
         }
         module.addDeserializer(DomainResource.class, fhirBaseResourceDeSerializer);
         om.registerModule(module);
-        fhirCollections.addAll(searchConfig.getResources());
     }
 
 
     @Override
     public List<IIdType> store(Collection<? extends DomainResource> fhirResources, boolean overrideLastUpdated) {
-        return this.storeWithDependencies(fhirResources.stream().map(r -> ResourceAndSubResources.builder().resource(r).build()).collect(Collectors.toList()), overrideLastUpdated, false);
+        return this.storeWithDependencies(fhirResources.stream().map(r -> ResourceAndSubResources.builder().resource(r).build()).toList(), overrideLastUpdated, false);
     }
 
     @Override
     public List<IIdType> store(Collection<? extends DomainResource> fhirResources, boolean overrideLastUpdated, boolean forceUpdate) {
-        return this.storeWithDependencies(fhirResources.stream().map(r -> ResourceAndSubResources.builder().resource(r).build()).collect(Collectors.toList()), overrideLastUpdated, forceUpdate);
+        return this.storeWithDependencies(fhirResources.stream().map(r -> ResourceAndSubResources.builder().resource(r).build()).toList(), overrideLastUpdated, forceUpdate);
     }
 
 
@@ -177,12 +162,11 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
             logger.debug("No resource to store.");
             return List.of();
         }
-        var fhirResourceType = fhirResources.iterator().next().getResource().getResourceType().name();
-        var mongoDatabase = mongoClient.getDatabase(this.databaseService.getDatabase());
-        MongoCollection<Document> collection = mongoDatabase.getCollection(fhirResourceType);
+        String resourceType = getResourceTypeByResourceList(fhirResources);
+        MongoCollection<Document> collection = getCollection(resourceType);
         var now = new Date().getTime();
 
-        var toSave = prepareResourcesToSave(fhirResources, fhirResourceType);
+        var toSave = prepareResourcesToSave(fhirResources, resourceType);
         var toUpdate = new HashMap<String, IdResourceDocument>();
         var toInsert = new HashMap<String, IdResourceDocument>();
 
@@ -211,21 +195,21 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
 
 
         if (!toInsert.values().isEmpty()) {
-            collection.insertMany(toInsert.values().stream().map(IdResourceDocument::getNewDocument).collect(Collectors.toList()));
+            collection.insertMany(toInsert.values().stream().map(IdResourceDocument::getNewDocument).toList());
         } else {
             logger.debug("No item to insert");
         }
 
         if (!toUpdate.isEmpty()) {
             // update old
-            collection.bulkWrite(toUpdate.values().stream().map(e -> new ReplaceOneModel<>(new Document(MongoQueryUtils.ID_ATTRIBUTE, e.getOldDocument().get(MongoQueryUtils.ID_ATTRIBUTE)), e.getOldDocument())).collect(Collectors.toList()));
+            collection.bulkWrite(toUpdate.values().stream().map(e -> new ReplaceOneModel<>(new Document(MongoQueryUtils.ID_ATTRIBUTE, e.getOldDocument().get(MongoQueryUtils.ID_ATTRIBUTE)), e.getOldDocument())).toList());
             // save new
-            collection.insertMany(toUpdate.values().stream().map(IdResourceDocument::getNewDocument).collect(Collectors.toList()));
+            collection.insertMany(toUpdate.values().stream().map(IdResourceDocument::getNewDocument).toList());
         }
 
 
         if (!toFlagAsNotUpdated.entrySet().isEmpty()) {
-            collection.bulkWrite(toFlagAsNotUpdated.values().stream().map(e -> new ReplaceOneModel<>(new Document(MongoQueryUtils.ID_ATTRIBUTE, e.getOldDocument().get(MongoQueryUtils.ID_ATTRIBUTE)), e.getOldDocument())).collect(Collectors.toList()));
+            collection.bulkWrite(toFlagAsNotUpdated.values().stream().map(e -> new ReplaceOneModel<>(new Document(MongoQueryUtils.ID_ATTRIBUTE, e.getOldDocument().get(MongoQueryUtils.ID_ATTRIBUTE)), e.getOldDocument())).toList());
         }
 
 
@@ -359,8 +343,8 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
         // call hooks:
         hookService.callHook(new BeforeSearchEvent(searchContext, selectExpression));
 
-        if (!fhirCollections.contains(selectExpression.getFhirResource())) {
-            throw new BadRequestException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
+        if (!searchConfigService.getResources().contains(selectExpression.getFhirResource())) {
+            throw new ResourceNotFoundException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
         }
 
         if (searchContext == null) {
@@ -376,11 +360,11 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
 
         // The search:
         if (savedLastId != null) { // next page
-            cursorWrapper = MongoQueryUtils.searchNextPage(this.searchConfig, selectExpression.getCount(), searchContext, selectExpression, collection, savedLastId);
+            cursorWrapper = MongoQueryUtils.searchNextPage(this.searchConfigService, selectExpression.getCount(), searchContext, selectExpression, collection, savedLastId, mongoMultiTenantService);
             searchRevision = searchContext.getRevision();
         } else { // first page:
             searchRevision = new Date().getTime();
-            cursorWrapper = MongoQueryUtils.searchFirstPage(this.searchConfig, selectExpression.getCount(), selectExpression, collection, searchRevision);
+            cursorWrapper = MongoQueryUtils.searchFirstPage(this.searchConfigService, selectExpression.getCount(), selectExpression, collection, searchRevision, mongoMultiTenantService);
         }
 
 
@@ -406,7 +390,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
                 ret.add(domainResource);
 
                 // inclusion:
-                MongoQueryUtils.extractIncludeReferences(searchConfig, selectExpression.getFhirResource(), selectExpression, includesTypeReference, doc);
+                MongoQueryUtils.extractIncludeReferences(searchConfigService, selectExpression.getFhirResource(), selectExpression, includesTypeReference, doc);
                 // end inclusion
 
                 // revinclude
@@ -450,8 +434,8 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
         // call hooks:
         hookService.callHook(new BeforeSearchEvent(searchContext, selectExpression));
 
-        if (!fhirCollections.contains(selectExpression.getFhirResource())) {
-            throw new BadRequestException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
+        if (!searchConfigService.getResources().contains(selectExpression.getFhirResource())) {
+            throw new ResourceNotFoundException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
         }
 
         if (searchContext == null) {
@@ -467,24 +451,26 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
         CloseableWrapper<MongoCursor<Document>> cursorWrapper;
         var savedLastId = searchContext.getFirstId();
         long searchRevision;
+        Set<String> elements;
 
         final var total = new Long[1];
         // The search:
         if (savedLastId != null) { // next page
-            cursorWrapper = MongoQueryUtils.searchNextPage(this.searchConfig, selectExpression.getCount(), searchContext, selectExpression, collection, savedLastId);
+            cursorWrapper = MongoQueryUtils.searchNextPage(this.searchConfigService, selectExpression.getCount(), searchContext, selectExpression, collection, savedLastId, mongoMultiTenantService);
             searchRevision = searchContext.getRevision();
             total[0] = searchContext.getTotal();
+            elements = searchContext.getElements();
         } else { // first page:
             searchRevision = new Date().getTime();
-            total[0] = this.count(selectExpression).getTotal();
-            cursorWrapper = MongoQueryUtils.searchFirstPage(this.searchConfig, selectExpression.getCount(), selectExpression, collection, searchRevision);
+            total[0] = searchContext.getTotal();
+            elements = selectExpression.getElements();
+            cursorWrapper = MongoQueryUtils.searchFirstPage(this.searchConfigService, selectExpression.getCount(), selectExpression, collection, searchRevision, mongoMultiTenantService);
         }
-
 
         //noinspection resource
         MongoCursor<Document> cursor = cursorWrapper.content();
 
-        return new DefaultFhirPageIterator(searchConfig, cursor, selectExpression, total, searchRevision);
+        return new DefaultFhirPageIterator(searchConfigService, cursor, selectExpression, total, searchRevision, elements);
     }
 
 
@@ -498,27 +484,29 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
      */
     private void addRevIncludes(long searchRevision, SelectExpression<Bson> selectExpression, ArrayList<DomainResource> ret, Set<String> ids) {
         var includes = selectExpression.getRevincludes();
-        ret.addAll(findRevIncludes(searchRevision, ids, includes));
+        ret.addAll(findRevIncludesV1(searchRevision, ids, includes));
     }
 
-    @Override
+    /**
+     * @deprecated (Used for version HAPI ( V1))
+     */
+    @Deprecated(forRemoval = true)
     @NotNull
-    public List<DomainResource> findRevIncludes(long searchRevision, Set<String> ids, Set<IncludeExpression<Bson>> includes) {
+    public List<DomainResource> findRevIncludesV1(long searchRevision, Set<String> ids, Set<IncludeExpression<Bson>> includes) {
         var elements = new ArrayList<DomainResource>();
         for (var inclusion : includes) {
-            if (inclusion.getType() == null || !fhirCollections.contains(inclusion.getType())) {
-                throw new BadRequestException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
+            if (inclusion.getType() == null || !searchConfigService.getResources().contains(inclusion.getType())) {
+                throw new ResourceNotFoundException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
             }
             var collectionIncluded = getCollection(inclusion.getType());
-            var config = searchConfig.getSearchConfigByPath(FhirSearchPath.builder().resource(inclusion.getType()).path(inclusion.getName()).build());
+            var config = searchConfigService.getSearchConfigByPath(FhirSearchPath.builder().resource(inclusion.getType()).path(inclusion.getName()).build());
             if (config.isEmpty()) {
                 throw new CantReadFhirResource("Search not supported on path: " + inclusion.getType() + "." + inclusion.getName());
             }
             FindIterable<Document> inclusionResult = collectionIncluded
                     .find(MongoQueryUtils.wrapQueryWithRevisionDate(
                             searchRevision,
-                            Filters.in(config.get().getIndexName() + "-reference", ids)))
-                    .limit(maxIncludePageSize);
+                            Filters.in(config.get().getIndexName() + "-reference", ids)));
 
             try (MongoCursor<Document> cursor = inclusionResult.cursor()) {
                 while (cursor.hasNext()) {
@@ -527,6 +515,33 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
                 }
             } catch (JsonProcessingException e) {
                 throw new CantReadFhirResource("Error converting the MongoDb Document to a FHIR resource when getting _revincludes");
+            }
+        }
+        return elements;
+    }
+
+    @Override
+    @NotNull
+    public List<FhirBundleBuilder.BundleEntry> findRevIncludes(long searchRevision, Set<String> ids, Set<IncludeExpression<Bson>> includes) {
+        List<FhirBundleBuilder.BundleEntry> elements = new ArrayList<>();
+        for (var inclusion : includes) {
+            if (inclusion.getType() == null || !searchConfigService.getResources().contains(inclusion.getType())) {
+                throw new ResourceNotFoundException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
+            }
+            var collectionIncluded = getCollection(inclusion.getType());
+            var config = searchConfigService.getSearchConfigByPath(FhirSearchPath.builder().resource(inclusion.getType()).path(inclusion.getName()).build());
+            if (config.isEmpty()) {
+                throw new CantReadFhirResource("Search not supported on path: " + inclusion.getType() + "." + inclusion.getName());
+            }
+            FindIterable<Document> inclusionResult = collectionIncluded
+                    .find(MongoQueryUtils.wrapQueryWithRevisionDate(
+                            searchRevision,
+                            Filters.in(config.get().getIndexName() + "-reference", ids)));
+
+            MongoCursor<Document> cursor = inclusionResult.cursor();
+            while (cursor.hasNext()) {
+                var doc = cursor.next();
+                elements.add(new FhirBundleBuilder.BundleEntry(inclusion.getType(), doc.getString("t_id"), ((Document) doc.get("fhir")).toJson()));
             }
         }
         return elements;
@@ -545,8 +560,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
             FindIterable<Document> inclusionResult = collectionForInclude
                     .find(MongoQueryUtils.wrapQueryWithRevisionDate(
                             searchRevision,
-                            Filters.in(StorageConstants.INDEX_T_FID, resourceTypeAndValue.getValue())))
-                    .limit(maxIncludePageSize);
+                            Filters.in(StorageConstants.INDEX_T_FID, resourceTypeAndValue.getValue())));
             try (MongoCursor<Document> cursor = inclusionResult.cursor()) {
                 while (cursor.hasNext()) {
                     var doc = cursor.next();
@@ -573,7 +587,6 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
                         MongoQueryUtils.wrapQueryWithRevisionDate(
                                 searchRevision,
                                 Filters.in(StorageConstants.INDEX_T_FID, ids)))
-                .limit(maxIncludePageSize)
                 .cursor();
         return new Iterator<>() {
             @Override
@@ -603,8 +616,8 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
         // call hooks:
         hookService.callHook(new BeforeCountEvent(selectExpression));
 
-        if (!fhirCollections.contains(selectExpression.getFhirResource())) {
-            throw new BadRequestException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
+        if (!searchConfigService.getResources().contains(selectExpression.getFhirResource())) {
+            throw new ResourceNotFoundException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
         }
 
         var collection = getCollection(selectExpression.getFhirResource());
@@ -614,10 +627,10 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
             case BEST_EFFORT:
                 var c = new CountOptions();
                 c.maxTime(maxCountCalculationTime, TimeUnit.MILLISECONDS);
-                cr = MongoQueryUtils.count(this.searchConfig, collection, selectExpression, c);
+                cr = MongoQueryUtils.count(this.searchConfigService, collection, selectExpression, c, mongoMultiTenantService);
                 break;
             case ALWAYS:
-                cr = MongoQueryUtils.count(this.searchConfig, collection, selectExpression, new CountOptions());
+                cr = MongoQueryUtils.count(this.searchConfigService, collection, selectExpression, new CountOptions(), mongoMultiTenantService);
                 break;
             case NONE:
             default:
@@ -642,8 +655,8 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
         // call hooks:
         hookService.callHook(new BeforeFindByIdEvent(type, theId));
 
-        if (!fhirCollections.contains(type)) {
-            throw new BadRequestException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
+        if (!searchConfigService.getResources().contains(type)) {
+            throw new ResourceNotFoundException(CAN_T_PROCESS_THE_REQUEST_RESOURCE_TYPE_NOT_SUPPORTED);
         }
 
         var collection = getCollection(type);
@@ -676,7 +689,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
         // call hooks:
         hookService.callHook(new BeforeDeleteAllEvent());
 
-        for (var c : fhirCollections) {
+        for (var c : searchConfigService.getResources()) {
             getCollection(c).deleteMany(new BsonDocument());
         }
 
@@ -687,7 +700,7 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
     @Override
     public void deleteElementsNotStoredSince(long timestamp) throws TooManyElementToDeleteException {
         var validTo = Filters.lt(MongoQueryUtils.LAST_WRITE_DATE, timestamp);
-        for (var c : fhirCollections) {
+        for (var c : searchConfigService.getResources()) {
             var collection = getCollection(c);
             var toDelete = (double) collection.countDocuments(validTo);
             var total = (double) collection.countDocuments();
@@ -713,6 +726,26 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
         return result.getDeletedCount() == 1;
     }
 
+
+    @Override
+    public boolean businessDelete(String type, IIdType theId) {
+        // call hooks:
+        hookService.callHook(BeforeDeleteEvent.builder().resourceId(theId).build());
+
+        var collection = getCollection(type);
+
+
+        var now = new Date().getTime();
+        var update = new Document("$set", new Document(MongoQueryUtils.VALID_TO_ATTRIBUTE, now));
+        collection.updateMany(Filters.eq(StorageConstants.INDEX_T_ID, theId.getIdPart()), update);
+
+        // call hooks:
+        hookService.callHook(AfterDeleteEvent.builder().resourceId(theId).build());
+
+        return true;
+    }
+
+
     /**
      * Delete elements that have a validTo date before a timestamp (MongoDbFhirService.VALID_TO_ATTRIBUTE / _validTo).
      *
@@ -720,23 +753,24 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
      */
     public void deleteOldRevisions(long timestamp) {
         var validTo = Filters.lt(MongoQueryUtils.VALID_TO_ATTRIBUTE, timestamp);
-        for (var c : fhirCollections) {
+        for (var c : searchConfigService.getResources()) {
             getCollection(c).deleteMany(validTo);
         }
     }
 
+    private String getResourceTypeByResourceList(Collection<ResourceAndSubResources> fhirResources) {
+        return fhirResources.iterator().next().getResource().getResourceType().name();
+    }
 
     /**
      * Get the mongodb collection by FHIR name
      *
-     * @param type the FHIR name of the collection
+     * @param resourceType the FHIR name of the collection
      * @return the collection
      */
-    MongoCollection<Document> getCollection(String type) {
-        var mongoDatabase = mongoClient.getDatabase(this.databaseService.getDatabase());
-        return mongoDatabase.getCollection(type);
+    private MongoCollection<Document> getCollection(String resourceType) {
+        return mongoMultiTenantService.getCollection(resourceType);
     }
-
 
     /**
      * Set the value of the max duration time used for the count calculation. This value is in ms.

@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhir;
 
 import ca.uhn.fhir.rest.api.server.IBundleProvider;
@@ -19,11 +18,7 @@ import org.hl7.fhir.r4.model.InstantType;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * The Hapi Fhir bundle provider implementation.
@@ -62,7 +57,7 @@ public class AfasBundleProvider<T> implements IBundleProvider {
      */
     final String type;
     /**
-     * The expression that have create the bundle
+     * The expression that have created the bundle
      */
     final SelectExpression<T> selectExpression;
     /**
@@ -172,7 +167,7 @@ public class AfasBundleProvider<T> implements IBundleProvider {
     @NotNull
     @Override
     public List<IBaseResource> getResources(int i, int to) {
-        return page.getPage().stream().collect(Collectors.toList());
+        return new ArrayList<>(page.getPage());
     }
 
     /**

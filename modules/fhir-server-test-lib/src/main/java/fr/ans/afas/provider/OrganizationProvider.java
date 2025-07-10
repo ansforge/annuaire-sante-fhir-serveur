@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.provider;
 
 import ca.uhn.fhir.context.FhirContext;
@@ -59,13 +58,13 @@ public class OrganizationProvider<T> extends AsBaseResourceProvider<T> implement
     @Search()
     public IBundleProvider search(@Count Integer theCount,
                                   @OptionalParam(name = IAnyResource.SP_RES_ID)
-                                          TokenAndListParam theId,
+                                  TokenAndListParam theId,
                                   @OptionalParam(name = Organization.SP_IDENTIFIER)
-                                          TokenAndListParam theIdentifier,
+                                      TokenAndListParam theIdentifier,
                                   @OptionalParam(name = "_lastUpdated")
-                                          DateRangeParam theLastUpdated,
+                                      DateRangeParam theLastUpdated,
                                   @OptionalParam(name = Organization.SP_NAME)
-                                          StringAndListParam theName) throws BadDataFormatException {//
+                                      StringAndListParam theName) throws BadDataFormatException {//
         var selectExpression = new SelectExpression<>(FhirServerConstants.ORGANIZATION_FHIR_RESOURCE_NAME, expressionFactory);
         selectExpression.setCount(theCount);
         selectExpression.fromFhirParams(FhirSearchPath.builder().resource(FhirServerConstants.ORGANIZATION_FHIR_RESOURCE_NAME).path(IAnyResource.SP_RES_ID).build(), theId);

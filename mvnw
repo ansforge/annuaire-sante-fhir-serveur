@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# (c) Copyright 1998-2022, ANS. All rights reserved.
+# (c) Copyright 1998-2025, ANS. All rights reserved.
 #
 
 # ----------------------------------------------------------------------------

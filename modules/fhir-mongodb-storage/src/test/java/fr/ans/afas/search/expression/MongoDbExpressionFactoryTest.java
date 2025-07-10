@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.search.expression;
 
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
@@ -11,7 +10,7 @@ import fr.ans.afas.fhirserver.search.expression.QuantityExpression;
 import fr.ans.afas.fhirserver.search.expression.StringExpression;
 import fr.ans.afas.fhirserver.search.expression.TokenExpression;
 import fr.ans.afas.mdbexpression.domain.fhir.MongoDbExpressionFactory;
-import fr.ans.afas.mdbexpression.domain.fhir.TestSearchConfig;
+import fr.ans.afas.mdbexpression.domain.fhir.TestSearchConfigService;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -25,16 +24,16 @@ import java.util.List;
  */
 public class MongoDbExpressionFactoryTest {
 
-    static final FhirSearchPath pathHasParam = FhirSearchPath.builder().resource(TestSearchConfig.FHIR_RESOURCE_SUB_NAME).path("string_sub_path").build();
-    static final FhirSearchPath pathHasParamToken = FhirSearchPath.builder().resource(TestSearchConfig.FHIR_RESOURCE_SUB_NAME).path("token_sub_path").build();
-    static final FhirSearchPath pathHasLink = FhirSearchPath.builder().resource(TestSearchConfig.FHIR_RESOURCE_SUB_NAME).path("parentPath").build();
+    static final FhirSearchPath pathHasParam = FhirSearchPath.builder().resource(TestSearchConfigService.FHIR_RESOURCE_SUB_NAME).path("string_sub_path").build();
+    static final FhirSearchPath pathHasParamToken = FhirSearchPath.builder().resource(TestSearchConfigService.FHIR_RESOURCE_SUB_NAME).path("token_sub_path").build();
+    static final FhirSearchPath pathHasLink = FhirSearchPath.builder().resource(TestSearchConfigService.FHIR_RESOURCE_SUB_NAME).path("parentPath").build();
 
 
     @Test
     public void referenceExpressionTest() {
-        var expressionFactory = new MongoDbExpressionFactory(new TestSearchConfig());
+        var expressionFactory = new MongoDbExpressionFactory(new TestSearchConfigService().applyTestSearchConfigComplete());
 
-        var path = FhirSearchPath.builder().path(TestSearchConfig.FHIR_RESOURCE_REFERENCE_PATH).resource(TestSearchConfig.FHIR_RESOURCE_NAME).build();
+        var path = FhirSearchPath.builder().path(TestSearchConfigService.FHIR_RESOURCE_REFERENCE_PATH).resource(TestSearchConfigService.FHIR_RESOURCE_NAME).build();
         var eRef = expressionFactory.newReferenceExpression(path, "A/12");
 
         Assert.assertEquals(path, eRef.getFhirPath());
@@ -48,8 +47,8 @@ public class MongoDbExpressionFactoryTest {
 
     @Test
     public void quantityExpressionTest() {
-        var expressionFactory = new MongoDbExpressionFactory(new TestSearchConfig());
-        var path = FhirSearchPath.builder().path("quantityPath").resource(TestSearchConfig.FHIR_RESOURCE_NAME).build();
+        var expressionFactory = new MongoDbExpressionFactory(new TestSearchConfigService().applyTestSearchConfigComplete());
+        var path = FhirSearchPath.builder().path("quantityPath").resource(TestSearchConfigService.FHIR_RESOURCE_NAME).build();
         var qRef = expressionFactory.newQuantityExpression(path, 1, QuantityExpression.Operator.LT);
 
         Assert.assertEquals(path, qRef.getFhirPath());
@@ -60,7 +59,7 @@ public class MongoDbExpressionFactoryTest {
 
     @Test
     public void hasExpressionStringTest() {
-        var expressionFactory = new MongoDbExpressionFactory(new TestSearchConfig());
+        var expressionFactory = new MongoDbExpressionFactory(new TestSearchConfigService().applyTestSearchConfigComplete());
         var hasCondString = expressionFactory.newHasExpression(pathHasLink, pathHasParam, List.of("val1", "val2"));
 
         Assert.assertEquals(pathHasLink, hasCondString.getFhirPath());
@@ -72,14 +71,14 @@ public class MongoDbExpressionFactoryTest {
         Assert.assertEquals("val1", exp1.getValue());
         Assert.assertEquals("val2", exp2.getValue());
         Assert.assertEquals("string_sub_path", exp2.getFhirPath().getPath());
-        Assert.assertEquals(TestSearchConfig.FHIR_RESOURCE_SUB_NAME, exp2.getFhirPath().getResource());
+        Assert.assertEquals(TestSearchConfigService.FHIR_RESOURCE_SUB_NAME, exp2.getFhirPath().getResource());
 
     }
 
 
     @Test
     public void hasExpressionTokenTest() {
-        var expressionFactory = new MongoDbExpressionFactory(new TestSearchConfig());
+        var expressionFactory = new MongoDbExpressionFactory(new TestSearchConfigService().applyTestSearchConfigComplete());
         var hasCondToken = expressionFactory.newHasExpression(pathHasLink, pathHasParamToken, List.of("a|1", "2"));
 
         Assert.assertEquals(pathHasLink, hasCondToken.getFhirPath());
@@ -93,7 +92,7 @@ public class MongoDbExpressionFactoryTest {
         Assert.assertEquals("2", exp2.getValue());
         Assert.assertNull(exp2.getSystem());
         Assert.assertEquals("token_sub_path", exp2.getFhirPath().getPath());
-        Assert.assertEquals(TestSearchConfig.FHIR_RESOURCE_SUB_NAME, exp2.getFhirPath().getResource());
+        Assert.assertEquals(TestSearchConfigService.FHIR_RESOURCE_SUB_NAME, exp2.getFhirPath().getResource());
 
     }
 

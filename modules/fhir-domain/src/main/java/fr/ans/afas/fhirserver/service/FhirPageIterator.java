@@ -1,7 +1,6 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhirserver.service;
 
 import fr.ans.afas.domain.FhirBundleBuilder;
@@ -17,7 +16,13 @@ public interface FhirPageIterator extends Iterator<FhirBundleBuilder.BundleEntry
 
     Map<String, Set<String>> getIncludesTypeReference();
 
+    void clearIncludesTypeReference();
+
     Set<String> getRevIncludeIds();
+
+    void clearRevIncludeIds();
+
+    Set<String> getElements();
 
     boolean hasNextPage();
 }

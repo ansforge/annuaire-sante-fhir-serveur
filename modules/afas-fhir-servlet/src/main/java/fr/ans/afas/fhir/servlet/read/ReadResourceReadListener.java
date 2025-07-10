@@ -1,17 +1,16 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
-
 package fr.ans.afas.fhir.servlet.read;
 
-import ca.uhn.fhir.context.FhirContext;
-import fr.ans.afas.fhirserver.service.FhirStoreService;
+import fr.ans.afas.fhir.servlet.exception.BadRequestException;
+import fr.ans.afas.fhirserver.service.FhirServerContext;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.ReadListener;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
@@ -22,7 +21,10 @@ import java.io.IOException;
  */
 @Slf4j
 @RequiredArgsConstructor
+// TODO non lié au tenant
 public class ReadResourceReadListener<T> implements ReadListener {
+
+    private final FhirServerContext<T> fhirServerContext;
 
     /**
      * The servlet response
@@ -33,30 +35,24 @@ public class ReadResourceReadListener<T> implements ReadListener {
      * The context
      */
     private final AsyncContext asyncContext;
-    /**
-     * The fhir store service
-     */
-    private final FhirStoreService<T> fhirStoreService;
+
 
     /**
      * Parameters of the read operation
      */
     private final ReadSearchParams readSearchParams;
 
-    /**
-     * The fhir context
-     */
-    private final FhirContext fhirContext;
 
     @Override
     public void onDataAvailable() {
-        // no data for the read operation
+        // no data for the capability statement
+        throw new BadRequestException("This endpoint doens't support body");
     }
 
     @Override
     public void onAllDataRead() throws IOException {
         var output = response.getOutputStream();
-        var writeListener = new ReadResourceWriteListener<T>(output, asyncContext, fhirStoreService, readSearchParams, fhirContext);
+        var writeListener = new ReadResourceWriteListener<T>(fhirServerContext, output, asyncContext, readSearchParams);
         output.setWriteListener(writeListener);
     }
 

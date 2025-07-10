@@ -1,5 +1,5 @@
-/*
- * (c) Copyright 1998-2023, ANS. All rights reserved.
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
  */
 package fr.ans.afas.rass.service.impl;
 
@@ -13,7 +13,7 @@ import com.mongodb.client.model.CountOptions;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import fr.ans.afas.fhirserver.search.FhirSearchPath;
-import fr.ans.afas.fhirserver.search.config.SearchConfig;
+import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.config.domain.JoinPath;
 import fr.ans.afas.fhirserver.search.data.SearchContext;
 import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
@@ -21,6 +21,7 @@ import fr.ans.afas.fhirserver.search.expression.*;
 import fr.ans.afas.fhirserver.service.data.CountResult;
 import fr.ans.afas.fhirserver.service.exception.BadRequestException;
 import fr.ans.afas.rass.service.CloseableWrapper;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,18 +68,18 @@ public class MongoQueryUtils {
     /**
      * Count results of the query
      *
-     * @param searchConfig     the search config
-     * @param collection       the collection
-     * @param selectExpression the select expression
-     * @param c                the count option
+     * @param searchConfigService the search config
+     * @param collection          the collection
+     * @param selectExpression    the select expression
+     * @param c                   the count option
      * @return the result (the count)
      */
-    public static CountResult count(SearchConfig searchConfig, MongoCollection<Document> collection, SelectExpression<Bson> selectExpression, CountOptions c) {
+    public static CountResult count(SearchConfigService searchConfigService, MongoCollection<Document> collection, SelectExpression<Bson> selectExpression, CountOptions c, MongoMultiTenantService mongoMultiTenantService) {
         var searchRevision = new Date().getTime();
         try {
-            optimizeQuery(searchConfig, selectExpression);
+            optimizeQuery(searchConfigService, selectExpression);
             if (hasAggregation(selectExpression)) {
-                var agg = AggregationUtils.generateAggregation(searchConfig, selectExpression, searchRevision, null);
+                var agg = AggregationUtils.generateAggregation(searchConfigService, selectExpression, searchRevision, null, mongoMultiTenantService);
                 agg.add(new Document("$count", "c"));
                 var aggregate = collection.aggregate(agg).maxTime(c.getMaxTime(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
                 try (var it = aggregate.iterator()) {
@@ -103,18 +104,18 @@ public class MongoQueryUtils {
     /**
      * Search the first page and get the mongodb cursor
      *
-     * @param searchConfig     the search config
-     * @param pageSize         the page size
-     * @param selectExpression the select expression
-     * @param collection       the mongo collection where to search
-     * @param searchRevision   the searchRevision
+     * @param searchConfigService the search config
+     * @param pageSize            the page size
+     * @param selectExpression    the select expression
+     * @param collection          the mongo collection where to search
+     * @param searchRevision      the searchRevision
      * @return the mongodb cursor
      */
     @NotNull
-    public static CloseableWrapper<MongoCursor<Document>> searchFirstPage(SearchConfig searchConfig, int pageSize, SelectExpression<Bson> selectExpression, MongoCollection<Document> collection, Long searchRevision) {
-        optimizeQuery(searchConfig, selectExpression);
+    public static CloseableWrapper<MongoCursor<Document>> searchFirstPage(SearchConfigService searchConfigService, int pageSize, SelectExpression<Bson> selectExpression, MongoCollection<Document> collection, Long searchRevision, MongoMultiTenantService mongoMultiTenantService) {
+        optimizeQuery(searchConfigService, selectExpression);
         if (hasAggregation(selectExpression)) {
-            var documentList = AggregationUtils.generateAggregation(searchConfig, selectExpression, searchRevision, null);
+            var documentList = AggregationUtils.generateAggregation(searchConfigService, selectExpression, searchRevision, null, mongoMultiTenantService);
             documentList.add(new Document("$limit", pageSize + 1));
             AggregateIterable<Document> aggregate = collection.aggregate(documentList);
 
@@ -122,7 +123,7 @@ public class MongoQueryUtils {
                     .content(aggregate::cursor)
                     .build();
         } else {
-            return findFirstPageWithSearch(pageSize, selectExpression, collection, searchRevision);
+            return findFirstPageWithSearch(pageSize, selectExpression, collection, searchRevision, searchConfigService);
         }
     }
 
@@ -137,10 +138,10 @@ public class MongoQueryUtils {
      * @return the mongodb cursor
      */
     @NotNull
-    public static CloseableWrapper<MongoCursor<Document>> searchNextPage(SearchConfig searchConfig, int pageSize, SearchContext searchContext, SelectExpression<Bson> selectExpression, MongoCollection<Document> collection, String savedLastId) {
+    public static CloseableWrapper<MongoCursor<Document>> searchNextPage(SearchConfigService searchConfigService, int pageSize, SearchContext searchContext, SelectExpression<Bson> selectExpression, MongoCollection<Document> collection, String savedLastId, MongoMultiTenantService mongoMultiTenantService) {
         var searchRevision = searchContext.getRevision();
         if (hasAggregation(selectExpression)) {
-            var documentList = AggregationUtils.generateAggregation(searchConfig, selectExpression, searchRevision, savedLastId);
+            var documentList = AggregationUtils.generateAggregation(searchConfigService, selectExpression, searchRevision, savedLastId, mongoMultiTenantService);
             documentList.add(new Document("$limit", pageSize + 1));
             AggregateIterable<Document> aggregate = collection.aggregate(documentList);
 
@@ -148,7 +149,7 @@ public class MongoQueryUtils {
                     .content(aggregate::cursor)
                     .build();
         }
-        return findNextPageWithSearch(pageSize, searchContext, selectExpression, collection, savedLastId);
+        return findNextPageWithSearch(pageSize, searchContext, selectExpression, collection, savedLastId, searchConfigService);
 
     }
 
@@ -156,15 +157,16 @@ public class MongoQueryUtils {
     /**
      * Search the next page and get the mongodb cursor
      *
-     * @param pageSize         the page size
-     * @param searchContext    the context of the search
-     * @param selectExpression the select expression
-     * @param collection       the mongo collection where to search
-     * @param savedLastId      the last id
+     * @param pageSize            the page size
+     * @param searchContext       the context of the search
+     * @param selectExpression    the select expression
+     * @param collection          the mongo collection where to search
+     * @param savedLastId         the last id
+     * @param searchConfigService
      * @return the mongodb cursor
      */
     @NotNull
-    private static CloseableWrapper<MongoCursor<Document>> findNextPageWithSearch(int pageSize, SearchContext searchContext, SelectExpression<Bson> selectExpression, MongoCollection<Document> collection, String savedLastId) {
+    private static CloseableWrapper<MongoCursor<Document>> findNextPageWithSearch(int pageSize, SearchContext searchContext, SelectExpression<Bson> selectExpression, MongoCollection<Document> collection, String savedLastId, SearchConfigService searchConfigService) {
         try {
             var searchRevision = searchContext.getRevision();
             Bson filters = Optional.ofNullable(selectExpression.interpreter())
@@ -180,8 +182,11 @@ public class MongoQueryUtils {
 
             addSinceParam(selectExpression, filters);
 
+            var projection = generateProjection(searchConfigService, selectExpression.getFhirResource(), searchContext.getElements());
+
             FindIterable<Document> documents = collection
                     .find(filters)
+                    .projection(projection)
                     .sort(Sorts.ascending(ID_ATTRIBUTE))
                     .limit(pageSize + 1);
 
@@ -199,23 +204,28 @@ public class MongoQueryUtils {
     /**
      * Search the first page and get the mongodb cursor
      *
-     * @param pageSize         the page size
-     * @param selectExpression the select expression
-     * @param collection       the mongo collection where to search
-     * @param searchRevision   the searchRevision
+     * @param pageSize            the page size
+     * @param selectExpression    the select expression
+     * @param collection          the mongo collection where to search
+     * @param searchRevision      the searchRevision
+     * @param searchConfigService
      * @return the mongodb cursor
      */
     @NotNull
     private static CloseableWrapper<MongoCursor<Document>> findFirstPageWithSearch(int pageSize,
                                                                                    SelectExpression<Bson> selectExpression,
                                                                                    MongoCollection<Document> collection,
-                                                                                   Long searchRevision) {
+                                                                                   Long searchRevision,
+                                                                                   SearchConfigService searchConfigService) {
 
-        Bson bson = Optional.ofNullable(selectExpression.interpreter())
+        var bson = Optional.ofNullable(selectExpression.interpreter())
                 .map(r -> Filters.and(Filters.gte(VALID_TO_ATTRIBUTE, searchRevision), r))
                 .orElseGet(() -> Filters.gte(VALID_TO_ATTRIBUTE, searchRevision));
 
-        FindIterable<Document> documents = collection.find(addSinceParam(selectExpression, bson))
+        var projection = generateProjection(searchConfigService, selectExpression.getFhirResource(), selectExpression.getElements());
+
+        var documents = collection.find(addSinceParam(selectExpression, bson))
+                .projection(projection)
                 .sort(Sorts.ascending(ID_ATTRIBUTE))
                 .limit(pageSize + 1);
 
@@ -250,15 +260,15 @@ public class MongoQueryUtils {
     /**
      * Extract references to include
      *
-     * @param searchConfig          the search config
+     * @param searchConfigService   the search config
      * @param type                  the type of the resource
      * @param selectExpression      the select expression
      * @param includesTypeReference the list to fill with references
      * @param doc                   the document from the db
      */
-    public static void extractIncludeReferences(SearchConfig searchConfig, String type, SelectExpression<Bson> selectExpression, Map<String, Set<String>> includesTypeReference, Document doc) {
+    public static void extractIncludeReferences(SearchConfigService searchConfigService, String type, SelectExpression<Bson> selectExpression, Map<String, Set<String>> includesTypeReference, Document doc) {
         for (var inclusion : selectExpression.getIncludes()) {
-            var config = searchConfig.getSearchConfigByResourceAndParamName(type, inclusion.getName());
+            var config = searchConfigService.getSearchConfigByResourceAndParamName(type, inclusion.getName());
             if (config.isEmpty()) {
                 throw new BadConfigurationException("Search not supported on path: " + type + "." + inclusion.getName());
             }
@@ -299,13 +309,13 @@ public class MongoQueryUtils {
      * Try to optimize the query.
      * If Fhir resources have _has queries and these resources are joined, we use the join by replacing the has condition by a  parameter
      *
-     * @param searchConfig
+     * @param searchConfigService
      * @param selectExpression
      */
-    public static void optimizeQuery(SearchConfig searchConfig, SelectExpression<Bson> selectExpression) {
+    public static void optimizeQuery(SearchConfigService searchConfigService, SelectExpression<Bson> selectExpression) {
         if (hasAggregation(selectExpression)) {
             var newHasConditions = new ArrayList<HasCondition<Bson>>();
-            var joins = searchConfig.getJoinsByFhirResource(selectExpression.getFhirResource());
+            var joins = searchConfigService.getJoinsByFhirResource(selectExpression.getFhirResource());
             if (joins == null) {
                 return;
             }
@@ -341,8 +351,7 @@ public class MongoQueryUtils {
             for (var sub : ((ContainerExpression<Bson>) exp).getExpressions()) {
                 translateExpression(mainResource, joinedResource, joinedPath, sub);
             }
-        } else if (exp instanceof ElementExpression) {
-            var elementExpression = (ElementExpression) exp;
+        } else if (exp instanceof ElementExpression elementExpression) {
             var path = elementExpression.getFhirPath();
             var newPath = FhirSearchPath.builder().resource(mainResource).path("links." + joinedResource + "." + path.getPath()).build();
             elementExpression.setFhirPath(newPath);
@@ -357,4 +366,31 @@ public class MongoQueryUtils {
 
     }
 
+    private static Document generateProjection(SearchConfigService searchConfigService, String fhirResourceName, Set<String> elements) {
+        if (elements != null && !elements.isEmpty()) {
+            Document document = new Document();
+
+            // INTERN FIELDS OR REQUIRED
+            //We get always the intern attributes mongo, indexes and resourceType, id and meta of the resource, because we can need it to use some attributes for correct jsonconstruction (example: t_id for fullUrl)
+            Arrays.asList(ID_ATTRIBUTE, "_hash", REVISION_ATTRIBUTE, VALID_FROM_ATTRIBUTE, VALID_TO_ATTRIBUTE, LAST_WRITE_DATE, "fhir.resourceType", "fhir.id", "fhir.meta").forEach(a -> document.append(a, 1));
+
+            // INDEX FIELDS
+            //TODO t_status-i for device is not getting in response because we are based on indexes and in this case the status is saved as string for every resource even if index is in token. We have to see this later when we will do RASS-1461
+            //We have as well to get the indexes because is used for other purposes (ex: include)
+            searchConfigService.getIndexesByFhirResource(fhirResourceName).forEach(i -> document.append(i, 1));
+            //t_profile is only applied in save but there is not index created except for HealthcareService
+            document.append("t_profile", 1);
+
+            // COMPULSORY AND MODIFIERS FIELDS, fields that are compusory (cardinality min=1) or modifier (?!) in interop profile have to be included
+            searchConfigService.getAllByFhirResource(fhirResourceName)
+                    .stream().filter(s -> s.getIsCompulsoryOrModifierElementsParam() != null && s.getIsCompulsoryOrModifierElementsParam())
+                    .forEach(i -> document.append("fhir.".concat(i.getName()), 1));
+
+            // ELEMENTS FIELDS (from search param _elements)
+            elements.forEach(e -> document.append("fhir.".concat(e), 1));
+
+            return document;
+        }
+        return null;
+    }
 }

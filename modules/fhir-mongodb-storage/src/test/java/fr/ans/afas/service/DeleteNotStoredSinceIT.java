@@ -1,9 +1,13 @@
+/**
+ * (c) Copyright 1998-2024, ANS. All rights reserved.
+ */
 package fr.ans.afas.service;
 
 import com.mongodb.client.MongoClient;
 import fr.ans.afas.fhirserver.service.exception.TooManyElementToDeleteException;
 import fr.ans.afas.fhirserver.test.unit.WithMongoTest;
 import fr.ans.afas.rass.service.MongoDbFhirService;
+import fr.ans.afas.rass.service.MongoMultiTenantService;
 import org.hl7.fhir.r4.model.Device;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +35,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = TestFhirApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {WithMongoTest.PropertyOverrideContextInitializer.class})
+
 public class DeleteNotStoredSinceIT {
 
 
@@ -51,6 +56,9 @@ public class DeleteNotStoredSinceIT {
      */
     @Inject
     MongoClient mongoClient;
+
+    @Inject
+    MongoMultiTenantService multiTenantService;
 
     @Before
     public void init() {
@@ -83,7 +91,7 @@ public class DeleteNotStoredSinceIT {
         mongoDbFhirService.store(List.of(d2), true);
         await().atLeast(1, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 10);
 
-        var deviceCollection = mongoClient.getDatabase(dbName).getCollection("Device");
+        var deviceCollection = multiTenantService.getCollection("Device");
         assertEquals(2, deviceCollection.countDocuments());
 
 
@@ -137,7 +145,7 @@ public class DeleteNotStoredSinceIT {
         await().atLeast(1, TimeUnit.MILLISECONDS).until(() -> System.currentTimeMillis() - t1 > 15);
 
         // 2 versions of 2 devices:
-        var deviceCollection = mongoClient.getDatabase(dbName).getCollection("Device");
+        var deviceCollection = multiTenantService.getCollection("Device");
         assertEquals(4, deviceCollection.countDocuments());
 
 
