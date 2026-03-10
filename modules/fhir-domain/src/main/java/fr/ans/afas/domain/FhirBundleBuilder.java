@@ -3,6 +3,7 @@
  */
 package fr.ans.afas.domain;
 
+import java.util.Map;
 
 public class FhirBundleBuilder {
 
@@ -38,35 +39,50 @@ public class FhirBundleBuilder {
         return sb.toString();
     }
 
-    public String getFooter(String nextUrl, String currentUrl, String nextPageId) {
-        var sb = new StringBuilder("]");
-        sb.append(",\"link\": [");
+    public String getFooter(String nextUrl, String currentUrl, String nextPageId, int pageNumber, Map<Integer, String> pagingUrls) {
+        pagingUrls.put(pageNumber, currentUrl);
+        var sbJson = new StringBuilder("]");
+        sbJson.append(",\"link\": [");
         if (nextPageId != null) {
-            sb.append(" {")
-                    .append("\"relation\": \"next\",")
-                    .append("\"url\": \"")
-                    .append(nextUrl);
+            // On forme l'URL de la page suivante
+            StringBuilder sbNextUrl = new StringBuilder(nextUrl);
             if (!nextUrl.endsWith("/") && !nextUrl.endsWith(PAGE_ATTRIBUTE)) {
-                sb.append("/");
+                sbNextUrl.append("/");
             }
 
             // Vérifier si nextUrl contient déjà "_page" pour éviter le doublon
             if (!nextUrl.contains(PAGE_ATTRIBUTE)) {
-                sb.append(PAGE_ATTRIBUTE);
+                sbNextUrl.append(PAGE_ATTRIBUTE);
             }
-            sb.append("?id=")
-                    .append(nextPageId)
+            sbNextUrl.append("?id=")
+                    .append(nextPageId);
+            // On l'injecte l'URL dans le map pour la page suivante
+            pagingUrls.put(pageNumber + 1, sbNextUrl.toString());
+            // On ajoute également l'URL au JSON
+            sbJson.append(" {")
+                    .append("\"relation\": \"next\",")
+                    .append("\"url\": \"")
+                    .append(sbNextUrl)
                     .append("\"},");
         }
-
-        sb.append(" {")
+        // URL current
+        sbJson.append(" {")
                 .append("\"relation\": \"self\",")
                 .append("\"url\": \"")
                 .append(currentUrl).append("\"}");
 
-        sb.append("]");
-        sb.append("}");
-        return sb.toString();
+        // URL previous
+        if (pageNumber > 0 && pagingUrls.get(pageNumber - 1) != null) {
+            sbJson.append(", {")
+                    .append("\"relation\": \"previous\",")
+                    .append("\"url\": \"")
+                    .append(pagingUrls.get(pageNumber - 1));
+            sbJson.append("\"}");
+        }
+
+        sbJson.append("]");
+        sbJson.append("}");
+        return sbJson.toString();
     }
 
 

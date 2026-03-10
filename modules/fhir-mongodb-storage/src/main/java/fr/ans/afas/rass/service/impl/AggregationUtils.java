@@ -15,12 +15,15 @@ import fr.ans.afas.rass.service.MongoMultiTenantService;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Utility class to generate aggregations
@@ -33,6 +36,8 @@ public class AggregationUtils {
     public static final String MONGO_MATCH = "$match";
     public static final String MONGO_SORT = "$sort";
     public static final String MONGO_LOOKUP = "$lookup";
+
+    protected static final Logger logger = LoggerFactory.getLogger(AggregationUtils.class);
 
     private AggregationUtils() {
     }
@@ -64,18 +69,38 @@ public class AggregationUtils {
             }
 
             var aggregation = new ArrayList<Document>();
-            var subObjName = "sub_r_" + fhirPath.getResource() + "_" + sc.getName();
+            final String subObjName;
+            final String collectionName;
+            final String localField;
+            final String foreignField;
+
+            if (fhirPath.getChain() == null) {
+                //_has on a reference
+                subObjName = "sub_r_" + fhirPath.getResource() + "_" + sc.getName();
+                collectionName = mongoMultiTenantService.getCollectionName(fhirPath.getResource());
+                localField = "t_id";
+                foreignField = sc.getIndexName() + "-id";
+            } else {
+                //chain reference
+                subObjName = "sub_r_" + sc.getReferenceType() + "_" + fhirPath.getResource();
+                collectionName = mongoMultiTenantService.getCollectionName(sc.getReferenceType());
+                foreignField = "t_id";
+                localField = sc.getIndexName() + "-id";
+            }
+
             aggregation.add(new Document(MONGO_LOOKUP,
-                    new Document("from", mongoMultiTenantService.getCollectionName(fhirPath.getResource()))
-                            .append("localField", "t_id")
-                            .append("foreignField", sc.getIndexName() + "-id")
-                            .append("as", subObjName)));
+                    new Document("from", collectionName)
+                            .append("localField", localField)
+                            .append("foreignField", foreignField)
+                            .append("as", subObjName)
+            ));
             for (var ex : entries.getValue()) {
                 aggregation.add(new Document(MONGO_MATCH, ex.interpreter(new ExpressionContext(subObjName))));
             }
 
             aggrs.addAll(aggregation);
         }
+
         return aggrs;
     }
 

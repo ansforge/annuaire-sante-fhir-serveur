@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Test the serialization of Expression for MongoDB
@@ -253,6 +256,53 @@ public class ExpressionSerializationTest {
         Assert.assertEquals("my name is", ((StringExpression<Bson>) subEx).getValue());
 
 
+    }
+
+    @Test
+    public void testSerializeTokenNotInExpression() {
+        // Mock dependencies
+        FhirSearchPath fhirPath = FhirSearchPath.builder()
+                .resource("TestResource")
+                .path("TestPath")
+                .build();
+
+        TokenNotInExpression<Bson> tokenNotInExpression = mock(TokenNotInExpression.class);
+        when(tokenNotInExpression.getSystem()).thenReturn("TestSystem");
+        when(tokenNotInExpression.getValues()).thenReturn(List.of("value1", "value2"));
+        when(tokenNotInExpression.getFhirPath()).thenReturn(fhirPath);
+
+        MongoDbExpressionSerializer serializer = new MongoDbExpressionSerializer(null, null);
+
+        // Call the method
+        String serialized = serializer.serialize(tokenNotInExpression);
+
+        // Assert the serialized output
+        String expected = "9|TestSystem$value1$value2$TestResource$TestPath";
+        assertEquals(expected, serialized);
+    }
+
+
+    @Test
+    public void testSerializeTokenInExpression() {
+        // Mock dependencies
+        FhirSearchPath fhirPath = FhirSearchPath.builder()
+                .resource("TestResource")
+                .path("TestPath")
+                .build();
+
+        TokenInExpression<Bson> tokenInExpression = mock(TokenInExpression.class);
+        when(tokenInExpression.getSystem()).thenReturn("TestSystem");
+        when(tokenInExpression.getValues()).thenReturn(List.of("value1", "value2"));
+        when(tokenInExpression.getFhirPath()).thenReturn(fhirPath);
+
+        MongoDbExpressionSerializer serializer = new MongoDbExpressionSerializer(null, null);
+
+        // Call the method
+        String serialized = serializer.serialize(tokenInExpression);
+
+        // Assert the serialized output
+        String expected = "10|TestSystem$value1$value2$TestResource$TestPath";
+        assertEquals(expected, serialized);
     }
 
 }

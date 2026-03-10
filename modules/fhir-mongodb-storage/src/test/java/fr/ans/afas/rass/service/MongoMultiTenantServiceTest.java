@@ -25,7 +25,7 @@ class MongoMultiTenantServiceTest {
         tenant1.setName(TEST_TENANT_1);
         tenant1.setPath("/t1");
         tenant1.setDbname("dbtest");
-        tenant1.setSuffixCollection("_0.1");
+        tenant1.setSuffixCollection("0.1");
     }
 
     @InjectMocks

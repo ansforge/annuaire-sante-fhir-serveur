@@ -37,7 +37,7 @@ class ExpressionSerializationUtilsTest {
 
     @Test
     void testGetClassForCode_CodeNotSupported() {
-        String unsupportedCode = "9";
+        String unsupportedCode = "11";
 
         Exception exception = assertThrows(SerializationException.class, () ->
                 ExpressionSerializationUtils.getClassForCode(unsupportedCode));

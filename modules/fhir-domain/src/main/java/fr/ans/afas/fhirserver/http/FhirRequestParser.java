@@ -30,7 +30,7 @@ import java.util.StringTokenizer;
  */
 public class FhirRequestParser {
 
-    static final String[] SPECIAL_PARAMS = new String[]{"_count", "_pretty", "_format", "_total", "_include", "_revinclude", "_elements"};
+    static final String[] SPECIAL_PARAMS = new String[]{"_count", "_pretty", "_format", "_total", "_include", "_revinclude", "_elements","_has"};
 
 
     private FhirRequestParser() {
@@ -79,6 +79,9 @@ public class FhirRequestParser {
                     case "_elements":
                         handleElementsParam(selectExpression, parsedParam);
                         break;
+                    case "_has":
+                        handleHasParams(selectExpression, parsedParam);
+                        break;
                     case "_pretty", "_format":
                     default:
                         break;
@@ -86,8 +89,15 @@ public class FhirRequestParser {
                 }
 
             } else {
-                // classic params
-                var path = FhirSearchPath.builder().resource(resourceType).path(parsedParam.paramName).build();
+                // Détection du chaînage : si le paramètre contient un point, on le considère comme une recherche chaînée.
+                FhirSearchPath path;
+                if(parsedParam.getResourceTarget()!=null){
+                    path = FhirSearchPath.builder().resource(resourceType).path(parsedParam.getResourceTarget()).build();
+
+                } else {
+                    path = FhirSearchPath.builder().resource(resourceType).path(parsedParam.getParamName()).build();
+                }
+
                 var sc = searchConfigService.getSearchConfigByPath(path).orElseThrow(() -> new BadSelectExpression("Parameter " + parsedParam.paramName + " not found for resource " + resourceType));
                 switch (sc.getSearchType()) {
 
@@ -102,6 +112,9 @@ public class FhirRequestParser {
                         break;
                     case "reference":
                         parseReference(selectExpression, parsedParam, path);
+                        break;
+                    case "uri":
+                        parseUri(selectExpression, parsedParam, path);
                         break;
                     default:
                         throw new BadSelectExpression("Search type not supported");
@@ -151,16 +164,40 @@ public class FhirRequestParser {
     }
 
     private static <T> void parseReference(SelectExpression<T> selectExpression, ParsedParam parsedParam, FhirSearchPath path) throws BadDataFormatException {
-        var referenceAndListParam = new ReferenceAndListParam();
-        var referenceOrListParam = new ReferenceOrListParam();
-        for (var oneVal : parsedParam.getParamValues()) {
-            var referenceParam = new ReferenceParam();
-            referenceParam.setValue(oneVal);
-            referenceOrListParam.addOr(referenceParam);
+        // Vérifier si le nom du paramètre contient un point (indiquant un chaining)
+        if (parsedParam.getResourceTarget()!=null) {
+
+            FhirSearchPath chainedPath = FhirSearchPath.builder()
+                    .resource(path.getResource())
+                    .path(parsedParam.getResourceTarget())
+                    .chain(parsedParam.getParamName())
+                    .build();
+            // Créer les paramètres de référence pour la valeur reçue
+            var referenceAndListParam = new ReferenceAndListParam();
+            var referenceOrListParam = new ReferenceOrListParam();
+            for (var oneVal : parsedParam.getParamValues()) {
+                var referenceParam = new ReferenceParam();
+                referenceParam.setValueAsQueryToken(null, null, null, oneVal);
+                referenceParam.setChain(parsedParam.getResourceTarget());
+                referenceOrListParam.addOr(referenceParam);
+            }
+            referenceAndListParam.addAnd(referenceOrListParam);
+            // Intégrer le paramètre avec le chemin enrichi dans l'expression de sélection
+            selectExpression.fromFhirParams(chainedPath, referenceAndListParam);
+        } else {
+            // Traitement classique si aucun chaining n'est présent
+            var referenceAndListParam = new ReferenceAndListParam();
+            var referenceOrListParam = new ReferenceOrListParam();
+            for (var oneVal : parsedParam.getParamValues()) {
+                var referenceParam = new ReferenceParam();
+                referenceParam.setValueAsQueryToken(null, null, null, oneVal);
+                referenceOrListParam.addOr(referenceParam);
+            }
+            referenceAndListParam.addAnd(referenceOrListParam);
+            selectExpression.fromFhirParams(path, referenceAndListParam);
         }
-        referenceAndListParam.addAnd(referenceOrListParam);
-        selectExpression.fromFhirParams(path, referenceAndListParam);
     }
+
 
 
     private static <T> void parseDate(SelectExpression<T> selectExpression, ParsedParam parsedParam, FhirSearchPath path) {
@@ -170,6 +207,18 @@ public class FhirRequestParser {
             return p;
         }).toList();
         selectExpression.orFromFhirParams(path, paramList);
+    }
+
+    private static <T> void parseUri(SelectExpression<T> selectExpression, ParsedParam parsedParam, FhirSearchPath path) throws BadDataFormatException {
+        var uriParam = new UriAndListParam();
+        var uriOrListParam = new UriOrListParam();
+        for (var oneVal : parsedParam.getParamValues()) {
+            var sp = new UriParam();
+            sp.setValue(oneVal);
+            uriOrListParam.addOr(sp);
+        }
+        uriParam.addAnd(uriOrListParam);
+        selectExpression.fromFhirParams(path, uriParam);
     }
 
 
@@ -190,30 +239,42 @@ public class FhirRequestParser {
             // handle params:
             var token = tokenizer.nextToken();
             var offsetEquals = token.indexOf('=');
-            String paramName;
+            String fullParamName;
             String paramValue = null;
             if (offsetEquals > 0) {
-                paramName = urlDecode(token.substring(0, offsetEquals));
+                fullParamName = urlDecode(token.substring(0, offsetEquals));
                 paramValue = urlDecode(token.substring(offsetEquals + 1));
             } else {
-                paramName = urlDecode(token);
+                fullParamName = urlDecode(token);
             }
 
-            if (paramName == null) {
+            if (fullParamName == null) {
                 continue;
             }
 
-            // handle modifiers:
-            String parsedParamName;
-            String parsedModifier = null;
-            var offsetModifier = paramName.indexOf(':');
-            if (offsetModifier > 0) {
-                parsedParamName = paramName.substring(0, offsetModifier);
-                parsedModifier = paramName.substring(offsetModifier + 1);
+            // Initialize variables for resource target, parameter name, and modifier
+            String resourceTarget = null;
+            String finalParamName;
+            String modifier = null;
+
+            // Split on '.' to separate resource target if present
+            int dotIndex = fullParamName.indexOf('.');
+            String paramNamePart;
+            if (dotIndex > 0) {
+                resourceTarget = fullParamName.substring(0, dotIndex);
+                paramNamePart = fullParamName.substring(dotIndex + 1);
             } else {
-                parsedParamName = paramName;
+                paramNamePart = fullParamName;
             }
 
+            // Split on ':' to separate modifier if present
+            int colonIndex = paramNamePart.indexOf(':');
+            if (colonIndex > 0) {
+                finalParamName = paramNamePart.substring(0, colonIndex);
+                modifier = paramNamePart.substring(colonIndex + 1);
+            } else {
+                finalParamName = paramNamePart;
+            }
 
             var parsedParamValues = new ArrayList<String>();
 
@@ -227,15 +288,16 @@ public class FhirRequestParser {
             }
 
             params.add(ParsedParam.builder()
-                    .paramName(parsedParamName)
+                    .resourceTarget(resourceTarget)  // now setting resourceTarget
+                    .paramName(finalParamName)
                     .paramValues(parsedParamValues)
-                    .modifier(parsedModifier)
+                    .modifier(modifier)
                     .build());
-
         }
 
         return params;
     }
+
 
     public static void handleCountParam(SelectExpression<?> selectExpression, ParsedParam parsedParam) throws BadSelectExpression {
         try {
@@ -286,6 +348,35 @@ public class FhirRequestParser {
             includes.add(new Include(val));
         }
         selectExpression.fromFhirParamsRevInclude(includes);
+    }
+
+    private static <T> void handleHasParams(SelectExpression<T> selectExpression, ParsedParam parsedParam) throws BadSelectExpression {
+        // Vérification et extraction du modificateur qui doit avoir le format : TargetResource:referenceField:searchParam
+        String modifier = parsedParam.getModifier();
+        if (modifier == null) {
+            throw new BadSelectExpression("Le paramètre _has doit contenir un modificateur avec le format : _has:TargetResource:referenceField:searchParam");
+        }
+        String[] parts = modifier.split(":");
+        if (parts.length != 3) {
+            throw new BadSelectExpression("Format du modificateur _has incorrect. Attendu : _has:TargetResource:referenceField:searchParam");
+        }
+        String targetResource = parts[0];
+        String referenceField = parts[1];
+        String searchParamName = parts[2];
+
+        // Création du paramètre HasAndListParam
+        HasAndListParam hasAndListParam = new HasAndListParam();
+        HasOrListParam hasOrListParam = new HasOrListParam();
+
+        // Pour chaque valeur fournie, créer un HasParam
+        for (String value : parsedParam.getParamValues()) {
+            HasParam hasParam = new HasParam(targetResource, referenceField, searchParamName, value);
+            hasOrListParam.addOr(hasParam);
+        }
+        hasAndListParam.addAnd(hasOrListParam);
+
+        // Ajout de la condition _has à l'expression de sélection
+        selectExpression.fromFhirParams(hasAndListParam);
     }
 
     private static void checkParametersInclude(SearchConfigService searchConfigService, String resourceType, String includeValue) throws BadSelectExpression {

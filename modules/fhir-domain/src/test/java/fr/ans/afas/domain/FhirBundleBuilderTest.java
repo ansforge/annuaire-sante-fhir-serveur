@@ -4,15 +4,18 @@
 package fr.ans.afas.domain;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.parser.DataFormatException;
 import ca.uhn.fhir.parser.IParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Test the FhirBundleBuilder class
@@ -20,6 +23,24 @@ import org.junit.jupiter.params.provider.CsvSource;
 class FhirBundleBuilderTest {
 
     IParser parser = FhirContext.forR4().newJsonParser();
+    String urlPage1;
+    String urlPage2;
+    String urlPage3;
+    Map<Integer, String> pagingUrlsUnePage;
+    Map<Integer, String> pagingUrlsTroisPages;
+
+    @BeforeEach
+    void setUp() {
+        urlPage1 = "https://serverUrl/_page?id=111111";
+        urlPage2 = "https://serverUrl/_page?id=222222";
+        urlPage3 = "https://serverUrl/_page?id=333333";
+        pagingUrlsUnePage = new HashMap<>();
+        pagingUrlsUnePage.put(1, urlPage1);
+        pagingUrlsTroisPages = new HashMap<>();
+        pagingUrlsTroisPages.put(1, urlPage1);
+        pagingUrlsTroisPages.put(2, urlPage2);
+        pagingUrlsTroisPages.put(3, urlPage3);
+    }
 
     @Test
     void testBuildHeader() {
@@ -33,7 +54,7 @@ class FhirBundleBuilderTest {
         var builder = new FhirBundleBuilder();
         var genericHeader = builder.getHeader("123", 10L);
 
-        var result = builder.getFooter("https://serverUrl", "https://currentUrl/path?abc", null);
+        var result = builder.getFooter("https://serverUrl", "https://currentUrl/path?abc", null, 1, pagingUrlsUnePage);
         Assertions.assertEquals("],\"link\": [ {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}]}", result);
         Assertions.assertDoesNotThrow(() -> {
             parser.parseResource(genericHeader + result);
@@ -43,19 +64,19 @@ class FhirBundleBuilderTest {
 
     @ParameterizedTest
     @CsvSource({
-            "https://serverUrl, https://currentUrl/path?abc, , '],\"link\": [ {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}]}', false",
-            "https://serverUrl/v2/, https://currentUrl/path?abc, 123456, '],\"link\": [ {\"relation\": \"next\",\"url\": \"https://serverUrl/v2/_page?id=123456\"}, {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}]}', false",
-            "https://serverUrl/v2/_page, https://currentUrl/path?abc, 123456, '],\"link\": [ {\"relation\": \"next\",\"url\": \"https://serverUrl/v2/_page?id=123456\"}, {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}]}', false",
-            "https://serverUrl/v2/, https://currentUrl/path?abc, , '],\"link\": [ {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}]}', false",
-            "https://serverUrl, https://currentUrl/path?abc, 123456, '],\"link\": [ {\"relation\": \"next\",\"url\": \"https://serverUrl/_page?id=123456\"}, {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}]}', false"
+            "https://serverUrl, https://currentUrl/path?abc, , 1, '],\"link\": [ {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}]}', false",
+            "https://serverUrl/v2/, https://currentUrl/path?abc, 123456, 2, '],\"link\": [ {\"relation\": \"next\",\"url\": \"https://serverUrl/v2/_page?id=123456\"}, {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}, {\"relation\": \"previous\",\"url\": \"https://serverUrl/_page?id=111111\"}]}', false",
+            "https://serverUrl/v2/_page, https://currentUrl/path?abc, 123456, 3, '],\"link\": [ {\"relation\": \"next\",\"url\": \"https://serverUrl/v2/_page?id=123456\"}, {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}, {\"relation\": \"previous\",\"url\": \"https://serverUrl/_page?id=222222\"}]}', false",
+            "https://serverUrl/v2/, https://currentUrl/path?abc, , 4, '],\"link\": [ {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}, {\"relation\": \"previous\",\"url\": \"https://serverUrl/_page?id=333333\"}]}', false",
+            "https://serverUrl, https://currentUrl/path?abc, 123456, 5, '],\"link\": [ {\"relation\": \"next\",\"url\": \"https://serverUrl/_page?id=123456\"}, {\"relation\": \"self\",\"url\": \"https://currentUrl/path?abc\"}]}', false"
     })
-    void testBuildFooter(String serverUrl, String currentUrl, String pageId, String expected, boolean shouldThrow) {
+    void testBuildFooter(String serverUrl, String currentUrl, String pageId, int pageNumber, String expected, boolean shouldThrow) {
         var builder = new FhirBundleBuilder();
         var genericHeader = builder.getHeader("123", 10L);
-        var result = builder.getFooter(serverUrl, currentUrl, pageId);
+        var result = builder.getFooter(serverUrl, currentUrl, pageId, pageNumber, pagingUrlsTroisPages);
 
-        Assertions.assertEquals(expected, result);
         if (!shouldThrow) {
+            Assertions.assertEquals(expected, result);
             Assertions.assertDoesNotThrow(() -> {
                 parser.parseResource(genericHeader + result);
             });
@@ -67,7 +88,7 @@ class FhirBundleBuilderTest {
         FhirBundleBuilder builder = new FhirBundleBuilder();
         // Passer un total null pour vérifier le comportement
         String header = builder.getHeader("123", null);
-        String footer = builder.getFooter("https://serverUrl", "https://currentUrl/path?abc", "123456");
+        String footer = builder.getFooter("https://serverUrl", "https://currentUrl/path?abc", "123456", 1, pagingUrlsUnePage);
 
         // Construire le bundle complet (header + footer)
         String completeBundle = header + footer;

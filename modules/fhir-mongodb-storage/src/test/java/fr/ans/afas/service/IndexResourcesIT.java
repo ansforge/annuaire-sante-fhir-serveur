@@ -26,7 +26,6 @@ import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.Device;
 import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.Reference;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -85,14 +84,6 @@ public class IndexResourcesIT {
 
     @Inject
     MongoMultiTenantService multiTenantService;
-
-    /**
-     * Stop docker
-     */
-    @AfterClass
-    public static void shutdown() {
-        WithMongoTest.clean();
-    }
 
     @Before
     public void init() {

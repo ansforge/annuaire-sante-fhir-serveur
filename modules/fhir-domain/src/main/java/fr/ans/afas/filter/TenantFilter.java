@@ -45,6 +45,23 @@ public class TenantFilter implements Filter {
         if (tenant.isEmpty()) {
             throw new TenantNotFoundException(requestUri);
         }
+
+        // Si c'est une requête POST avec form-urlencoded, on capture les paramètres
+        if (request instanceof HttpServletRequest httpRequest &&
+                "POST".equalsIgnoreCase(httpRequest.getMethod()) &&
+                httpRequest.getContentType() != null &&
+                httpRequest.getContentType().contains("application/x-www-form-urlencoded")) {
+
+            var parameterMap = httpRequest.getParameterMap();
+            var queryString = parameterMap.entrySet().stream()
+                    .flatMap(entry -> java.util.Arrays.stream(entry.getValue())
+                            .map(value -> entry.getKey() + "=" + value))
+                    .collect(java.util.stream.Collectors.joining("&"));
+
+            // On stocke les paramètres dans l'attribut de requête
+            request.setAttribute("cachedPostQueryString", queryString);
+        }
+
         setCurrentTenantAndForward(tenant.get().getTenantConfig().getName(), tenant.get().getTenantConfig().getPath(), request, response);
 
     }

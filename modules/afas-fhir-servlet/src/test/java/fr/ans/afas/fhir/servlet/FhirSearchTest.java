@@ -21,7 +21,6 @@ import fr.ans.afas.servlet.ServletTestUtil;
 import org.hl7.fhir.r4.model.*;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -110,8 +109,16 @@ public class FhirSearchTest extends BaseTest {
                 }
         );
 
+        String contextPath = "/fhir/" + HttpUtils.SERVLET_API_PATH + "/";
+
         var servlet = new FhirResourceServlet<>(fhirServerContext, afasConfiguration, fhirOperationFactory, messageSource);
-        var out = ServletTestUtil.callAsyncServlet(servlet, "GET", "/fhir/" + HttpUtils.SERVLET_API_PATH + "/Patient?_count=2", "/fhir/" + HttpUtils.SERVLET_API_PATH + "/", null);
+        var out = ServletTestUtil.callAsyncServlet(
+                servlet,
+                "GET",
+                contextPath + "Patient?_count=2",
+                contextPath,
+                null
+        );
 
         var parser = FhirContext.forR4().newJsonParser();
         var patients = (Bundle) parser.parseResource(out.toString());
@@ -119,15 +126,19 @@ public class FhirSearchTest extends BaseTest {
         Assert.assertEquals(3, patients.getTotal());
         Assert.assertEquals(2, patients.getEntry().size());
 
-        var nextLink = patients.getLink("next");
+        // on sait que le NextUrlManager renvoie toujours "TEST_PAGE_ID"
+        var out2 = ServletTestUtil.callAsyncServlet(
+                servlet,
+                "GET",
+                "_page?id=TEST_PAGE_ID",
+                contextPath,
+                null
+        );
 
-        //We didn't call TenantFilter in this test, but we add to next link the tenant path, this is because we have to add tenant path in contextPath to do test works
-        var out2 = ServletTestUtil.callAsyncServlet(servlet, "GET", nextLink.getUrl().replaceAll(SERVER_URL+"/fhir/" + HttpUtils.SERVLET_API_PATH, ""), "/fhir/" + HttpUtils.SERVLET_API_PATH + "/", null);
-        System.out.println(out2);
+        System.out.println("out2 = " + out2);
         var patients2 = (Bundle) parser.parseResource(out2.toString());
         Assert.assertEquals(3, patients2.getTotal());
         Assert.assertEquals(1, patients2.getEntry().size());
-
     }
 
 

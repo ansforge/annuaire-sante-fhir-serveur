@@ -48,7 +48,7 @@ public interface ExpressionFactory<T> {
      * @param value    the value of the token
      * @return the expression
      */
-    TokenExpression<T> newTokenExpression(FhirSearchPath fhirPath, String system, String value,TokenExpression.Operator operator);
+    TokenExpression<T> newTokenExpression(FhirSearchPath fhirPath, String system, String value, TokenExpression.Operator operator);
 
     /**
      * Create a new reference expression
@@ -103,5 +103,23 @@ public interface ExpressionFactory<T> {
      */
     DateRangeExpression<T> newDateRangeExpression(FhirSearchPath path, Date value, TemporalPrecisionEnum precision, ParamPrefixEnum queryQualifier);
 
+    /**
+     * Create a new token In expression
+     *
+     * @param path path on which the expression applies
+     * @param system   the system of the token
+     * @param values    the List of values of the token
+     * @return the expression
+     */
+    TokenInExpression<T> newTokenInExpression(FhirSearchPath path, String system, List<String> values);
 
+    /**
+     * Create a new token Not In expression
+     *
+     * @param path path on which the expression applies
+     * @param system   the system of the token
+     * @param values    the List of values of the token
+     * @return the expression
+     */
+    TokenNotInExpression<T> newTokenNotInExpression(FhirSearchPath path, String system, List<String> values);
 }

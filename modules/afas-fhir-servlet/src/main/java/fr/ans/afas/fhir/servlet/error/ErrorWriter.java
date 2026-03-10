@@ -6,6 +6,8 @@ package fr.ans.afas.fhir.servlet.error;
 import ca.uhn.fhir.context.ConfigurationException;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.DataFormatException;
+import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
+import fr.ans.afas.fhirserver.search.exception.BadParametersException;
 import fr.ans.afas.fhirserver.service.exception.PublicException;
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.http.HttpServletResponse;
@@ -58,7 +60,8 @@ public class ErrorWriter {
      * @param context the async context
      */
     public static void writeError(Exception e, AsyncContext context, int status) {
-        if (e instanceof PublicException || e instanceof DataFormatException || e instanceof ConfigurationException) {
+        if (e instanceof PublicException || e instanceof DataFormatException || e instanceof ConfigurationException
+                || e instanceof BadConfigurationException || e instanceof BadParametersException) {
             ErrorWriter.writeError(e.getMessage(), context, status);
         } else {
             ErrorWriter.writeError("Unknown error", context, status);

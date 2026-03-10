@@ -11,7 +11,6 @@ import fr.ans.afas.fhirserver.search.exception.BadConfigurationException;
 import fr.ans.afas.fhirserver.search.expression.*;
 import org.bson.conversions.Bson;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import javax.inject.Inject;
 import javax.validation.constraints.NotNull;
@@ -88,16 +87,37 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
     @Override
     public ReferenceExpression<Bson> newReferenceExpression(FhirSearchPath fhirPath, String reference) {
         Assert.hasLength(reference, "The reference must have a length");
-        if (reference.contains("/")) {
-            var parts = reference.split("/");
-            if (parts.length != 2) {
-                throw new BadConfigurationException("Bad reference format. The reference format must be <Type>/<id> or <id>");
+        // Si le FhirSearchPath possède une partie chain, on considère que c'est un chained reference
+        if (fhirPath.getChain() != null) {
+            // On récupère la configuration pour le champ chainé
+            var config = searchConfigService.getSearchConfigByPath(fhirPath)
+                    .orElseThrow(() -> new BadConfigurationException("Chained param doesn't exist: "
+                            + fhirPath.getResource() + "." + fhirPath.getChain()));
+
+            String targetResource = config.getReferenceType(); // méthode à ajouter dans votre config si nécessaire
+            // 3. Construire le chemin pour le champ chaîné (ex : "family")
+            FhirSearchPath paramPath = FhirSearchPath.builder()
+                    .resource(targetResource)
+                    .path(fhirPath.getChain())
+                    .build();
+            // 4. Construire une condition _has à partir de basePath et paramPath avec la valeur fournie
+            HasCondition<Bson> hasCondition = newHasExpression(fhirPath, paramPath, List.of(reference));
+            // 5. Retourner une ReferenceExpression qui encapsule cette condition
+            return new MongoDbChainedReferenceExpression(searchConfigService, fhirPath, hasCondition);
+        }  else {
+            // Cas classique : pas de chaining
+            if (reference.contains("/")) {
+                var parts = reference.split("/");
+                if (parts.length != 2) {
+                    throw new BadConfigurationException("Bad reference format. The reference format must be <Type>/<id> or <id>");
+                }
+                return new MongoDbReferenceExpression(searchConfigService, fhirPath, parts[0], parts[1]);
+            } else {
+                return new MongoDbReferenceExpression(searchConfigService, fhirPath, null, reference);
             }
-            return new MongoDbReferenceExpression(searchConfigService, fhirPath, parts[0], parts[1]);
-        } else {
-            return new MongoDbReferenceExpression(searchConfigService, fhirPath, null, reference);
         }
     }
+
 
     /**
      * Create a new Or expression
@@ -162,6 +182,30 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
 
         return hasCondition;
     }
+    /**
+     * Create a new token In expression
+     *
+     * @param path path on which the expression applies
+     * @param system   the system of the token
+     * @param values    the List of values of the token
+     * @return the expression
+     */
+    @Override
+    public TokenInExpression<Bson> newTokenInExpression(FhirSearchPath path, String system, List<String> values) {
+        return new MongoDbTokenInExpression(searchConfigService,path, system, values);
+    }
+    /**
+     * Create a new token Not In expression
+     *
+     * @param path path on which the expression applies
+     * @param system   the system of the token
+     * @param values    the List of values of the token
+     * @return the expression
+     */
+    @Override
+    public TokenNotInExpression<Bson> newTokenNotInExpression(FhirSearchPath path, String system, List<String> values) {
+        return new MongoDbTokenNotInExpression(searchConfigService,path, system, values);
+    }
 
     private void newTokenHasCondition(FhirSearchPath paramPath, List<String> values, HasCondition<Bson> hasCondition) {
         if (!values.isEmpty()) {
@@ -179,15 +223,16 @@ public class MongoDbExpressionFactory implements ExpressionFactory<Bson> {
     private TokenExpression<Bson> parseTokenValue(FhirSearchPath paramPath, String value) {
         String systemToUse = null;
         String valueToUse = null;
-        var split = value.split("\\|");
-        if (split.length > 1) {
-            if (StringUtils.hasLength(split[0])) {
-                systemToUse = split[0];
-            }
-            if (StringUtils.hasLength(split[1])) {
-                valueToUse = split[1];
+        var indexSplitToken = value.indexOf('|');
+        if (indexSplitToken >= 0) {
+            // Texte avant le `|`
+            systemToUse = value.substring(0, indexSplitToken);
+            // Texte après le `|` peut être vide
+            if (indexSplitToken + 1 < value.length()) {
+                valueToUse = value.substring(indexSplitToken + 1);
             }
         } else {
+           // Pas de `|`, tout est considéré comme la valeur
             valueToUse = value;
         }
         return this.newTokenExpression(paramPath, systemToUse, valueToUse, TokenExpression.Operator.EQUALS);

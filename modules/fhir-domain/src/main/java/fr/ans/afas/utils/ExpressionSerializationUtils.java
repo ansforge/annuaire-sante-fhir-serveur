@@ -36,6 +36,8 @@ public final class ExpressionSerializationUtils {
         codeExpressionClass.put(SelectExpression.class, "6");
         codeExpressionClass.put(ReferenceExpression.class, "7");
         codeExpressionClass.put(HasCondition.class, "8");
+        codeExpressionClass.put(TokenNotInExpression.class, "9");
+        codeExpressionClass.put(TokenInExpression.class, "10");
         for (var classCode : codeExpressionClass.entrySet()) {
             classCodeExpression.put(classCode.getValue(), classCode.getKey());
         }

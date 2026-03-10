@@ -5,10 +5,8 @@ package fr.ans.afas.fhir.servlet;
 
 import ca.uhn.fhir.context.FhirContext;
 import fr.ans.afas.configuration.AfasConfiguration;
-import fr.ans.afas.fhir.servlet.error.ErrorWriter;
 import fr.ans.afas.fhir.servlet.metadata.CapabilityStatementWriteListener;
 import fr.ans.afas.fhir.servlet.servletutils.HttpUtils;
-import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
 import fr.ans.afas.fhirserver.search.config.domain.SearchParamConfig;
 import fr.ans.afas.fhirserver.search.config.domain.TenantSearchConfig;
@@ -22,7 +20,6 @@ import org.hl7.fhir.r4.model.CapabilityStatement;
 import org.hl7.fhir.r4.model.Enumerations;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -30,10 +27,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
@@ -114,6 +108,8 @@ public class CapabilityStatementTest extends BaseTest {
         Assert.assertEquals(Enumerations.FHIRVersion._4_0_1, capabilityStatement.getFhirVersion());
         Assert.assertEquals("application/fhir+json", capabilityStatement.getFormat().get(0).getCode());
         Assert.assertEquals("json", capabilityStatement.getFormat().get(1).getCode());
+        Assert.assertEquals(CapabilityStatement.CapabilityStatementKind.INSTANCE, capabilityStatement.getKind());
+        Assert.assertEquals("https://gateway.api.esante.gouv.fr/fhir/v2", capabilityStatement.getImplementation().getUrl());
 
 
         var rest = capabilityStatement.getRest();
@@ -121,6 +117,7 @@ public class CapabilityStatementTest extends BaseTest {
         var resource = rest.get(0);
         var params = resource.getResource().get(0).getSearchParam();
         Assert.assertEquals(2, params.size());
+        Assert.assertEquals(CapabilityStatement.RestfulCapabilityMode.SERVER, resource.getMode());
 
         var p1 = params.get(0);
         Assert.assertEquals("tokenPath", p1.getName());
@@ -145,12 +142,10 @@ public class CapabilityStatementTest extends BaseTest {
         CapabilityStatementWriteListener.addInteractions(fhirResourceSearchConfig, resourceComponent);
 
         // Verify that the correct interactions were added
-        Assert.assertEquals(5, resourceComponent.getInteraction().size());
-        Assert.assertEquals(CapabilityStatement.TypeRestfulInteraction.DELETE, resourceComponent.getInteraction().get(0).getCode());
-        Assert.assertEquals(CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE, resourceComponent.getInteraction().get(1).getCode());
-        Assert.assertEquals(CapabilityStatement.TypeRestfulInteraction.READ, resourceComponent.getInteraction().get(2).getCode());
-        Assert.assertEquals(CapabilityStatement.TypeRestfulInteraction.CREATE, resourceComponent.getInteraction().get(3).getCode());
-        Assert.assertEquals(CapabilityStatement.TypeRestfulInteraction.UPDATE, resourceComponent.getInteraction().get(4).getCode());
+        Assert.assertEquals(2, resourceComponent.getInteraction().size());
+        Assert.assertEquals(CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE, resourceComponent.getInteraction().get(0).getCode());
+        Assert.assertEquals(CapabilityStatement.TypeRestfulInteraction.READ, resourceComponent.getInteraction().get(1).getCode());
+
     }
 
     @Test

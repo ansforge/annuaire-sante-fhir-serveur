@@ -3,8 +3,6 @@
  */
 package fr.ans.afas.fhir.servlet.search.bundle;
 
-import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.parser.IParser;
 import fr.ans.afas.configuration.AfasConfiguration;
 import fr.ans.afas.domain.FhirBundleBuilder;
 import fr.ans.afas.fhir.servlet.exception.UnknownErrorWritingResponse;
@@ -21,6 +19,7 @@ import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -39,7 +38,7 @@ import java.util.UUID;
 @Slf4j
 public abstract class AbstractFhirBundleWriteListener<T> extends DefaultWriteListener {
 
-    static IParser parser = FhirContext.forR4().newJsonParser();
+//    static IParser parser = FhirContext.forR4().newJsonParser();
     private final AfasConfiguration afasConfiguration;
     private final ServletOutputStream output;
 
@@ -99,12 +98,18 @@ public abstract class AbstractFhirBundleWriteListener<T> extends DefaultWriteLis
         var req = this.context.getRequest();
         var httpReq = (HttpServletRequest) req;
         //TODO temporal solution to remove tenant before generating the next url because the tenant don't have to appear in next url but we can remove this solution at the moment that HAPI would be deleted
-        var currentUrl = afasConfiguration.getPublicUrl().concat(httpReq.getRequestURI().replaceAll("(/0.x)|(/1.x)", "")).concat(addIfHasParams(httpReq.getQueryString()));
-
+        var currentUrl = afasConfiguration.getPublicUrl().concat(httpReq.getRequestURI().replaceAll("(/0.x)|(/1.x)", "")).concat(addIfHasParams(getQueryString(httpReq)));
+        // Récupoération des URLs de pagination stockées avec leur numéro de page
+        Map<Integer, String> pagingUrls = HttpUtils.getPagingUrls(httpReq);
+        // Récupération du numéro de page actuel, via l'URL si elle est stockée dans la Map ci-dessus, sinon c'est la première.
+        int pageNumber = pagingUrls.entrySet().stream()
+                .filter(entry -> StringUtils.startsWith(currentUrl, entry.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(1);
         if (fhirPageIterator.hasNextPage()) {
             //TODO temporal solution to remove tenant before generating the next url because the tenant don't have to appear in next url but we can remove this solution at the moment that HAPI would be deleted
             var nextUrl = HttpUtils.getServerUrl(afasConfiguration.getPublicUrl(), "").replace(selectExpression.getFhirResource(), "");
-
             var id = fhirServerContext.getNextUrlManager().store(PagingData.<T>builder()
                     .pageSize(selectExpression.getCount())
                     .size(CountResult.builder().total(fhirPageIterator.searchContext().getTotal()).build())
@@ -117,11 +122,11 @@ public abstract class AbstractFhirBundleWriteListener<T> extends DefaultWriteLis
                     .build());
 
 
-            output.write(this.fhirBundleBuilder.getFooter(nextUrl, currentUrl, id).getBytes(Charset.defaultCharset()));
+            output.write(this.fhirBundleBuilder.getFooter(nextUrl, currentUrl, id, pageNumber, pagingUrls).getBytes(Charset.defaultCharset()));
             context.complete();
             return;
         }
-        output.write(this.fhirBundleBuilder.getFooter(afasConfiguration.getPublicUrl(), currentUrl, null).getBytes(Charset.defaultCharset()));
+        output.write(this.fhirBundleBuilder.getFooter(afasConfiguration.getPublicUrl(), currentUrl, null, pageNumber, pagingUrls).getBytes(Charset.defaultCharset()));
         context.complete();
     }
 
@@ -217,6 +222,20 @@ public abstract class AbstractFhirBundleWriteListener<T> extends DefaultWriteLis
         output.write(this.fhirBundleBuilder.getHeader(bundleId, fhirPageIterator.searchContext().getTotal()).getBytes(Charset.defaultCharset()));
         state = RenderingState.ENTRIES;
 
+    }
+
+    private String getQueryString(HttpServletRequest request) {
+        if ("GET".equalsIgnoreCase(request.getMethod())) {
+            return request.getQueryString();
+        }
+
+        if ("POST".equalsIgnoreCase(request.getMethod()) &&
+                request.getContentType() != null &&
+                request.getContentType().contains("application/x-www-form-urlencoded")) {
+            return (String) request.getAttribute("cachedPostQueryString");
+        }
+
+        return null;
     }
 
 
