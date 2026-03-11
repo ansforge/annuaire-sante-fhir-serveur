@@ -143,4 +143,34 @@ class TenantFilterTest {
         // Invalid URI
         assertFalse(pattern.matcher(invalidUri).matches());
     }
+    @Test
+    void testDoFilter_PostRequestWithFormUrlEncoded() throws Exception {
+       Tenant tenant = new Tenant();
+        tenant.setName("tenant1");
+        tenant.setPath("/tenant1");
+        when(tenantSearchConfig.getTenantConfig()).thenReturn(tenant);
+
+        Map<String, TenantSearchConfig> configMap = new HashMap<>();
+        configMap.put("tenant1", tenantSearchConfig);
+        when(serverSearchConfig.getConfigs()).thenReturn(configMap);
+
+        when(request.getRequestURI()).thenReturn("/fhir/v1/tenant1/resource");
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getContentType()).thenReturn("application/x-www-form-urlencoded");
+        when(request.getParameterMap()).thenReturn(Map.of("key1", new String[]{"value1"}, "key2", new String[]{"value2"}));
+        when(request.getRequestDispatcher(anyString())).thenReturn(requestDispatcher);
+
+        tenantFilter.doFilter(request, response, chain);
+
+        ArgumentCaptor<String> queryStringCaptor = ArgumentCaptor.forClass(String.class);
+        verify(request).setAttribute(eq("cachedPostQueryString"), queryStringCaptor.capture());
+
+        String actualQueryString = queryStringCaptor.getValue();
+        assertTrue(actualQueryString.contains("key1=value1"));
+        assertTrue(actualQueryString.contains("key2=value2"));
+        assertTrue(actualQueryString.matches(".*key1=value1.*key2=value2.*|.*key2=value2.*key1=value1.*"));
+
+       verify(requestDispatcher).forward(any(ServletRequest.class), any(ServletResponse.class));
+    }
+
 }

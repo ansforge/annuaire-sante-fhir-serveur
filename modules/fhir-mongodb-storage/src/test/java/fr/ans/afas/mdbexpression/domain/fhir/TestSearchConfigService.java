@@ -97,7 +97,9 @@ public class TestSearchConfigService extends BaseSearchConfigService {
     public static final String FHIR_RESOURCE_SUB_DB_REFERENCE_PATH = "t_reference_sub_path";
 
     public static final String REFERENCE_PATH_REFERENCE_TYPE = "referenceType";
-
+    // Ajout de la constante pour le nouveau chemin
+    public static final String FHIR_RESOURCE_VALID_CHAINED_PATH = "validSubPath";
+    public static final String FHIR_RESOURCE_DB_VALID_CHAINED_PATH = "t_valid_sub_path";
 
     public TestSearchConfigService() {
         super(new TenantSearchConfig());
@@ -151,10 +153,32 @@ public class TestSearchConfigService extends BaseSearchConfigService {
                 .resourcePaths(List.of(ResourcePathConfig.builder().path("referencePath").build()))
                 .build());
 
-        configs.put(FHIR_RESOURCE_NAME, FhirResourceSearchConfig.builder().name(FHIR_RESOURCE_NAME).profile("http").searchParams(listFhirResource).build());
+        listFhirResource.add(SearchParamConfig.builder()
+                .urlParameter("subPath")
+                .name("subPath")
+                .searchType("reference")
+                .indexName("t_sub_path")
+                .resourcePaths(List.of(ResourcePathConfig.builder().path("subPath").build()))
+                .build());
 
+        listFhirResource.add(SearchParamConfig.builder()
+                .urlParameter(FHIR_RESOURCE_REFERENCE_PATH)
+                .name("referencePath")
+                .searchType("reference")
+                .referenceType(REFERENCE_PATH_REFERENCE_TYPE)
+                .indexName(FHIR_RESOURCE_DB_REFERENCE_PATH)
+                .resourcePaths(List.of(
+                        ResourcePathConfig.builder().path("referencePath").build(),
+                        ResourcePathConfig.builder().path(FHIR_RESOURCE_VALID_CHAINED_PATH).build() // Utilisation de la constante
+                ))
+                .build());
+        configs.put(FHIR_RESOURCE_NAME, FhirResourceSearchConfig.builder()
+                .name(FHIR_RESOURCE_NAME)
+                .profile("http")
+                .searchParams(listFhirResource)
+                .build());
 
-        // the sub resource:
+        // Configuration pour la sous-ressource
         var listFhirResourceSub = new ArrayList<SearchParamConfig>();
         listFhirResourceSub.add(SearchParamConfig.builder()
                 .urlParameter(FHIR_RESOURCE_SUB_TOKEN_PATH)
@@ -181,7 +205,11 @@ public class TestSearchConfigService extends BaseSearchConfigService {
                 .resourcePaths(List.of(ResourcePathConfig.builder().path("parentPath").build()))
                 .build());
 
-        configs.put(FHIR_RESOURCE_SUB_NAME, FhirResourceSearchConfig.builder().name(FHIR_RESOURCE_SUB_NAME).profile("http").searchParams(listFhirResourceSub).build());
+        configs.put(FHIR_RESOURCE_SUB_NAME, FhirResourceSearchConfig.builder()
+                .name(FHIR_RESOURCE_SUB_NAME)
+                .profile("http")
+                .searchParams(listFhirResourceSub)
+                .build());
 
         return this;
     }

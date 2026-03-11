@@ -232,9 +232,70 @@ public class MongoDbExpressionSerializer implements ExpressionSerializer<Bson> {
                 .orWhen(TokenExpression.class::equals, x -> new TokenDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
                 .orWhen(ReferenceExpression.class::equals, x -> new ReferenceDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
                 .orWhen(StringExpression.class::equals, x -> new StringDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
-                .orWhen(HasCondition.class::equals, x -> new HasDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal));
+                .orWhen(HasCondition.class::equals, x -> new HasDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
+                .orWhen(TokenNotInExpression.class::equals, x -> new TokenNotInDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal))
+                .orWhen(TokenInExpression.class::equals, x -> new TokenInDeserializeFunction().process(searchConfigService, expressionFactory, this, valueFinal));
+
 
         return deserializeChooser.matches((Class<? extends Expression<Bson>>) classFound).orElseThrow();
+    }
+
+    /**
+     * Serialize a Not In expression
+     *
+     * @param tokenNotInExpression the Not In expression
+     * @return a string representation of the expression
+     */
+    @Override
+    public String serialize(TokenNotInExpression<Bson> tokenNotInExpression) {
+        var sb = new StringBuilder();
+        sb.append(ExpressionSerializationUtils.getCodeForClass(TokenNotInExpression.class));
+        sb.append(Expression.SERIALIZE_SEPARATOR);
+        if (StringUtils.hasLength(tokenNotInExpression.getSystem())) {
+            sb.append(encodeValue(tokenNotInExpression.getSystem()));
+        }
+        sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+        if (!tokenNotInExpression.getValues().isEmpty()) {
+            tokenNotInExpression.getValues().forEach(value -> {
+                sb.append(value);
+                sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+            });
+
+        }
+        sb.append(tokenNotInExpression.getFhirPath().getResource());
+        sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+        sb.append(tokenNotInExpression.getFhirPath().getPath());
+
+        return sb.toString();
+    }
+
+    /**
+     * Serialize a In expression
+     *
+     * @param tokenInExpression the In expression
+     * @return a string representation of the expression
+     */
+    @Override
+    public String serialize(TokenInExpression<Bson> tokenInExpression) {
+        var sb = new StringBuilder();
+        sb.append(ExpressionSerializationUtils.getCodeForClass(TokenInExpression.class));
+        sb.append(Expression.SERIALIZE_SEPARATOR);
+        if (StringUtils.hasLength(tokenInExpression.getSystem())) {
+            sb.append(encodeValue(tokenInExpression.getSystem()));
+        }
+        sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+        if (!tokenInExpression.getValues().isEmpty()) {
+            tokenInExpression.getValues().forEach(value -> {
+                sb.append(value);
+                sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+            });
+
+        }
+        sb.append(tokenInExpression.getFhirPath().getResource());
+        sb.append(Expression.SERIALIZE_VALUE_SEPARATOR);
+        sb.append(tokenInExpression.getFhirPath().getPath());
+
+        return sb.toString();
     }
 
 

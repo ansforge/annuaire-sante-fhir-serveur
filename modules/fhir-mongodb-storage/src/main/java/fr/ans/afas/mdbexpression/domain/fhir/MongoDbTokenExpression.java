@@ -64,13 +64,21 @@ public class MongoDbTokenExpression extends TokenExpression<Bson> {
         }
         Bson ret = null;
         if (operator.equals(Operator.NOT)) {
-            ret = Filters.not(Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_VALUE, value));
-        } else if (StringUtils.hasText(this.system) && StringUtils.hasLength(this.value)) {
-            ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSVAL, system + "|" + value);
-        } else if (!StringUtils.hasLength(this.system)) {
-            ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_VALUE, value);
-        } else if (!StringUtils.hasLength(this.value)) {
-            ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSTEM, system);
+            if (StringUtils.hasText(this.system) && StringUtils.hasLength(this.value)) {
+                ret = Filters.ne(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSVAL, system + "|" + value);
+            } else if (!StringUtils.hasLength(this.system)) {
+                ret = Filters.ne(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_VALUE, value);
+            } else if (!StringUtils.hasLength(this.value)) {
+                ret = Filters.ne(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSTEM, system);
+            }
+        } else {
+            if (StringUtils.hasText(this.system) && StringUtils.hasLength(this.value)) {
+                ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSVAL, system + "|" + value);
+            } else if (!StringUtils.hasLength(this.system)) {
+                ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_VALUE, value);
+            } else if (!StringUtils.hasLength(this.value)) {
+                ret = Filters.eq(expressionContext.getPrefix() + config.get().getIndexName() + TOKEN_DB_PATH_SUFFIX_SYSTEM, system);
+            }
         }
 
         return ret;

@@ -8,7 +8,6 @@ import ca.uhn.fhir.rest.param.ParamPrefixEnum;
 import fr.ans.afas.exception.BadDataFormatException;
 import fr.ans.afas.exception.BadSelectExpression;
 import fr.ans.afas.fhirserver.http.FhirRequestParser;
-import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.config.SearchConfigService;
 import fr.ans.afas.fhirserver.search.expression.*;
 import fr.ans.afas.fhirserver.search.expression.emptyimpl.EmptyAndExpression;
@@ -31,6 +30,8 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -43,8 +44,6 @@ import static org.mockito.Mockito.mock;
 @SpringBootTest
 class FhirRequestParserTest {
 
-    final FhirSearchPath pathString = FhirSearchPath.builder().resource("FhirResource").path("string_path").build();
-
     final ExpressionFactory<?> expressionFactory = mock(ExpressionFactory.class);
     final SearchConfigService searchConfigService = new TestSearchConfigService();
 
@@ -53,11 +52,10 @@ class FhirRequestParserTest {
     void init() {
         Mockito.when(expressionFactory.newAndExpression()).then(a -> new EmptyAndExpression());
         Mockito.when(expressionFactory.newOrExpression()).then(a -> new EmptyOrExpression());
-        Mockito.when(expressionFactory.newStringExpression(pathString, "bla", StringExpression.Operator.EXACT)).then(a -> new EmptyStringExpression(pathString, "bla", StringExpression.Operator.EXACT));
-        Mockito.when(expressionFactory.newStringExpression(pathString, "blo", StringExpression.Operator.EXACT)).then(a -> new EmptyStringExpression(pathString, "blo", StringExpression.Operator.EXACT));
+        Mockito.when(expressionFactory.newStringExpression(any(), anyString(), any())).then(a -> new EmptyStringExpression(a.getArgument(0), a.getArgument(1), a.getArgument(2)));
 
-        //FhirSearchPath path, Date value, TemporalPrecisionEnum precision, ParamPrefixEnum queryQualifier
-        Mockito.when(expressionFactory.newDateRangeExpression(Mockito.any(), Mockito.any(Date.class), Mockito.any(TemporalPrecisionEnum.class), Mockito.any(ParamPrefixEnum.class)))
+        // FhirSearchPath path, Date value, TemporalPrecisionEnum precision, ParamPrefixEnum queryQualifier
+        Mockito.when(expressionFactory.newDateRangeExpression(any(), any(Date.class), any(TemporalPrecisionEnum.class), any(ParamPrefixEnum.class)))
                 .then(a -> new EmptyDateExpression(a.getArgument(0), a.getArgument(1), a.getArgument(2), a.getArgument(3)));
 
         IncludeExpression<?> mockIncludeDevice = mock(IncludeExpression.class);
@@ -79,6 +77,10 @@ class FhirRequestParserTest {
         IncludeExpression<?> mockIncludeOrganization = mock(IncludeExpression.class);
         Mockito.when(mockIncludeOrganization.getType()).thenReturn("Organization");
         Mockito.when(mockIncludeOrganization.getName()).thenReturn("partof");
+
+        IncludeExpression<?> mockHealthcareServiceProfile = mock(IncludeExpression.class);
+        Mockito.when(mockHealthcareServiceProfile.getType()).thenReturn("HealthcareService");
+        Mockito.when(mockHealthcareServiceProfile.getName()).thenReturn("_profile");
 
         Mockito.when(expressionFactory.newIncludeExpression("Device", "organization")).then(a -> mockIncludeDevice);
         Mockito.when(expressionFactory.newIncludeExpression("PractitionerRole", "organization")).then(a -> mockIncludePractitionerRoleOrganization);
@@ -255,6 +257,26 @@ class FhirRequestParserTest {
     void testUnsupportedSearch() throws BadDataFormatException {
         Assert.assertThrows(BadSelectExpression.class,
                 () -> FhirRequestParser.parseSelectExpression("FhirResource?_count=49&not_exist_path=Patient/00001", expressionFactory, searchConfigService));
+    }
+
+
+    @Test
+    void testUriParsing() throws BadSelectExpression, BadDataFormatException {
+        // OR operator
+        var expression = FhirRequestParser.parseSelectExpression("HealthcareService?_profile=https://interop.esante.gouv.fr/ig/fhir/annuaire/StructureDefinition/as-dp-healthcareservice-healthcare-activity,https://interop.esante.gouv.fr/ig/fhir/annuaire/StructureDefinition/as-healthcareservice-social-equipment", expressionFactory, searchConfigService);
+        var rootExpression = (AndExpression<?>) expression.getExpression();
+        Assert.assertEquals(1, rootExpression.getExpressions().size());
+        var or = (OrExpression<?>) rootExpression.getExpressions().get(0);
+        Assert.assertEquals(2, or.getExpressions().size());
+        var firstUri = (StringExpression<?>) or.getExpressions().get(0);
+        var secondUri = (StringExpression<?>) or.getExpressions().get(1);
+
+        Assert.assertEquals("https://interop.esante.gouv.fr/ig/fhir/annuaire/StructureDefinition/as-dp-healthcareservice-healthcare-activity", firstUri.getValue());
+        Assert.assertEquals("https://interop.esante.gouv.fr/ig/fhir/annuaire/StructureDefinition/as-healthcareservice-social-equipment", secondUri.getValue());
+        Assert.assertEquals("_profile", firstUri.getFhirPath().getPath());
+        Assert.assertEquals("_profile", secondUri.getFhirPath().getPath());
+        Assert.assertEquals(StringExpression.Operator.EXACT, firstUri.getOperator());
+        Assert.assertEquals(StringExpression.Operator.EXACT, secondUri.getOperator());
     }
 
 }

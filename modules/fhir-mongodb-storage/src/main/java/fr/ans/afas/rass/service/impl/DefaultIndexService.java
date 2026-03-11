@@ -82,37 +82,60 @@ public class DefaultIndexService implements IndexService {
     @Override
     public void refreshIndexesSync(long fromDate) {
         try {
+            logger.info("[IndexService] Début d'indexation (depuis {})", new Date(fromDate));
+
             for (var targetResource : searchConfigService.getResources()) {
+                logger.info("[IndexService] ➤ Traitement de la ressource '{}'", targetResource);
+
                 var toInclude = new HashSet<Include>();
                 var joins = searchConfigService.getJoinsByFhirResource(targetResource);
-                if (joins != null) {
+
+                if (joins != null && !joins.isEmpty()) {
+                    logger.info("[IndexService]   → Joins trouvés : {}", joins.size());
+
                     var referenceFields = new HashMap<String, String>();
                     for (var j : joins) {
+                        logger.debug("[IndexService]     - Join: {} via path '{}'", j.getResource(), j.getPath());
                         toInclude.add(new Include(j.getResource() + ":" + j.getPath()));
                         referenceFields.put(j.getResource(), j.getField());
                     }
+
                     try {
                         var se = new SelectExpression<>(targetResource, expressionFactory);
                         se.setCount(1000);
                         se.setSince(new Date(fromDate));
                         se.fromFhirParamsRevInclude(toInclude);
+
                         var pageResult = this.fhirStoreService.search(null, se);
+                        int totalResources = 0;
+                        int pageCount = 0;
+
+
                         do {
                             var page = pageResult.getPage();
+                            if (page == null || page.isEmpty()) {
+                                logger.debug("[IndexService]     ↪️ Aucune ressource à indexer pour {}", targetResource);
+                            } else {
+                                logger.debug("[IndexService]     ↪️ Page {}: {} ressources", ++pageCount, page.size());
+                                totalResources += page.size();
 
-                            // reindex resources:
-                            index(targetResource, page, referenceFields);
-
-                            // and paginate:
-                            pageResult = this.fhirStoreService.search(pageResult.getContext(), se);
+                                index(targetResource, page, referenceFields);
+                                pageResult = this.fhirStoreService.search(pageResult.getContext(), se);
+                            }
                         } while (pageResult.isHasNext());
 
+                        logger.info("[IndexService]   → Terminé pour '{}'. Total ressources traitées : {}", targetResource, totalResources);
 
                     } catch (Exception e) {
+                        logger.error("[IndexService] ❌ Erreur lors de l’indexation de '{}'", targetResource, e);
                         throw new IndexingException(e);
                     }
+                } else {
+                    logger.warn("[IndexService] ⚠ Aucun join défini pour '{}'", targetResource);
                 }
             }
+
+            logger.info("[IndexService] ✅ Indexation terminée");
         } finally {
             isRunning.set(false);
         }
@@ -130,8 +153,17 @@ public class DefaultIndexService implements IndexService {
         for (var t : targets) {
             var sub = joins.stream().filter(f -> hasSameId(f, t, referenceFields.get(t.fhirType()))).toList();
             for (var s : sub) {
-                var resourceAndSubResources = new ResourceAndSubResources(s, List.of(t));
-                workspace.add(resourceAndSubResources);
+                var existing = workspace.stream()
+                        .filter(r -> r.getResource().getIdElement().equals(s.getIdElement()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (existing != null) {
+                    existing.getSubResources().add(t);
+                } else {
+                    var resourceAndSubResources = new ResourceAndSubResources(s, new ArrayList<>(List.of(t)));
+                    workspace.add(resourceAndSubResources);
+                }
             }
         }
         this.fhirStoreService.storeWithDependencies(workspace, false, true);

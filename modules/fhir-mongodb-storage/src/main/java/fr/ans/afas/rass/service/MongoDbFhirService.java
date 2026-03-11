@@ -301,7 +301,8 @@ public class MongoDbFhirService implements FhirStoreService<Bson> {
                 newDoc.put(MongoQueryUtils.REVISION_ATTRIBUTE, oldDoc.getInteger(MongoQueryUtils.REVISION_ATTRIBUTE) + 1);
                 var fhir = (Document) newDoc.get("fhir");
                 var meta = (Document) fhir.get("meta");
-                meta.put("versionId", oldDoc.getInteger(MongoQueryUtils.REVISION_ATTRIBUTE) + 1);
+                meta.put("versionId", String.valueOf(oldDoc.getInteger(MongoQueryUtils.REVISION_ATTRIBUTE) + 1));
+
             } else {
                 // dont update
                 toFlagAsNotUpdated.put(resource.getIdElement().getIdPart(), toUpdate.remove(resource.getIdElement().getIdPart()));

@@ -40,6 +40,11 @@ public class TestSearchConfigService extends BaseSearchConfigService {
     public static final String FHIR_RESOURCE_ORGANIZATION = "Organization";
 
     /**
+     * The name of the Sample Fhir Resource Organization
+     */
+    public static final String HEALTH_CARE_SERVICE = "HealthcareService";
+
+    /**
      * The exemple path for a token
      */
     public static final String FHIR_RESOURCE_TOKEN_PATH = "token_path";
@@ -173,6 +178,16 @@ public class TestSearchConfigService extends BaseSearchConfigService {
                                 .name("includePath")
                                 .searchType("reference")
                                 .indexName(FHIR_RESOURCE_DB_REFERENCE_PATH)
+                                .resourcePaths(List.of(ResourcePathConfig.builder().path("includePath").build()))
+                                .build())
+                ).build());
+
+        configs.put(HEALTH_CARE_SERVICE, FhirResourceSearchConfig.builder().name(HEALTH_CARE_SERVICE)
+                .searchParams(
+                        List.of(SearchParamConfig.builder()
+                                .urlParameter("_profile")
+                                .name("includePath")
+                                .searchType("uri")
                                 .resourcePaths(List.of(ResourcePathConfig.builder().path("includePath").build()))
                                 .build())
                 ).build());

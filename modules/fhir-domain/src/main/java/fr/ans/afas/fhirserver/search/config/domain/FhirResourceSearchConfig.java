@@ -6,9 +6,11 @@ package fr.ans.afas.fhirserver.search.config.domain;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.hl7.fhir.r4.model.CanonicalType;
 import org.hl7.fhir.r4.model.StringType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -23,6 +25,9 @@ public class FhirResourceSearchConfig {
 
     private String name;
     private String profile;
+
+    // Ajouter le champ supportedProfile
+    private List<CanonicalType> supportedProfiles = new ArrayList<>();
     private boolean visible = true;
     private boolean canRead = true;
     private boolean canWrite = true;
@@ -42,7 +47,7 @@ public class FhirResourceSearchConfig {
     }
 
     @Builder
-    public FhirResourceSearchConfig(String name, String profile, List<SearchParamConfig> searchParams, List<JoinPath> joins,
+    public FhirResourceSearchConfig(String name, String profile,List<CanonicalType> supportedProfiles, List<SearchParamConfig> searchParams, List<JoinPath> joins,
                                     List<StringType> searchIncludes, List<StringType> searchRevIncludes) {
         this.name = name;
         this.profile = profile;
@@ -50,6 +55,7 @@ public class FhirResourceSearchConfig {
         this.joins = joins;
         this.searchIncludes = searchIncludes;
         this.searchRevIncludes = searchRevIncludes;
+        this.supportedProfiles = supportedProfiles != null ? supportedProfiles : Collections.emptyList();
     }
 
     // Nuevo método de conveniencia para searchIncludes
@@ -68,5 +74,8 @@ public class FhirResourceSearchConfig {
         }
     }
 
-
+    // Méthode pour définir les supportedProfiles
+    public void setSupportedProfiles(List<CanonicalType> profiles) {
+        this.supportedProfiles = profiles;
+    }
 }

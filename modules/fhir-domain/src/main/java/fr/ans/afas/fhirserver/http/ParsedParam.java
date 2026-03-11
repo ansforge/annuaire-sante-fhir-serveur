@@ -20,15 +20,17 @@ import java.util.List;
 @NoArgsConstructor
 public class ParsedParam {
 
+    String resourceTarget;
     String paramName;
     List<String> paramValues;
     String modifier;
 
 
     @Builder
-    public ParsedParam(String paramName, List<String> paramValues, String modifier) {
+    public ParsedParam(String paramName, List<String> paramValues, String modifier, String resourceTarget) {
         this.paramName = paramName;
         this.paramValues = paramValues;
         this.modifier = modifier;
+        this.resourceTarget = resourceTarget;
     }
 }

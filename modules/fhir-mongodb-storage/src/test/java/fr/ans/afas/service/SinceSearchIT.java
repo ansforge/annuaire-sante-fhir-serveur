@@ -12,7 +12,6 @@ import fr.ans.afas.rass.service.MongoDbFhirService;
 import fr.ans.afas.rass.service.MongoMultiTenantService;
 import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.Device;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,14 +53,6 @@ public class SinceSearchIT {
 
     @Inject
     MongoMultiTenantService multiTenantService;
-
-    /**
-     * Stop docker
-     */
-    @AfterClass
-    public static void shutdown() {
-        WithMongoTest.clean();
-    }
 
     @Before
     public void init() {

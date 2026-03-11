@@ -41,11 +41,7 @@ public class SimpleWithMongoTest {
      */
     @Test
     public void testMongoAccess() {
-        try (var client = MongoClients.create(mongoUri)) {
-            Assert.assertTrue(client.listDatabaseNames().iterator().hasNext());
-        }catch(Exception e) {
-            WithMongoTest.clean();
-        }
+        Assert.assertTrue(MongoClients.create(mongoUri).listDatabaseNames().iterator().hasNext());
     }
 
 }

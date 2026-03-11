@@ -56,4 +56,12 @@ public abstract class ReferenceExpression<T> implements ElementExpression<T> {
     public void setFhirPath(FhirSearchPath path) {
         this.fhirPath = path;
     }
+
+    /**
+     * Retourne la condition _has associée à l'expression de référence,
+     * ou null si l'expression n'est pas de type chaîne.
+     */
+    public HasCondition<T> getHasCondition() {
+        return null;
+    }
 }

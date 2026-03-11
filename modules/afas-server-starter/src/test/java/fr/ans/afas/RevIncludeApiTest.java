@@ -37,11 +37,6 @@ public class RevIncludeApiTest extends BaseTest {
      */
     final String fhirPath = "/fhir/" + HttpUtils.SERVLET_API_PATH + "/tenant-1";
 
-    @AfterClass
-    public static void shutdown() {
-        WithMongoTest.clean();
-    }
-
     @After
     public void clean() {
         fhirStoreService.deleteAll();

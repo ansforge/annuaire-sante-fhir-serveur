@@ -9,6 +9,7 @@ import fr.ans.afas.fhirserver.search.FhirSearchPath;
 import fr.ans.afas.fhirserver.search.exception.BadParametersException;
 import fr.ans.afas.fhirserver.search.expression.*;
 import fr.ans.afas.fhirserver.search.expression.emptyimpl.*;
+import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializer;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,49 @@ class SelectExpressionTest {
                 "SA01",
                 TokenExpression.Operator.EQUALS
         ));
+
+        //Mock TokenNotInExpression
+        Mockito.when(expressionFactory.newTokenNotInExpression(
+                pathToken,
+                "system1",
+                List.of("value1", "value2")
+        )).then(a -> new TokenNotInExpression(pathToken, "system1", List.of("value1", "value2")) {
+            @Override
+            public Object interpreter(ExpressionContext expressionContext) {
+                return null;
+            }
+
+            @Override
+            public String serialize(ExpressionSerializer expressionSerializer) {
+                return "";
+            }
+
+            @Override
+            public Expression deserialize(ExpressionSerializer expressionDeserializer) {
+                return null;
+            }
+        });
+
+        Mockito.when(expressionFactory.newTokenInExpression(
+                pathToken,
+                "system1",
+                List.of("value1", "value2")
+        )).then(a -> new TokenInExpression<>(pathToken, "system1", List.of("value1", "value2")) {
+            @Override
+            public Object interpreter(ExpressionContext expressionContext) {
+                return null;
+            }
+
+            @Override
+            public String serialize(ExpressionSerializer expressionSerializer) {
+                return "";
+            }
+
+            @Override
+            public Expression deserialize(ExpressionSerializer expressionDeserializer) {
+                return null;
+            }
+        });
 
 
     }
@@ -374,6 +418,60 @@ class SelectExpressionTest {
         Assert.assertEquals(TokenExpression.Operator.EQUALS, tokenExpressionEquals.getOperator());
 
 
+    }
+
+    @Test
+    void testFromFhirParamsAllEquals() {
+
+        var selectExpression = new SelectExpression<>("FhirResource", expressionFactory);
+        var tokenAndListParam = new TokenAndListParam();
+        var tokenOrListParam = new TokenOrListParam();
+
+
+        tokenOrListParam.add(new TokenParam("system1", "value1"));
+        tokenOrListParam.add(new TokenParam("system1", "value2"));
+        tokenAndListParam.addAnd(tokenOrListParam);
+
+
+        selectExpression.fromFhirParams(pathToken, tokenAndListParam);
+
+
+        var andExpression = (AndExpression<?>) selectExpression.getExpression();
+        Assert.assertNotNull(andExpression);
+        Assert.assertEquals(1, andExpression.getExpressions().size());
+
+        var tokenInExpression = (TokenInExpression<?>) andExpression.getExpressions().get(0);
+        Assert.assertEquals("system1", tokenInExpression.getSystem());
+        Assert.assertEquals(List.of("value1", "value2"), tokenInExpression.getValues());
+    }
+
+    @Test
+    void testFromFhirParamsAllNot() {
+
+        var selectExpression = new SelectExpression<>("FhirResource", expressionFactory);
+        var tokenAndListParam = new TokenAndListParam();
+        var tokenOrListParam = new TokenOrListParam();
+
+
+        var tokenParam1 = new TokenParam("system1", "value1");
+        tokenParam1.setModifier(TokenParamModifier.NOT);
+        var tokenParam2 = new TokenParam("system1", "value2");
+        tokenParam2.setModifier(TokenParamModifier.NOT);
+        tokenOrListParam.add(tokenParam1);
+        tokenOrListParam.add(tokenParam2);
+        tokenAndListParam.addAnd(tokenOrListParam);
+
+
+        selectExpression.fromFhirParams(pathToken, tokenAndListParam);
+
+
+        var andExpression = (AndExpression<?>) selectExpression.getExpression();
+        Assert.assertNotNull(andExpression);
+        Assert.assertEquals(1, andExpression.getExpressions().size());
+
+        var tokenNotInExpression = (TokenNotInExpression<?>) andExpression.getExpressions().get(0);
+        Assert.assertEquals("system1", tokenNotInExpression.getSystem());
+        Assert.assertEquals(List.of("value1", "value2"), tokenNotInExpression.getValues());
     }
 
 }

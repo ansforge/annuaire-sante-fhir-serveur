@@ -13,17 +13,16 @@ import fr.ans.afas.fhirserver.service.FhirStoreService;
 import fr.ans.afas.fhirserver.service.NextUrlManager;
 import fr.ans.afas.fhirserver.service.SecurityService;
 import fr.ans.afas.service.TestMultitenantService;
-import org.mockito.Mockito;
 import org.springframework.context.MessageSource;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * A test class with standard services
  */
 public abstract class BaseTest {
-
-
     FhirServerContext<Object> fhirServerContext;
-
 
     AfasConfiguration afasConfiguration;
 
@@ -31,19 +30,22 @@ public abstract class BaseTest {
 
     FhirOperationFactory fhirOperationFactory;
 
+    FhirStoreService fhirStoreServiceMock;
+
     protected void setup() {
-        this.fhirServerContext = Mockito.mock(FhirServerContext.class);
-        this.afasConfiguration = Mockito.mock(AfasConfiguration.class);
-        this.messageSource = Mockito.mock(MessageSource.class);
-        this.fhirOperationFactory = Mockito.mock(FhirOperationFactory.class);
-        Mockito.when(afasConfiguration.getPublicUrl()).thenAnswer((p) -> "http://a/fhir/");
-        Mockito.when(fhirServerContext.getMultiTenantService()).thenReturn(new TestMultitenantService());
-        Mockito.when(fhirServerContext.getFhirStoreService()).thenReturn(Mockito.mock(FhirStoreService.class));
-        Mockito.when(fhirServerContext.getNextUrlManager()).thenReturn(Mockito.mock(NextUrlManager.class));
-        Mockito.when(fhirServerContext.getFhirContext()).thenReturn(FhirContext.forR4());
-        Mockito.when(fhirServerContext.getExpressionFactory()).thenReturn(Mockito.mock(ExpressionFactory.class));
-        Mockito.when(fhirServerContext.getSearchConfigService()).thenReturn(Mockito.mock(SearchConfigService.class));
-        Mockito.when(fhirServerContext.getSecurityService()).thenReturn(Mockito.mock(SecurityService.class));
+        this.fhirServerContext = mock(FhirServerContext.class);
+        this.afasConfiguration = mock(AfasConfiguration.class);
+        this.messageSource = mock(MessageSource.class);
+        this.fhirOperationFactory = mock(FhirOperationFactory.class);
+        this.fhirStoreServiceMock = mock(FhirStoreService.class);
+        when(afasConfiguration.getPublicUrl()).thenAnswer((p) -> "http://a/fhir/");
+        when(fhirServerContext.getMultiTenantService()).thenReturn(new TestMultitenantService());
+        when(fhirServerContext.getFhirStoreService()).thenReturn(fhirStoreServiceMock);
+        when(fhirServerContext.getNextUrlManager()).thenReturn(mock(NextUrlManager.class));
+        when(fhirServerContext.getFhirContext()).thenReturn(FhirContext.forR4());
+        when(fhirServerContext.getExpressionFactory()).thenReturn(mock(ExpressionFactory.class));
+        when(fhirServerContext.getSearchConfigService()).thenReturn(mock(SearchConfigService.class));
+        when(fhirServerContext.getSecurityService()).thenReturn(mock(SecurityService.class));
 
     }
 

@@ -9,7 +9,6 @@ import fr.ans.afas.fhirserver.search.config.domain.FhirResourceSearchConfig;
 import fr.ans.afas.fhirserver.service.FhirServerContext;
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -21,6 +20,7 @@ import org.hl7.fhir.r4.model.Enumerations;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -52,17 +52,12 @@ public class CapabilityStatementWriteListener<T> extends DefaultWriteListener {
      * @param resource the capability statement component
      */
     public static void addInteractions(FhirResourceSearchConfig config, CapabilityStatement.CapabilityStatementRestResourceComponent resource) {
-        if (config.isCanDelete()) {
-            resource.addInteraction().setCode(CapabilityStatement.TypeRestfulInteraction.DELETE);
-        }
+
         if (config.isCanRead()) {
             resource.addInteraction().setCode(CapabilityStatement.TypeRestfulInteraction.SEARCHTYPE);
             resource.addInteraction().setCode(CapabilityStatement.TypeRestfulInteraction.READ);
         }
-        if (config.isCanWrite()) {
-            resource.addInteraction().setCode(CapabilityStatement.TypeRestfulInteraction.CREATE);
-            resource.addInteraction().setCode(CapabilityStatement.TypeRestfulInteraction.UPDATE);
-        }
+
     }
 
     @Override
@@ -89,9 +84,17 @@ public class CapabilityStatementWriteListener<T> extends DefaultWriteListener {
         if (StringUtils.isNotBlank(searchConfigService.getServerSearchConfig().getImplementationGuideUrl())) {
             cs.setImplementationGuide(List.of(new CanonicalType(searchConfigService.getServerSearchConfig().getImplementationGuideUrl())));
         }
+        cs.setDate(new Date());
         cs.setStatus(Enumerations.PublicationStatus.ACTIVE);
         cs.setFhirVersion(Enumerations.FHIRVersion._4_0_1);
-        // we only support json:
+        cs.setKind(CapabilityStatement.CapabilityStatementKind.INSTANCE);
+
+        // Add implementation details
+        cs.getImplementation()
+                .setDescription("Spécification des capacités de l'API FHIR Annuaire Santé V2")
+                .setUrl("https://gateway.api.esante.gouv.fr/fhir/v2");
+
+
         cs.setFormat(List.of(new CodeType("application/fhir+json"), new CodeType("json")));
     }
 
@@ -110,10 +113,15 @@ public class CapabilityStatementWriteListener<T> extends DefaultWriteListener {
     protected List<CapabilityStatement.CapabilityStatementRestComponent> buildServer() {
         var serverComponents = new ArrayList<CapabilityStatement.CapabilityStatementRestComponent>();
         var serverComponent = new CapabilityStatement.CapabilityStatementRestComponent();
+
+        // add mode (SERVER)
+        serverComponent.setMode(CapabilityStatement.RestfulCapabilityMode.SERVER);
+
         serverComponents.add(serverComponent);
         for (var config : this.fhirServerContext.getSearchConfigService().getServerSearchConfig().getResources()) {
             var resource = serverComponent.addResource();
             resource.setProfile(config.getProfile());
+            resource.setSupportedProfile(config.getSupportedProfiles());
             resource.setType(config.getName());
 
             addInteractions(config, resource);

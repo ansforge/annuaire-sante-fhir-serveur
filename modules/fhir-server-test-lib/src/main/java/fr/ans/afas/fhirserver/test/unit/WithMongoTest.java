@@ -13,8 +13,6 @@ import org.springframework.util.StringUtils;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -35,16 +33,6 @@ public final class WithMongoTest {
     private static final Logger logger = LoggerFactory.getLogger(WithMongoTest.class);
 
     private WithMongoTest() {
-    }
-
-
-    /**
-     * Clean test context
-     */
-    public static void clean() {
-        if (mongoDBContainer.get() != null) {
-            mongoDBContainer.get().stop();
-        }
     }
 
     /**
@@ -68,6 +56,8 @@ public final class WithMongoTest {
                     logger.info("START Mongo");
                     mongoDBContainer.get().start();
                     logger.info("STARTED Mongo");
+                    logger.info("MongoDB started at: {}", mongoDBContainer.get().getReplicaSetUrl());
+                    logger.info("Mongo host: {}", mongoDBContainer.get().getHost());
                     TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext, "afas.mongodb.uri=mongodb://"+ mongoDBContainer.get().getHost() + ":" + mongoDBContainer.get().getMappedPort(27017));
                 } catch (Exception e) {
                     // no docker
@@ -76,7 +66,6 @@ public final class WithMongoTest {
 
                 }
             } else {
-                clean();
                 createLocalhostMongoInstance(configurableApplicationContext);
             }
 

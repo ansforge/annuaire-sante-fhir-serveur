@@ -5,6 +5,7 @@ package fr.ans.afas.fhirserver.search.expression;
 
 
 import ca.uhn.fhir.model.api.IQueryParameterAnd;
+import ca.uhn.fhir.model.api.IQueryParameterType;
 import ca.uhn.fhir.model.api.Include;
 import ca.uhn.fhir.rest.param.*;
 import fr.ans.afas.exception.BadDataFormatException;
@@ -16,6 +17,7 @@ import fr.ans.afas.fhirserver.search.expression.serialization.ExpressionSerializ
 import fr.ans.afas.utils.SelectExpressionMatching;
 import fr.ans.afas.validation.DataValidationUtils;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.util.Assert;
 
 import javax.validation.constraints.NotNull;
@@ -72,9 +74,17 @@ public class SelectExpression<T> implements Expression<T> {
     /**
      * The "_since" parameter to limit the request on object that have a modification date after this value.
      * If null, the parameter is not used
+     * -- SETTER --
+     *  Set the "_since" parameter to limit the request on object that have a modification date after this value.
+     *  If null, the parameter is not used
+     *
+     * @param since the date or null
+
      */
+    @Setter
     Date since;
 
+    @Setter
     Set<String> elements;
 
     SelectExpressionMatching<OrExpression<T>, Object, FhirSearchPath, Object, OrExpression<T>> constructOrExpression;
@@ -124,7 +134,13 @@ public class SelectExpression<T> implements Expression<T> {
                 .orWhen(ReferenceParam.class::equals, (OrExpression<T> orExpression, FhirSearchPath path, Object param) -> {
                     var referenceParam = (ReferenceParam) param;
                     DataValidationUtils.validateTokenParameter(referenceParam.getValue());
-                    return orExpression.or(expressionFactory.newReferenceExpression(path, referenceParam.getValue()));
+                    var refExp = expressionFactory.newReferenceExpression(path, referenceParam.getValue());
+                    // Appel de getHasCondition() sans instanceof
+                    var hasCondition = refExp.getHasCondition();
+                    if (hasCondition != null) {
+                        SelectExpression.this.addHasCondition( hasCondition);
+                    }
+                    return orExpression.or(refExp);
                 })
                 .orWhen(DateParam.class::equals, (OrExpression<T> orExpression, FhirSearchPath path, Object param) -> {
                     var dateRangeParam = (DateParam) param;
@@ -132,7 +148,7 @@ public class SelectExpression<T> implements Expression<T> {
                 })
                 .orWhen(UriParam.class::equals, (OrExpression<T> orExpression, FhirSearchPath path, Object param) -> {
                     var uriParam = (UriParam) param;
-                    DataValidationUtils.validateTokenParameter(uriParam.getValue());
+                    DataValidationUtils.validateString(uriParam.getValue());
                     return orExpression.or(expressionFactory.newStringExpression(path, uriParam.getValue(), StringExpression.Operator.EXACT));
                 });
     }
@@ -140,8 +156,44 @@ public class SelectExpression<T> implements Expression<T> {
     public <P extends IQueryParameterAnd<?>> SelectExpression<T> fromFhirParams(FhirSearchPath path, P iQueryParam) {
         if (iQueryParam != null) {
             for (var orParams : iQueryParam.getValuesAsQueryTokens()) {
+
+                // ✅ Si ce "paramètre OR" contient plusieurs valeurs
+                List<IQueryParameterType> params = (List<IQueryParameterType>) orParams.getValuesAsQueryTokens();
+                if (params.size() > 1 && params.stream().allMatch(TokenParam.class::isInstance)) {
+                    List<TokenParam> tokenParams = params.stream()
+                            .map(p -> (TokenParam) p)
+                            .toList();
+
+                    boolean allEquals = tokenParams.stream()
+                            .allMatch(p -> resolveOperatorToken(p) == TokenExpression.Operator.EQUALS);
+                    boolean allNot = tokenParams.stream()
+                            .allMatch(p -> resolveOperatorToken(p) == TokenExpression.Operator.NOT);
+
+                    boolean sameSystem = tokenParams.stream()
+                            .map(TokenParam::getSystem)
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .count() <= 1;
+
+                    if ((allEquals || allNot) && sameSystem) {
+                        String system = tokenParams.get(0).getSystem(); // tous ont le même
+                        List<String> values = tokenParams.stream()
+                                .map(TokenParam::getValue)
+                                .filter(Objects::nonNull)
+                                .toList();
+
+                        if (allEquals) {
+                            this.expression.addExpression(expressionFactory.newTokenInExpression(path, system, values));
+                        } else {
+                            this.expression.addExpression(expressionFactory.newTokenNotInExpression(path, system, values));
+                        }
+                        continue; // ⚠️ pour ne pas tomber dans le traitement standard
+                    }
+                }
+
+                // 🟡 Traitement standard (OR classique)
                 OrExpression<T> orExpression = expressionFactory.newOrExpression();
-                for (var param : orParams.getValuesAsQueryTokens()) {
+                for (var param : params) {
                     constructOrExpression.addOrExpression(orExpression, param.getClass(), path, param);
                 }
                 this.expression.addExpression(orExpression);
@@ -294,16 +346,6 @@ public class SelectExpression<T> implements Expression<T> {
         }
     }
 
-    /**
-     * Set the "_since" parameter to limit the request on object that have a modification date after this value.
-     * If null, the parameter is not used
-     *
-     * @param since the date or null
-     */
-    public void setSince(Date since) {
-        this.since = since;
-    }
-
     public String serialize(ExpressionSerializer<T> expressionSerializer) {
         return expressionSerializer.serialize(this);
     }
@@ -341,10 +383,6 @@ public class SelectExpression<T> implements Expression<T> {
                     throw new BadSelectExpression("Bad value for the _total parameter. Allowed values are : accurate, none, estimate");
             }
         }
-    }
-
-    public void setElements(Set<String> elements) {
-        this.elements = elements;
     }
 
     @Override

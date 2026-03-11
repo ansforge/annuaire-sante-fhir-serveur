@@ -35,12 +35,6 @@ import java.util.Set;
 
 public class GenericServiceTest extends BaseTest {
 
-
-    @AfterClass
-    public static void shutdown() {
-        WithMongoTest.clean();
-    }
-
     @After
     public void clean() {
         fhirStoreService.deleteAll();

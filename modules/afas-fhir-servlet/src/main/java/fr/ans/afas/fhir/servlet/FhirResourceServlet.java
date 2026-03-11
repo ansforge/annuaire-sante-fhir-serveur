@@ -19,6 +19,7 @@ import fr.ans.afas.fhir.servlet.read.ReadSearchParams;
 import fr.ans.afas.fhir.servlet.search.bundle.FhirQueryFirstPageReadListener;
 import fr.ans.afas.fhir.servlet.search.bundle.FhirQueryNextPageReadListener;
 import fr.ans.afas.fhir.servlet.service.FhirOperationFactory;
+import fr.ans.afas.fhir.servlet.servletutils.HttpUtils;
 import fr.ans.afas.fhir.servlet.transaction.TransactionReadListener;
 import fr.ans.afas.fhirserver.service.FhirServerContext;
 import fr.ans.afas.utils.TenantUtil;
@@ -33,8 +34,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.MessageSource;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author Anouar EL Qadim
@@ -87,6 +94,7 @@ public class FhirResourceServlet<T> extends HttpServlet {
             response.setContentType(FHIR_CONTENT_TYPE);
             String fhirPath = extractFhirPath(request);
             String fullPath = getFullPath(request, fhirPath);
+            HttpUtils.getSession(request);
 
             switch (method) {
                 case GET:
@@ -107,7 +115,7 @@ public class FhirResourceServlet<T> extends HttpServlet {
                     throw new UnsupportedOperationException(messageSource.getMessage("error.http.not.supported", null, Locale.getDefault()));
             }
 
-        } catch (ForbiddenException e1){
+        } catch (ForbiddenException e1) {
             handleError(context, e1, HttpServletResponse.SC_FORBIDDEN);
         } catch (Exception e) {
             handleError(context, e, HttpServletResponse.SC_BAD_REQUEST);
@@ -150,23 +158,43 @@ public class FhirResourceServlet<T> extends HttpServlet {
     private void handlePostRequest(HttpServletRequest request, HttpServletResponse response, AsyncContext context, ServletInputStream input, String fhirPath) {
         try {
             String[] parts = fhirPath.split("/");
-            if(APPLICATION_X_WWW_FORM_URLENCODED.equals(request.getContentType())) {
-                handleGetRequest(request, response, context, input, fhirPath, fhirPath);
+            if (APPLICATION_X_WWW_FORM_URLENCODED.equalsIgnoreCase(request.getContentType())) {
+                // Construire une query string à partir du body POST
+                String queryString = buildQueryFromParameterMap(request.getParameterMap());
+
+                // Appeler GET handler
+                handleGetRequest(request, response, context, input, fhirPath, fhirPath + "?" + queryString);
+                return;
             }
-            else if (parts.length == 1 && !parts[0].isEmpty()) {
+            else if (parts.length == 1 && parts[0].equals("$store-with-deps")) {
+                String body;
+                try (var inputStream = request.getInputStream()) {
+                    body = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                    startWriteOperation(fhirPath, context, body);
+                } catch (IOException e) {
+                    handleError(context, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                }
+            } else if (parts.length == 1 && !parts[0].isEmpty()) {
                 fhirServerContext.getSecurityService().canWriteResource(request);
                 PostParams params = PostParams.builder().resource(parts[0]).build();
                 write(response, context, input, params);
-            }
-            else {
+            } else {
                 fhirServerContext.getSecurityService().canWriteResource(request);
                 bundleTransaction(response, context, input);
             }
-        } catch (ForbiddenException e1){
+        } catch (ForbiddenException e1) {
             handleError(context, e1, HttpServletResponse.SC_FORBIDDEN);
         } catch (Exception e) {
             handleError(context, e, HttpServletResponse.SC_BAD_REQUEST);
         }
+    }
+
+    private String buildQueryFromParameterMap(Map<String, String[]> paramMap) {
+        return paramMap.entrySet().stream()
+                .flatMap(e -> Arrays.stream(e.getValue())
+                        .map(v -> URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8) + "=" +
+                                URLEncoder.encode(v, StandardCharsets.UTF_8)))
+                .collect(Collectors.joining("&"));
     }
 
     /**
@@ -179,8 +207,7 @@ public class FhirResourceServlet<T> extends HttpServlet {
         String[] parts = fhirPath.split("/");
         if (parts.length == 2 && !parts[1].startsWith("_")) {
             writeWithId(response, context, input, PutParams.builder().resource(parts[0]).id(parts[1]).build());
-        }
-        else {
+        } else {
             handleError(context, new BadSelectExpression(messageSource.getMessage("error.invalid.put.path", null, Locale.getDefault())), HttpServletResponse.SC_NOT_FOUND);
         }
     }
@@ -333,6 +360,14 @@ public class FhirResourceServlet<T> extends HttpServlet {
      */
     private void startOperation(String fhirPath, AsyncContext context) {
         var operation = fhirOperationFactory.findOperationByName(fhirPath, context);
+        context.start(operation);
+    }
+    /**
+     * @param fhirPath
+     * @param context
+     */
+    private void startWriteOperation(String fhirPath, AsyncContext context, String body) {
+        var operation = fhirOperationFactory.findWriteOperationByName(fhirPath, context, body);
         context.start(operation);
     }
 

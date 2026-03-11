@@ -59,11 +59,6 @@ public class GenericApiTest extends BaseTest {
         return List.of("/fhir/v1/tenant-1", "/fhir/" + HttpUtils.SERVLET_API_PATH + "/tenant-1");
     }
 
-    @AfterClass
-    public static void shutdown() {
-        WithMongoTest.clean();
-    }
-
     @After
     public void clean() {
         fhirStoreService.deleteAll();

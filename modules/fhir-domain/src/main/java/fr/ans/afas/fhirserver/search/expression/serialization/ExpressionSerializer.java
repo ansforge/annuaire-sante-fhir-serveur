@@ -104,4 +104,21 @@ public interface ExpressionSerializer<T> {
      */
     Expression<T> deserialize(String val);
 
+    /**
+     * Serialize a Not In expression
+     *
+     * @param tokenNotInExpression the Not In expression
+     * @return a string representation of the expression
+     */
+    String serialize(TokenNotInExpression<T> tokenNotInExpression);
+
+    /**
+     * Serialize a In expression
+     *
+     * @param tokenInExpression the In expression
+     * @return a string representation of the expression
+     */
+    String serialize(TokenInExpression<T> tokenInExpression);
+
+
 }

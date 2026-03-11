@@ -20,7 +20,6 @@ import fr.ans.afas.rass.service.impl.DefaultIndexService;
 import fr.ans.afas.rass.service.json.GenericSerializer;
 import org.bson.conversions.Bson;
 import org.hl7.fhir.r4.model.*;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,14 +62,6 @@ public class HasExpressionTestIT {
 
     @Inject
     MongoMultiTenantService multiTenantService;
-
-    /**
-     * Stop docker
-     */
-    @AfterClass
-    public static void shutdown() {
-        WithMongoTest.clean();
-    }
 
     @Before
     public void init() {

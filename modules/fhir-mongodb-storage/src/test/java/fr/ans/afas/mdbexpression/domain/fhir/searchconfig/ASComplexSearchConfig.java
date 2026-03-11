@@ -59,7 +59,12 @@ public class ASComplexSearchConfig extends TenantSearchConfig {
         jp.setResource("Device");
         jp.setPath("organization");
         jp.setField("owner");
-        organizationSearchConfig.setJoins(List.of(jp));
+
+        var jpFromPractitionerRole = new JoinPath();
+        jpFromPractitionerRole.setResource("PractitionerRole"); // <- ressource joinée à Organization
+        jpFromPractitionerRole.setPath("organization");         // <- champ FHIR utilisé pour `_revinclude`
+        jpFromPractitionerRole.setField("organization");        // <- champ Java dans PractitionerRole
+        organizationSearchConfig.setJoins(List.of(jp,jpFromPractitionerRole));
 
         this.getResources().add(organizationSearchConfig);
 
@@ -105,7 +110,7 @@ public class ASComplexSearchConfig extends TenantSearchConfig {
         tenant.setName("tenant-1");
         tenant.setPath("/t1");
         tenant.setDbname("afastest");
-        tenant.setSuffixCollection("_0.1");
+        tenant.setSuffixCollection("0.1");
 
         this.tenantConfig = tenant;
 
